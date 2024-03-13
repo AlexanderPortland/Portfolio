@@ -1,0 +1,16 @@
+[package]
+name = "portfolio-entity"
+version = "2.0.0"
+edition = "2021"
+publish = false
+
+[lib]
+name = "entity"
+path = "src/lib.rs"
+
+[dependencies]
+chrono = "^0.4"
+async-trait = "^0.1"
+
+[dependencies.sea-orm]
+version = "^0.11"

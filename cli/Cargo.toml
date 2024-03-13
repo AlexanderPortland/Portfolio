@@ -1,0 +1,27 @@
+[package]
+name = "portfolio-cli"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+url = "^2.3"
+clap = { version = "^4.3", features = ["cargo"] }
+
+portfolio-entity = { path = "../entity" }
+portfolio-core = { path = "../core" }
+
+[dependencies.tokio]
+version = "^1.28"
+features = [
+    "process",
+    "macros",
+]
+
+[dependencies.sea-orm]
+version = "^0.11"
+features = [
+    "sqlx-sqlite",
+    # TODO: Migrate to rustls for better compatibility with various OS
+    "runtime-tokio-native-tls"
+]

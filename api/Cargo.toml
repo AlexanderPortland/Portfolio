@@ -1,0 +1,35 @@
+[package]
+name = "portfolio-api"
+version = "2.0.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+rocket = { version = "^0.5.0-rc.3", features = [
+  "json",
+  "secrets",
+] }
+
+async-trait = { version = "^0.1" }
+tokio = "^1.28"
+
+dotenv = "^0.15"
+
+serde_json = { version = "^1.0" }
+
+chrono = "^0.4"
+
+# logging
+log = "^0.4"
+fern = "^0.6"
+
+portfolio-entity = { path = "../entity" }
+portfolio-migration = { path = "../migration" }
+portfolio-core = { path = "../core" }
+
+[dependencies.sea-orm-rocket]
+version = "^0.5"
+
+
+[dev-dependencies]
+once_cell = "^1.17"
