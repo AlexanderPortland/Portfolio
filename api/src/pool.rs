@@ -5,6 +5,8 @@ use sea_orm::ConnectOptions;
 use sea_orm_rocket::{rocket::figment::Figment, Database};
 #[cfg(not(test))]
 use std::time::Duration;
+use entity::{admin_session, application};
+use sea_orm::DbConn;
 
 #[derive(Database, Debug)]
 #[database("sea_orm")]
@@ -34,7 +36,7 @@ impl sea_orm_rocket::Pool for SeaOrmPool {
         println!("NO TEST");
 
         let database_url = std::env::var("PORTFOLIO_DATABASE_URL").unwrap();
-        let mut options: ConnectOptions = database_url.into();
+        let mut options: ConnectOptions = database_url.clone().into();
         options
             .max_connections(1024)
             .min_connections(5)
@@ -52,9 +54,64 @@ impl sea_orm_rocket::Pool for SeaOrmPool {
             options.idle_timeout(Duration::from_secs(idle_timeout));
         } */
         println!("connecting");
-        let conn = sea_orm::Database::connect(options).await?;
-        println!("CONNECTED");
-        Ok(SeaOrmPool { conn })
+
+        // connect to general database
+        let db: sea_orm::DbConn = sea_orm::Database::connect(options).await?;
+
+        use sea_orm::{Schema, Database, Statement};
+        use sea_orm::{sea_query::TableCreateStatement, ConnectionTrait, DbBackend};
+
+        // create specific portfolio db if it doesn't exist
+        let db_name = "portfolio";
+        db.execute(Statement::from_string(
+            db.get_database_backend(),
+            format!("CREATE DATABASE IF NOT EXISTS `{}`;", db_name),
+        )).await?;
+
+        // connect directly to that one
+        let mut options2: ConnectOptions = format!("{database_url}{db_name}").clone().into();
+        options2
+            .max_connections(1024)
+            .min_connections(5)
+            .connect_timeout(Duration::from_secs(15))
+            .acquire_timeout(Duration::from_secs(15))
+            .max_lifetime(Duration::from_secs(15))
+            .idle_timeout(Duration::from_secs(5))
+            .sqlx_logging(false);
+        let db = sea_orm::Database::connect(options2).await?;
+        println!("CONNECTED to new");
+
+        if true {
+            use entity::{admin, candidate, parent, session};
+            
+
+            let schema = Schema::new(DbBackend::MySql);
+            let stmt: TableCreateStatement = schema.create_table_from_entity(candidate::Entity);
+            let stmt2: TableCreateStatement = schema.create_table_from_entity(application::Entity);
+            let stmt3: TableCreateStatement = schema.create_table_from_entity(session::Entity);
+            let stmt4: TableCreateStatement = schema.create_table_from_entity(admin::Entity);
+            let stmt5: TableCreateStatement = schema.create_table_from_entity(admin_session::Entity);
+            let stmt6: TableCreateStatement = schema.create_table_from_entity(parent::Entity);
+            // need to enter correct db
+            //let _ = db.execute(Statement::from_string(db.get_database_backend(), "CREATE DATABASE portfolio;".to_string())).await;
+            //let _ = db.execute(Statement::from_string(db.get_database_backend(), "USE portfolio;".to_string())).await;
+            println!("helskdjklgajklsd");
+            println!("stmt is {:?}", stmt);
+            let b = db.get_database_backend().build(&stmt);
+            println!("b is {:?}", b);
+            let r = db.execute(b).await;
+            println!("res is {:?}", r);
+            r.unwrap();
+            db.execute(db.get_database_backend().build(&stmt2)).await.unwrap();
+            db.execute(db.get_database_backend().build(&stmt3)).await.unwrap();
+            db.execute(db.get_database_backend().build(&stmt4)).await.unwrap();
+            db.execute(db.get_database_backend().build(&stmt5)).await.unwrap();
+            db.execute(db.get_database_backend().build(&stmt6)).await.unwrap();
+        }
+        // have to convert form DbConn to databaseconnection
+        // what hte hells hte difference???
+        // just type aliases lmao
+        Ok(SeaOrmPool { conn: db })
     }
 
     fn borrow(&self) -> &Self::Connection {
