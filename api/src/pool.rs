@@ -31,6 +31,7 @@ impl sea_orm_rocket::Pool for SeaOrmPool {
     #[cfg(not(test))]
     async fn init(_figment: &Figment) -> Result<Self, Self::Error> {
         dotenv::dotenv().ok();
+        println!("NO TEST");
 
         let database_url = std::env::var("PORTFOLIO_DATABASE_URL").unwrap();
         let mut options: ConnectOptions = database_url.into();
@@ -50,9 +51,9 @@ impl sea_orm_rocket::Pool for SeaOrmPool {
         if let Some(idle_timeout) = config.idle_timeout {
             options.idle_timeout(Duration::from_secs(idle_timeout));
         } */
-
+        println!("connecting");
         let conn = sea_orm::Database::connect(options).await?;
-
+        println!("CONNECTED");
         Ok(SeaOrmPool { conn })
     }
 

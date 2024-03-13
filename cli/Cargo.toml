@@ -21,7 +21,7 @@ features = [
 [dependencies.sea-orm]
 version = "^0.11"
 features = [
-    "sqlx-sqlite",
+    "sqlx-mysql",
     # TODO: Migrate to rustls for better compatibility with various OS
     "runtime-tokio-native-tls"
 ]
