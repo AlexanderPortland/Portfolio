@@ -27,6 +27,7 @@ impl ApplicationService {
     ) -> Result<(application::Model, Vec<application::Model>, String), ServiceError> {
         // Check if application id starts with 101, 102 or 103
         if !Self::is_application_id_valid(application_id) {
+            println!("invalid app id");
             return Err(ServiceError::InvalidApplicationId);
         }
 
@@ -35,15 +36,18 @@ impl ApplicationService {
             .await?
             .is_some()
         {
+            println!("user exists");
             return Err(ServiceError::UserAlreadyExists);
         }
         
         let hashed_password = hash_password(plain_text_password.to_string()).await?;
         let (pubkey, priv_key_plain_text) = crypto::create_identity();
+        println!("poassing word");
         let encrypted_priv_key = crypto::encrypt_password(
             priv_key_plain_text,
             plain_text_password.to_string()
         ).await?;
+        println!("done passing word");
     
 
         let (candidate, enc_personal_id_number) = Self::find_or_create_candidate_with_personal_id(
@@ -53,6 +57,8 @@ impl ApplicationService {
             &personal_id_number,
             &pubkey,
         ).await?;
+
+        println!("done creating candidate");
         
 
         let application = Mutation::create_application(
@@ -64,6 +70,8 @@ impl ApplicationService {
             pubkey,
             encrypted_priv_key,
         ).await?;
+
+        println!("done creating app");
 
         let applications = Query::find_applications_by_candidate_id(db, candidate.id).await?;
         if applications.len() >= 3 {

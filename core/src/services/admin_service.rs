@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use entity::{admin, admin_session};
+use entity::{admin, admin_session, session};
 use sea_orm::{prelude::Uuid, DbConn, IntoActiveModel};
 
 use crate::{crypto, error::ServiceError, Query, Mutation, models::auth::AuthenticableTrait};
@@ -34,15 +34,18 @@ impl AuthenticableTrait for AdminService {
         ip_addr: String,
     ) -> Result<(String, String), ServiceError> {
         let admin = Query::find_admin_by_id(db, admin_id).await?.ok_or(ServiceError::InvalidCredentials)?;
-
+        println!("admin is {:?}", admin);
         let session_id = Self::new_session(db,
             &admin,
             password.clone(),
             ip_addr
         )
             .await?;
+        println!("session id is {:?}", session_id);
         
-        let private_key = Self::decrypt_private_key(db, admin.id, password).await?;
+        //let private_key = Self::decrypt_private_key(db, admin.id, password).await?;
+        let private_key = "13".to_string();
+        //println!("private key is {:?}", private_key);
         Ok((session_id, private_key))
     }
 
@@ -75,6 +78,7 @@ impl AuthenticableTrait for AdminService {
         ip_addr: String,
     ) -> Result<String, ServiceError> {
         if !crypto::verify_password(password.clone(), admin.password.clone()).await? {
+            println!("crypto couldn't verify that password");
             return Err(ServiceError::InvalidCredentials);
         }
         // user is authenticated, generate a new session
@@ -103,7 +107,7 @@ impl AuthenticableTrait for AdminService {
 
 }
 
-#[cfg(test)]
+//#[cfg(test)]
 pub mod admin_tests {
     use chrono::{Local, Utc};
     use entity::admin;
@@ -116,12 +120,15 @@ pub mod admin_tests {
     pub async fn create_admin(db: &DbConn) -> admin::Model {    
         let password = "admin".to_string();
         let (pubkey, priv_key) = crypto::create_identity();
+
+        // TODO: is this the right parameter order for password encryption
         let enc_priv_key = crypto::encrypt_password(priv_key, password).await.unwrap();
     
         let admin = admin::ActiveModel {
             name: Set("admin".to_string()),
             public_key: Set(pubkey),
             private_key: Set(enc_priv_key),
+            // should be password hash
             password: Set("admin".to_string()),
             created_at: Set(Utc::now().naive_utc()),
             updated_at: Set(Utc::now().naive_utc()),

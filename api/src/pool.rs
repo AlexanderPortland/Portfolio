@@ -58,6 +58,8 @@ impl sea_orm_rocket::Pool for SeaOrmPool {
         // connect to general database
         let db: sea_orm::DbConn = sea_orm::Database::connect(options).await?;
 
+        use portfolio_core::crypto::{self, hash_password};
+        use portfolio_core::services::admin_service::admin_tests::create_admin;
         use sea_orm::{Schema, Database, Statement};
         use sea_orm::{sea_query::TableCreateStatement, ConnectionTrait, DbBackend};
 
@@ -81,7 +83,8 @@ impl sea_orm_rocket::Pool for SeaOrmPool {
         let db = sea_orm::Database::connect(options2).await?;
         println!("CONNECTED to new");
 
-        if true {
+        let init = false;
+        if init {
             use entity::{admin, candidate, parent, session};
             
 
@@ -95,6 +98,8 @@ impl sea_orm_rocket::Pool for SeaOrmPool {
             // need to enter correct db
             //let _ = db.execute(Statement::from_string(db.get_database_backend(), "CREATE DATABASE portfolio;".to_string())).await;
             //let _ = db.execute(Statement::from_string(db.get_database_backend(), "USE portfolio;".to_string())).await;
+            // INSERT INTO admin VALUES (0, "alex", 13, 13, "hi", ‘2021-12-01 14:30:15’, ‘2021-12-01 14:30:15’);
+            // INSERT INTO admin VALUES (0, "alex", 13, 13, "hi", NOW(), NOW());
             println!("helskdjklgajklsd");
             println!("stmt is {:?}", stmt);
             let b = db.get_database_backend().build(&stmt);
@@ -107,10 +112,27 @@ impl sea_orm_rocket::Pool for SeaOrmPool {
             db.execute(db.get_database_backend().build(&stmt4)).await.unwrap();
             db.execute(db.get_database_backend().build(&stmt5)).await.unwrap();
             db.execute(db.get_database_backend().build(&stmt6)).await.unwrap();
+
+
+            // insert new admin account for our use
+            // id: should be 1 but may change
+            // password: hello
+            let password_plain_text = "hello".to_string();
+            let pwrd_hash = hash_password(password_plain_text.clone()).await.unwrap();
+            println!("got password hash {}", pwrd_hash.clone());
+            let (pub_key, priv_key) = crypto::create_identity();
+            let enc_priv_key = crypto::encrypt_password(priv_key, password_plain_text).await.unwrap();
+            db.execute(Statement::from_string(
+                db.get_database_backend(),
+                format!("INSERT INTO admin VALUES (0, \"alex3\", \"{pub_key}\", \"{enc_priv_key}\", \"{pwrd_hash}\", NOW(), NOW());"),
+            )).await?;
         }
-        // have to convert form DbConn to databaseconnection
-        // what hte hells hte difference???
-        // just type aliases lmao
+
+        
+
+        //create_admin(&db).await;
+
+        
         Ok(SeaOrmPool { conn: db })
     }
 
