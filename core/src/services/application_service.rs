@@ -27,6 +27,7 @@ impl ApplicationService {
     ) -> Result<(application::Model, Vec<application::Model>, String), ServiceError> {
         // Check if application id starts with 101, 102 or 103
         if !Self::is_application_id_valid(application_id) {
+            println!("invalid app id");
             return Err(ServiceError::InvalidApplicationId);
         }
 
@@ -35,15 +36,18 @@ impl ApplicationService {
             .await?
             .is_some()
         {
+            println!("user exists");
             return Err(ServiceError::UserAlreadyExists);
         }
         
         let hashed_password = hash_password(plain_text_password.to_string()).await?;
         let (pubkey, priv_key_plain_text) = crypto::create_identity();
+        println!("poassing word");
         let encrypted_priv_key = crypto::encrypt_password(
             priv_key_plain_text,
             plain_text_password.to_string()
         ).await?;
+        println!("done passing word");
     
 
         let (candidate, enc_personal_id_number) = Self::find_or_create_candidate_with_personal_id(
@@ -53,6 +57,8 @@ impl ApplicationService {
             &personal_id_number,
             &pubkey,
         ).await?;
+
+        println!("done creating candidate");
         
 
         let application = Mutation::create_application(
@@ -64,6 +70,8 @@ impl ApplicationService {
             pubkey,
             encrypted_priv_key,
         ).await?;
+
+        println!("done creating app");
 
         let applications = Query::find_applications_by_candidate_id(db, candidate.id).await?;
         if applications.len() >= 3 {
@@ -100,6 +108,7 @@ impl ApplicationService {
         pubkey: &String,
         // enc_personal_id_number: &EncryptedString,
     ) -> Result<(candidate::Model, String), ServiceError> {
+        println!("doing some wacky shit");
         let candidates = Query::list_candidates_full(db).await?;
         let ids_decrypted = futures::future::join_all(
         candidates.iter().map(|c| async {(
@@ -112,12 +121,17 @@ impl ApplicationService {
         ))
             .await;
 
+        println!("doing some more wacky shit");
+
         let found_ids: Vec<&(i32, String)> = ids_decrypted
             .iter()
             .filter(|(_, id)| id == personal_id_number)
             .collect();
+
+        println!("doing even more wacky shit");
             
         if let Some((candidate_id, _)) = found_ids.first() {
+            println!("a");
             Ok(
                 Self::find_linkable_candidate(db, 
                     application_id,
@@ -127,15 +141,20 @@ impl ApplicationService {
                 ).await?
             )
         } else {
+            println!("b");
             let recipients = get_recipients(db, pubkey).await?;
-
+            println!("c");
             let enc_personal_id_number = EncryptedString::new(
                 personal_id_number,
                 &recipients,
             ).await?;
+
+            println!("d");
+            let s = enc_personal_id_number.to_owned().to_string();
+            println!("stringy string is {:?}", s.clone());
             Ok(
                 (
-                    CandidateService::create(db, enc_personal_id_number.to_owned().to_string()).await?,
+                    CandidateService::create(db, s).await?,
                     enc_personal_id_number.to_string(),
                 )
             )

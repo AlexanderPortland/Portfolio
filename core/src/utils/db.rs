@@ -17,10 +17,11 @@ pub async fn get_memory_sqlite_connection() -> sea_orm::DbConn {
     use sea_orm::{sea_query::TableCreateStatement, ConnectionTrait, DbBackend};
 
     
-    let base_url = "sqlite::memory:";
+    let base_url = "mysql::memory:";
+    println!("TRYING TO CONNECT TO {}", base_url);
     let db: DbConn = Database::connect(base_url).await.unwrap();
 
-    let schema = Schema::new(DbBackend::Sqlite);
+    let schema = Schema::new(DbBackend::MySql);
     let stmt: TableCreateStatement = schema.create_table_from_entity(candidate::Entity);
     let stmt2: TableCreateStatement = schema.create_table_from_entity(application::Entity);
     let stmt3: TableCreateStatement = schema.create_table_from_entity(session::Entity);

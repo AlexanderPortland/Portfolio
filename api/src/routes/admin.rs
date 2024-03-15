@@ -95,6 +95,8 @@ pub async fn create_candidate(
 
     let plain_text_password = random_12_char_string();
 
+    println!("trying to did the thing");
+
     let (application, applications, personal_id_number) = ApplicationService::create(
         &private_key,
         &db,
@@ -105,6 +107,7 @@ pub async fn create_candidate(
         .await
         .map_err(to_custom_error)?;
 
+    println!("did the thing");
     Ok(
         Json(
             CreateCandidateResponse {
