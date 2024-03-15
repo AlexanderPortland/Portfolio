@@ -108,6 +108,7 @@ impl ApplicationService {
         pubkey: &String,
         // enc_personal_id_number: &EncryptedString,
     ) -> Result<(candidate::Model, String), ServiceError> {
+        println!("doing some wacky shit");
         let candidates = Query::list_candidates_full(db).await?;
         let ids_decrypted = futures::future::join_all(
         candidates.iter().map(|c| async {(
@@ -120,12 +121,17 @@ impl ApplicationService {
         ))
             .await;
 
+        println!("doing some more wacky shit");
+
         let found_ids: Vec<&(i32, String)> = ids_decrypted
             .iter()
             .filter(|(_, id)| id == personal_id_number)
             .collect();
+
+        println!("doing even more wacky shit");
             
         if let Some((candidate_id, _)) = found_ids.first() {
+            println!("a");
             Ok(
                 Self::find_linkable_candidate(db, 
                     application_id,
@@ -135,15 +141,20 @@ impl ApplicationService {
                 ).await?
             )
         } else {
+            println!("b");
             let recipients = get_recipients(db, pubkey).await?;
-
+            println!("c");
             let enc_personal_id_number = EncryptedString::new(
                 personal_id_number,
                 &recipients,
             ).await?;
+
+            println!("d");
+            let s = enc_personal_id_number.to_owned().to_string();
+            println!("stringy string is {:?}", s.clone());
             Ok(
                 (
-                    CandidateService::create(db, enc_personal_id_number.to_owned().to_string()).await?,
+                    CandidateService::create(db, s).await?,
                     enc_personal_id_number.to_string(),
                 )
             )
