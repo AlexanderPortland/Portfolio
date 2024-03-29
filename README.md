@@ -1,6 +1,6 @@
 <h1 align="center"><br><img src="./.github/img/appIcon.png" alt="Lusk! 🤌 logo" width=175px></h1>
 
-<h3 align="center">Portfolio!</h3>
+<h3 align="center">Portfolio! <i>(pre-alohomora)</i></h3>
 <p align="center">
     Portál pro bezpečné a radostné přijímací řízení
     <br />
