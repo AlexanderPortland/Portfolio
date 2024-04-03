@@ -95,7 +95,7 @@ pub async fn create_candidate(
 
     let plain_text_password = random_12_char_string();
 
-    println!("trying to did the thing");
+    //println!("trying to did the thing");
 
     let (application, applications, personal_id_number) = ApplicationService::create(
         &private_key,
@@ -109,7 +109,7 @@ pub async fn create_candidate(
 
     println!("did the thing");
     Ok(
-        Json(
+        Json( // return BBoxJson type thing and then alohomora will take care of getting rid of that
             CreateCandidateResponse {
                 application_id: application.id,
                 field_of_study: application.field_of_study,
