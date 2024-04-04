@@ -1,3 +1,6 @@
+use alohomora::pcr::PrivacyCriticalRegion;
+use alohomora::{bbox::BBox, policy::NoPolicy};
+use alohomora::*;
 use chrono::NaiveDateTime;
 use entity::{application, candidate};
 use sea_orm::{EntityTrait, DbErr, DbConn, ModelTrait, FromQueryResult, QuerySelect, JoinType, RelationTrait, QueryFilter, ColumnTrait, QueryOrder, PaginatorTrait};
@@ -43,7 +46,7 @@ fn get_ordering(sort: String) -> (application::Column, sea_orm::Order)
 impl Query {
     pub async fn find_application_by_id(
         db: &DbConn,
-        application_id: i32,
+        application_id: BBox<i32, NoPolicy>,
     ) -> Result<Option<application::Model>, DbErr> {
         application::Entity::find_by_id(application_id)
             .one(db)
@@ -62,17 +65,31 @@ impl Query {
 
     pub async fn list_applications(
         db: &DbConn,
-        field_of_study: Option<String>,
-        page: Option<u64>,
-        sort: Option<String>,
+        field_of_study: BBox<Option<String>, NoPolicy>,
+        page: BBox<Option<u64>, NoPolicy>,
+        sort: BBox<Option<String>, NoPolicy>,
     ) -> Result<Vec<ApplicationCandidateJoin>, DbErr> {
         let select = application::Entity::find();
-        let (column, order) = if let Some(sort) = sort {
+
+        // TODO: is this right for PCR?
+        // let f1 = PrivacyCriticalRegion::new(|sort: &Option<String>, _, _|{
+        //     let (column, order) = if let Some(sort) = *sort {
+        //         get_ordering(sort)
+        //     } else {
+        //         (application::Column::Id, sea_orm::Order::Asc)
+        //     };
+        //     (column, order)
+        // });
+        
+        // let (column, order) = sort.pcr(f1, ());
+
+        let (column, order) = if let Some(sort) = sort.discard_box() {
             get_ordering(sort)
         } else {
             (application::Column::Id, sea_orm::Order::Asc)
         };
-        let query = if let Some(field) = field_of_study {
+        
+        let query = if let Some(field) = field_of_study.discard_box() {
             select.filter(application::Column::FieldOfStudy.eq(field)) 
          } else {
              select
@@ -88,7 +105,7 @@ impl Query {
             .column_as(application::Column::CreatedAt, "created_at")
             .into_model::<ApplicationCandidateJoin>();
 
-        if let Some(page) = page {
+        if let Some(page) = page.discard_box() {
             query
                 .paginate(db, PAGE_SIZE)
                 .fetch_page(page).await
@@ -109,7 +126,7 @@ impl Query {
 
     pub async fn find_applications_by_candidate_id(
         db: &DbConn,
-        candidate_id: i32,
+        candidate_id: BBox<i32, NoPolicy>,
     ) -> Result<Vec<application::Model>, DbErr> {
         let applications = application::Entity::find()
             .filter(application::Column::CandidateId.eq(candidate_id))

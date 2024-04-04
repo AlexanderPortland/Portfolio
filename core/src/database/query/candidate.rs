@@ -1,3 +1,4 @@
+use alohomora::{bbox::BBox, policy::NoPolicy};
 use sea_orm::*;
 
 use ::entity::{candidate, candidate::Entity as Candidate};
@@ -37,7 +38,7 @@ pub struct CandidateResult {
 impl Query {
     pub async fn find_candidate_by_id(
         db: &DbConn,
-        id: i32,
+        id: BBox<i32, NoPolicy>,
     ) -> Result<Option<candidate::Model>, DbErr> {
         Candidate::find_by_id(id)
             .one(db)
@@ -66,7 +67,7 @@ impl Query {
 
     pub async fn find_candidate_by_personal_id(
         db: &DbConn,
-        personal_id: &str,
+        personal_id: BBox<&str, NoPolicy>,
     ) -> Result<Option<candidate::Model>, DbErr> {
         Candidate::find()
             .filter(candidate::Column::PersonalIdentificationNumber.eq(personal_id))
@@ -77,6 +78,8 @@ impl Query {
 
 #[cfg(test)]
 mod tests {
+    use alohomora::bbox::BBox;
+    use alohomora::policy::NoPolicy;
     use sea_orm::{ActiveModelTrait, Set};
 
     use entity::candidate;
@@ -88,10 +91,10 @@ mod tests {
     async fn test_find_candidate_by_id() {
         let db = get_memory_sqlite_connection().await;
         let candidate = candidate::ActiveModel {
-            id: Set(103158),
-            personal_identification_number: Set("test".to_string()),
-            created_at: Set(chrono::offset::Local::now().naive_local()),
-            updated_at: Set(chrono::offset::Local::now().naive_local()),
+            id: Set(BBox::new(103158, NoPolicy::new())),
+            personal_identification_number: Set(BBox::new("test".to_string(), NoPolicy::new())),
+            created_at: Set(BBox::new(chrono::offset::Local::now().naive_local(), NoPolicy::new())),
+            updated_at: Set(BBox::new(chrono::offset::Local::now().naive_local(), NoPolicy::new())),
             ..Default::default()
         }
         .insert(&db)

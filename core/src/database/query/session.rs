@@ -1,5 +1,7 @@
 use crate::Query;
 
+use alohomora::bbox::BBox;
+use alohomora::policy::NoPolicy;
 use ::entity::prelude::AdminSession;
 use ::entity::{admin, admin_session, application};
 use ::entity::{session, session::Entity as Session};
@@ -9,14 +11,14 @@ use sea_orm::*;
 impl Query {
     pub async fn find_session_by_uuid(
         db: &DbConn,
-        uuid: Uuid,
+        uuid: BBox<Uuid, NoPolicy>,
     ) -> Result<Option<session::Model>, DbErr> {
         Session::find_by_id(uuid).one(db).await
     }
 
     pub async fn find_admin_session_by_uuid(
         db: &DbConn,
-        uuid: Uuid,
+        uuid: BBox<Uuid, NoPolicy>,
     ) -> Result<Option<admin_session::Model>, DbErr> {
         AdminSession::find_by_id(uuid).one(db).await
     }
@@ -38,6 +40,8 @@ impl Query {
 
 #[cfg(test)]
 mod tests {
+    use alohomora::bbox::BBox;
+    use alohomora::policy::NoPolicy;
     use entity::{session, admin, admin_session};
     use sea_orm::{prelude::Uuid, ActiveModelTrait, Set};
 
@@ -51,12 +55,12 @@ mod tests {
 
         let (application, _, _) = put_user_data(&db).await;
         let session = session::ActiveModel {
-            id: Set(Uuid::new_v4()),
+            id: Set(BBox::new(Uuid::new_v4(), NoPolicy::new())),
             candidate_id: Set(application.id),
-            ip_address: Set("10.10.10.10".to_string()),
-            created_at: Set(chrono::offset::Local::now().naive_local()),
-            expires_at: Set(chrono::offset::Local::now().naive_local()),
-            updated_at: Set(chrono::offset::Local::now().naive_local())
+            ip_address: Set(BBox::new("10.10.10.10".to_string(), NoPolicy::new())),
+            created_at: Set(BBox::new(chrono::offset::Local::now().naive_local(), NoPolicy::new())),
+            expires_at: Set(BBox::new(chrono::offset::Local::now().naive_local(), NoPolicy::new())),
+            updated_at: Set(BBox::new(chrono::offset::Local::now().naive_local(), NoPolicy::new()))
         }
         .insert(&db)
         .await
@@ -75,12 +79,12 @@ mod tests {
         let (application, _, _) = put_user_data(&db).await;
 
         session::ActiveModel {
-            id: Set(Uuid::new_v4()),
+            id: Set(BBox::new(Uuid::new_v4(), NoPolicy::new())),
             candidate_id: Set(application.id),
-            ip_address: Set("10.10.10.10".to_string()),
-            created_at: Set(chrono::offset::Local::now().naive_local()),
-            expires_at: Set(chrono::offset::Local::now().naive_local()),
-            updated_at: Set(chrono::offset::Local::now().naive_local()),
+            ip_address: Set(BBox::new("10.10.10.10".to_string(), NoPolicy::new())),
+            created_at: Set(BBox::new(chrono::offset::Local::now().naive_local(), NoPolicy::new())),
+            expires_at: Set(BBox::new(chrono::offset::Local::now().naive_local(), NoPolicy::new())),
+            updated_at: Set(BBox::new(chrono::offset::Local::now().naive_local(), NoPolicy::new())),
             ..Default::default()
         }
             .insert(&db)
@@ -90,13 +94,13 @@ mod tests {
         const ADMIN_ID: i32 = 1;
 
         let admin = admin::ActiveModel {
-            id: Set(ADMIN_ID),
-            name: Set("admin".to_string()),
-            public_key: Set("test".to_string()),
-            private_key: Set("test".to_string()),
-            password: Set("test".to_string().to_string()),
-            created_at: Set(chrono::offset::Local::now().naive_local()),
-            updated_at: Set(chrono::offset::Local::now().naive_local()),
+            id: Set(BBox::new(ADMIN_ID, NoPolicy::new())),
+            name: Set(BBox::new("admin".to_string(), NoPolicy::new())),
+            public_key: Set(BBox::new("test".to_string(), NoPolicy::new())),
+            private_key: Set(BBox::new("test".to_string(), NoPolicy::new())),
+            password: Set(BBox::new("test".to_string(), NoPolicy::new())),
+            created_at: Set(BBox::new(chrono::offset::Local::now().naive_local(), NoPolicy::new())),
+            updated_at: Set(BBox::new(chrono::offset::Local::now().naive_local(), NoPolicy::new())),
             ..Default::default()
         }
             .insert(&db)
@@ -104,12 +108,12 @@ mod tests {
             .unwrap();
 
         admin_session::ActiveModel {
-            id: Set(Uuid::new_v4()),
-            admin_id: Set(ADMIN_ID),
-            ip_address: Set("10.10.10.10".to_string()),
-            created_at: Set(chrono::offset::Local::now().naive_local()),
-            expires_at: Set(chrono::offset::Local::now().naive_local()),
-            updated_at: Set(chrono::offset::Local::now().naive_local()),
+            id: Set(BBox::new(Uuid::new_v4(), NoPolicy::new())),
+            admin_id: Set(application.id),
+            ip_address: Set(BBox::new("10.10.10.10".to_string(), NoPolicy::new())),
+            created_at: Set(BBox::new(chrono::offset::Local::now().naive_local(), NoPolicy::new())),
+            expires_at: Set(BBox::new(chrono::offset::Local::now().naive_local(), NoPolicy::new())),
+            updated_at: Set(BBox::new(chrono::offset::Local::now().naive_local(), NoPolicy::new())),
             ..Default::default()
         }
             .insert(&db)
