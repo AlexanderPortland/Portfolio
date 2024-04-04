@@ -16,6 +16,8 @@ impl AdminService {
     ) -> Result<String, ServiceError> {
         let admin = Query::find_admin_by_id(db, admin_id).await?.ok_or(ServiceError::InvalidCredentials)?;
         let private_key_encrypted = admin.private_key;
+
+        // ALO: thinking pcr here
         let private_key = crypto::decrypt_password(private_key_encrypted, password).await?;
 
         Ok(private_key)
@@ -34,18 +36,18 @@ impl AuthenticableTrait for AdminService {
         ip_addr: String,
     ) -> Result<(String, String), ServiceError> {
         let admin = Query::find_admin_by_id(db, admin_id).await?.ok_or(ServiceError::InvalidCredentials)?;
-        println!("admin is {:?}", admin);
+        
         let session_id = Self::new_session(db,
             &admin,
             password.clone(),
             ip_addr
         )
             .await?;
-        println!("session id is {:?}", session_id);
         
+        // ALO: maybe sandbox here?
         //let private_key = Self::decrypt_private_key(db, admin.id, password).await?;
         let private_key = "13".to_string();
-        //println!("private key is {:?}", private_key);
+
         Ok((session_id, private_key))
     }
 

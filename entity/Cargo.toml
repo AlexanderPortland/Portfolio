@@ -11,6 +11,8 @@ path = "src/lib.rs"
 [dependencies]
 chrono = "^0.4"
 async-trait = "^0.1"
+alohomora = { path = "../../alohomora/alohomora" }
+alohomora_derive = { path = "../../alohomora/alohomora_derive" }
 
 [dependencies.sea-orm]
 version = "^0.11"

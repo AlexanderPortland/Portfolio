@@ -1,11 +1,13 @@
 use crate::Query;
 
-use ::entity::{admin, admin::Entity as Admin};
+use ::entity::admin::{self, BBoxModel, Entity as Admin};
 use sea_orm::*;
 
 impl Query {
     pub async fn find_admin_by_id(db: &DbConn, id: i32) -> Result<Option<admin::Model>, DbErr> {
-        Admin::find_by_id(id).one(db).await
+        let r = Admin::find_by_id(id).one(db).await;
+        //admin::to_bboxmodel_result(r)
+        r
     }
 
     pub async fn get_all_admin_public_keys(db: &DbConn) -> Result<Vec<String>, DbErr> {
