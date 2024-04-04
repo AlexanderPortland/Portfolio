@@ -9,7 +9,6 @@ publish = false
 members = [".", "api", "core", "entity", "migration", "cli"]
 
 [dependencies]
-#funty = "1.2.0"
 portfolio-api = { path = "api" }
 alohomora = { path = "../alohomora/alohomora" }
 alohomora_derive = { path = "../alohomora/alohomora_derive" }

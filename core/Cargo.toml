@@ -49,13 +49,20 @@ uuid = { version = "^1.3", features = ["v4"] }
 log = "^0.4"
 fern = "^0.6"
 
+# alohomora
+alohomora = { path = "../../alohomora/alohomora" }
+alohomora_derive = { path = "../../alohomora/alohomora_derive" }
+
 [dependencies.sea-orm]
-version = "^0.11"
-features = [
-    "runtime-tokio-native-tls",
-    "sqlx-postgres",
-    "sqlx-mysql",
-]
+git = "https://github.com/KinanBab/sea-orm.git"
+branch = "main"
+features = [ "sqlx-mysql", "sqlx-sqlite", "runtime-tokio-native-tls", "macros" ]
+# version = "^0.11"
+# features = [
+#     "runtime-tokio-native-tls",
+#     "sqlx-postgres",
+#     "sqlx-mysql",
+# ]
 
 [dev-dependencies]
 tokio = { version = "^1.28", features = ["macros"] }

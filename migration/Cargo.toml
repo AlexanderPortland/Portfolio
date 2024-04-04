@@ -16,5 +16,8 @@ chrono = "^0.4"
 portfolio-entity = { path = "../entity" }
 
 [dependencies.sea-orm-migration]
-version = "^0.11"
-features = [ "runtime-tokio-native-tls", "sqlx-postgres", "sqlx-sqlite"]
+git = "https://github.com/KinanBab/sea-orm.git"
+branch = "main"
+features = [ "sqlx-mysql", "sqlx-sqlite", "runtime-tokio-native-tls" ]
+# version = "^0.11"
+# features = [ "runtime-tokio-native-tls", "sqlx-postgres", "sqlx-sqlite"]
