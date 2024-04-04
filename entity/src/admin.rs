@@ -7,14 +7,14 @@ use alohomora::{bbox::BBox, policy::NoPolicy, AlohomoraType};
 #[sea_orm(table_name = "admin")]
 pub struct Model {
     #[sea_orm(primary_key)]
-    pub id: i32,
-    pub name: String,
-    pub public_key: String,
+    pub id: BBox<i32, NoPolicy>,
+    pub name: BBox<String, NoPolicy>,
+    pub public_key: BBox<String, NoPolicy>,
     #[sea_orm(column_type = "Text")]
-    pub private_key: String,
-    pub password: String,
-    pub created_at: DateTime,
-    pub updated_at: DateTime,
+    pub private_key: BBox<String, NoPolicy>,
+    pub password: BBox<String, NoPolicy>,
+    pub created_at: BBox<DateTime, NoPolicy>,
+    pub updated_at: BBox<DateTime, NoPolicy>,
 }
 
 // make another BBoxModel struct and way to transform between for now 
@@ -23,51 +23,6 @@ pub struct Model {
 // start from the database and then see where that gets errors and work out from there
 // transformation functions in the Query::___ fn so only the body of that will change
 // and then use .discard_box to get rid of boxes and still return a Json
-
-pub struct BBoxModel {
-    pub id: BBox<i32, NoPolicy>,
-    pub name: BBox<String, NoPolicy>,
-    pub public_key: BBox<String, NoPolicy>,
-    pub private_key: BBox<String, NoPolicy>,
-    pub password: BBox<String, NoPolicy>,
-    pub created_at: BBox<DateTime, NoPolicy>,
-    pub updated_at: BBox<DateTime, NoPolicy>,
-}
-
-impl From<Model> for BBoxModel {
-    fn from(value: Model) -> Self {
-        BBoxModel { 
-            id: BBox::new(value.id, NoPolicy::new()), 
-            name: BBox::new(value.name, NoPolicy::new()), 
-            public_key: BBox::new(value.public_key, NoPolicy::new()), 
-            private_key: BBox::new(value.private_key, NoPolicy::new()), 
-            password: BBox::new(value.password, NoPolicy::new()), 
-            created_at: BBox::new(value.created_at, NoPolicy::new()), 
-            updated_at: BBox::new(value.updated_at, NoPolicy::new()) 
-        }
-    }
-}
-
-impl From<BBoxModel> for Model {
-    fn from(value: BBoxModel) -> Self {
-        Model { id: value.id.discard_box(), name: value.name.discard_box(), public_key: value.public_key.discard_box(), private_key: value.private_key.discard_box(), password: value.password.discard_box(), created_at: value.created_at.discard_box(), updated_at: value.updated_at.discard_box() }
-    }
-}
-
-pub fn to_bboxmodel_result(r: Result<Option<Model>, DbErr>) -> Result<Option<BBoxModel>, DbErr> {
-    match r {
-        Ok(o) => {
-            match o {
-                None => Ok(None),
-                Some(model) => {
-                    let bmodel: BBoxModel = model.into();
-                    Ok(Some(bmodel))
-                }
-            }
-        },
-        Err(e) => Err(e),
-    }
-}
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
 pub enum Relation {

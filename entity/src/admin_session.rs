@@ -3,17 +3,18 @@
 use sea_orm::entity::prelude::*;
 
 use crate::session_trait::UserSession;
+use alohomora::{bbox::BBox, policy::NoPolicy};
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel)]
 #[sea_orm(table_name = "admin_session")]
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
-    pub id: Uuid,
-    pub admin_id: i32,
-    pub ip_address: String,
-    pub created_at: DateTime,
-    pub expires_at: DateTime,
-    pub updated_at: DateTime,
+    pub id: BBox<Uuid, NoPolicy>,
+    pub admin_id: BBox<i32, NoPolicy>,
+    pub ip_address: BBox<String, NoPolicy>,
+    pub created_at: BBox<DateTime, NoPolicy>,
+    pub expires_at: BBox<DateTime, NoPolicy>,
+    pub updated_at: BBox<DateTime, NoPolicy>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
@@ -38,10 +39,10 @@ impl ActiveModelBehavior for ActiveModel {}
 
 #[async_trait::async_trait]
 impl UserSession for Model {
-    async fn id(&self) -> Uuid {
-        self.id
+    async fn id(&self) -> BBox<Uuid, NoPolicy> {
+        self.id.clone()
     }
-    async fn expires_at(&self) -> chrono::NaiveDateTime {
-        self.expires_at
+    async fn expires_at(&self) -> BBox<chrono::NaiveDateTime, NoPolicy> {
+        self.expires_at.clone()
     }
 }
