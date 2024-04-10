@@ -459,8 +459,8 @@ mod tests {
             .ok()
             .unwrap();
 
-        assert!(tokio::fs::metadata(temp_dir.join(candidate.id.discard_box().to_string())).await.is_ok());
-        assert!(tokio::fs::metadata(temp_dir.join(candidate.id.discard_box().to_string()).join("cache")).await.is_ok());
+        assert!(tokio::fs::metadata(temp_dir.join(candidate.id.clone().discard_box().to_string())).await.is_ok());
+        assert!(tokio::fs::metadata(temp_dir.join(candidate.id.clone().discard_box().to_string()).join("cache")).await.is_ok());
 
         tokio::fs::remove_dir_all(temp_dir).await.unwrap();
     }
@@ -652,13 +652,13 @@ mod tests {
         let db = get_memory_sqlite_connection().await;
         let (_, candidate, _) = put_user_data(&db).await;
         
-        let (temp_dir, application_dir, _) = create_data_store_temp_dir(candidate.id.discard_box()).await;
+        let (temp_dir, application_dir, _) = create_data_store_temp_dir(candidate.id.clone().discard_box()).await;
 
-        PortfolioService::add_cover_letter_to_cache(candidate.id.discard_box(), vec![0]).await.unwrap();
-        PortfolioService::add_portfolio_letter_to_cache(candidate.id.discard_box(), vec![0]).await.unwrap();
-        PortfolioService::add_portfolio_zip_to_cache(candidate.id.discard_box(), vec![0]).await.unwrap();
+        PortfolioService::add_cover_letter_to_cache(candidate.id.clone().discard_box(), vec![0]).await.unwrap();
+        PortfolioService::add_portfolio_letter_to_cache(candidate.id.clone().discard_box(), vec![0]).await.unwrap();
+        PortfolioService::add_portfolio_zip_to_cache(candidate.id.clone().discard_box(), vec![0]).await.unwrap();
 
-        PortfolioService::submit(&candidate, &db).await.unwrap();
+        PortfolioService::submit(&candidate.clone(), &db).await.unwrap();
         
         assert!(tokio::fs::metadata(application_dir.join("PORTFOLIO.age")).await.is_ok());
 
@@ -671,11 +671,11 @@ mod tests {
         let db = get_memory_sqlite_connection().await;
         let (_, candidate, _) = put_user_data(&db).await;
 
-        let (temp_dir, application_dir, _) = create_data_store_temp_dir(candidate.id.discard_box()).await;
+        let (temp_dir, application_dir, _) = create_data_store_temp_dir(candidate.id.clone().discard_box()).await;
 
-        PortfolioService::add_cover_letter_to_cache(candidate.id.discard_box(), vec![0]).await.unwrap();
-        PortfolioService::add_portfolio_letter_to_cache(candidate.id.discard_box(), vec![0]).await.unwrap();
-        PortfolioService::add_portfolio_zip_to_cache(candidate.id.discard_box(), vec![0]).await.unwrap();
+        PortfolioService::add_cover_letter_to_cache(candidate.id.clone().discard_box(), vec![0]).await.unwrap();
+        PortfolioService::add_portfolio_letter_to_cache(candidate.id.clone().discard_box(), vec![0]).await.unwrap();
+        PortfolioService::add_portfolio_zip_to_cache(candidate.id.clone().discard_box(), vec![0]).await.unwrap();
 
         PortfolioService::submit(&candidate, &db).await.unwrap();
         
@@ -694,23 +694,23 @@ mod tests {
         let db = get_memory_sqlite_connection().await;
 
         let (_, candidate, _) = put_user_data(&db).await;
-        let (temp_dir, _, _) = create_data_store_temp_dir(candidate.id.discard_box()).await;
+        let (temp_dir, _, _) = create_data_store_temp_dir(candidate.id.clone().discard_box()).await;
 
-        PortfolioService::add_cover_letter_to_cache(candidate.id.discard_box(), vec![0]).await.unwrap();
-        PortfolioService::add_portfolio_letter_to_cache(candidate.id.discard_box(), vec![0]).await.unwrap();
-        PortfolioService::add_portfolio_zip_to_cache(candidate.id.discard_box(), vec![0]).await.unwrap();
+        PortfolioService::add_cover_letter_to_cache(candidate.id.clone().discard_box(), vec![0]).await.unwrap();
+        PortfolioService::add_portfolio_letter_to_cache(candidate.id.clone().discard_box(), vec![0]).await.unwrap();
+        PortfolioService::add_portfolio_zip_to_cache(candidate.id.clone().discard_box(), vec![0]).await.unwrap();
 
         PortfolioService::submit(&candidate, &db).await.unwrap();
         
-        assert!(PortfolioService::is_portfolio_submitted(candidate.id.discard_box()).await);
+        assert!(PortfolioService::is_portfolio_submitted(candidate.id.clone().discard_box()).await);
 
         clear_data_store_temp_dir(temp_dir).await;
 
-        let (temp_dir, application_dir, _) = create_data_store_temp_dir(candidate.id.discard_box()).await;
+        let (temp_dir, application_dir, _) = create_data_store_temp_dir(candidate.id.clone().discard_box()).await;
 
-        PortfolioService::add_cover_letter_to_cache(candidate.id.discard_box(), vec![0]).await.unwrap();
-        PortfolioService::add_portfolio_letter_to_cache(candidate.id.discard_box(), vec![0]).await.unwrap();
-        PortfolioService::add_portfolio_zip_to_cache(candidate.id.discard_box(), vec![0]).await.unwrap();
+        PortfolioService::add_cover_letter_to_cache(candidate.id.clone().discard_box(), vec![0]).await.unwrap();
+        PortfolioService::add_portfolio_letter_to_cache(candidate.id.clone().discard_box(), vec![0]).await.unwrap();
+        PortfolioService::add_portfolio_zip_to_cache(candidate.id.clone().discard_box(), vec![0]).await.unwrap();
 
         PortfolioService::submit(&candidate, &db).await.unwrap();
 
@@ -727,19 +727,19 @@ mod tests {
         let db = get_memory_sqlite_connection().await;
         let (application, candidate, _parent) = put_user_data(&db).await;
 
-        let (temp_dir, _, _) = create_data_store_temp_dir(candidate.id.discard_box()).await;
+        let (temp_dir, _, _) = create_data_store_temp_dir(candidate.id.clone().discard_box()).await;
 
         let private_key = crypto::decrypt_password(application.private_key.clone().discard_box(), "test".to_string())
             .await
             .unwrap();
 
-        PortfolioService::add_cover_letter_to_cache(candidate.id.discard_box(), vec![0])
+        PortfolioService::add_cover_letter_to_cache(candidate.id.clone().discard_box(), vec![0])
             .await
             .unwrap();
-        PortfolioService::add_portfolio_letter_to_cache(candidate.id.discard_box(), vec![0])
+        PortfolioService::add_portfolio_letter_to_cache(candidate.id.clone().discard_box(), vec![0])
             .await
             .unwrap();
-        PortfolioService::add_portfolio_zip_to_cache(candidate.id.discard_box(), vec![0])
+        PortfolioService::add_portfolio_zip_to_cache(candidate.id.clone().discard_box(), vec![0])
             .await
             .unwrap();
 

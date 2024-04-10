@@ -1,3 +1,5 @@
+use alohomora::bbox::BBox;
+use alohomora::policy::NoPolicy;
 use chrono::Local;
 use entity::admin;
 use sea_orm_migration::{
@@ -14,15 +16,15 @@ impl Default for Migration {
     fn default() -> Self {
         Self {
             admin: admin::ActiveModel {
-                id: Set(1),
-                name: Set("Admin".to_owned()),
-                public_key: Set("age1u889gp407hsz309wn09kxx9anl6uns30m27lfwnctfyq9tq4qpus8tzmq5".to_owned()),
+                id: Set(BBox::new(1, NoPolicy::new())),
+                name: Set(BBox::new("Admin".to_owned(), NoPolicy::new())),
+                public_key: Set(BBox::new("age1u889gp407hsz309wn09kxx9anl6uns30m27lfwnctfyq9tq4qpus8tzmq5".to_owned(), NoPolicy::new())),
                 // AGE-SECRET-KEY-14QG24502DMUUQDT2SPMX2YXPSES0X8UD6NT0PCTDAT6RH8V5Q3GQGSRXPS
-                private_key: Set("5KCEGk0ueWVGnu5Xo3rmpLoilcVZ2ZWmwIcdZEJ8rrBNW7jwzZU/XTcTXtk/xyy/zjF8s+YnuVpOklQvX3EC/Sn+ZwyPY3jokM2RNwnZZlnqdehOEV1SMm/Y".to_owned()),
+                private_key: Set(BBox::new("5KCEGk0ueWVGnu5Xo3rmpLoilcVZ2ZWmwIcdZEJ8rrBNW7jwzZU/XTcTXtk/xyy/zjF8s+YnuVpOklQvX3EC/Sn+ZwyPY3jokM2RNwnZZlnqdehOEV1SMm/Y".to_owned(), NoPolicy::new())),
                 // test
-                password: Set("$argon2i$v=19$m=6000,t=3,p=10$WE9xCQmmWdBK82R4SEjoqA$TZSc6PuLd4aWK2x2WAb+Lm9sLySqjK3KLbNyqyQmzPQ".to_owned()),
-                created_at: Set(Local::now().naive_local()),
-                updated_at: Set(Local::now().naive_local()),
+                password: Set(BBox::new("$argon2i$v=19$m=6000,t=3,p=10$WE9xCQmmWdBK82R4SEjoqA$TZSc6PuLd4aWK2x2WAb+Lm9sLySqjK3KLbNyqyQmzPQ".to_owned(), NoPolicy::new())),
+                created_at: Set(BBox::new(Local::now().naive_local(), NoPolicy::new())),
+                updated_at: Set(BBox::new(Local::now().naive_local(), NoPolicy::new())),
                 ..Default::default()
             },
         }

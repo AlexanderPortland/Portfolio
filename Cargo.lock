@@ -3548,6 +3548,8 @@ dependencies = [
 name = "portfolio-migration"
 version = "2.0.0"
 dependencies = [
+ "alohomora",
+ "alohomora_derive",
  "chrono",
  "portfolio-entity",
  "sea-orm-migration",

@@ -100,7 +100,7 @@ mod tests {
     async fn create_parent_test() {
         let db = get_memory_sqlite_connection().await;
         let candidate = CandidateService::create(&db, BBox::new("".to_string(), NoPolicy::new())).await.unwrap();
-        super::ParentService::create(&db, candidate.id).await.unwrap();
+        super::ParentService::create(&db, candidate.id.clone()).await.unwrap();
         super::ParentService::create(&db, candidate.id).await.unwrap();
     }
 
@@ -111,11 +111,11 @@ mod tests {
         // let application = ApplicationService::create(&"".to_string(), NoPolicy::new()), &db, 103100, &plain_text_password, "".to_string(), NoPolicy::new())).await.unwrap();
         let (application, candidate, _) = put_user_data(&db).await;
 
-        ParentService::create(&db, candidate.id).await.unwrap();
+        ParentService::create(&db, candidate.id.clone()).await.unwrap();
 
         let form = APPLICATION_DETAILS_TWO_PARENTS.lock().unwrap().clone();
 
-        let (candidate, parents) = ApplicationService::add_all_details(&db, &application, candidate, &form)
+        let (candidate, parents) = ApplicationService::add_all_details(&db, &application, candidate.clone(), &form)
             .await
             .unwrap();
 

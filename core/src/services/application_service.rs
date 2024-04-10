@@ -495,7 +495,7 @@ impl AuthenticableTrait for ApplicationService {
         // user is authenticated, generate a new session
         let random_uuid: BBox<Uuid, NoPolicy> = BBox::new(Uuid::new_v4(), NoPolicy::new());
 
-        let session = Mutation::insert_candidate_session(db, random_uuid, application.id, ip_addr).await?;
+        let session = Mutation::insert_candidate_session(db, random_uuid, application.id.clone(), ip_addr).await?;
 
         Self::delete_old_sessions(db, &application, 3).await?;
         let s: String = session.id.discard_box().into();
@@ -546,13 +546,13 @@ mod application_tests {
         let ip = BBox::new("127.0.0.1".to_string(), NoPolicy::new());
 
         assert!(
-            ApplicationService::login(&db, application.id, BBox::new("test".to_string(), NoPolicy::new()), ip.clone()).await.is_ok()
+            ApplicationService::login(&db, application.id.clone(), BBox::new("test".to_string(), NoPolicy::new()), ip.clone()).await.is_ok()
         );
 
-        let new_password = ApplicationService::reset_password(private_key, &db, application.id).await.unwrap().password;
+        let new_password = ApplicationService::reset_password(private_key, &db, application.id.clone()).await.unwrap().password;
 
         assert!(
-            ApplicationService::login(&db, application.id, BBox::new("test".to_string(), NoPolicy::new()), ip.clone()).await.is_err()
+            ApplicationService::login(&db, application.id.clone(), BBox::new("test".to_string(), NoPolicy::new()), ip.clone()).await.is_err()
         );
         
         assert!(
@@ -568,7 +568,7 @@ mod application_tests {
 
         let secret_message = "trnka".to_string();
 
-        let application = ApplicationService::create(&BBox::new("".to_string(), NoPolicy::new()), &db, BBox::new(103100, NoPolicy::new()), &BBox::new(plain_text_password, NoPolicy::new()), BBox::new("".to_string(), NoPolicy::new())).await.unwrap().0;
+        let application = ApplicationService::create(&BBox::new("".to_string(), NoPolicy::new()), &db, BBox::new(103100, NoPolicy::new()), &BBox::new(plain_text_password.clone(), NoPolicy::new()), BBox::new("".to_string(), NoPolicy::new())).await.unwrap().0;
 
         let encrypted_message =
             crypto::encrypt_password_with_recipients(&secret_message, &vec![&application.public_key.discard_box()])
@@ -576,7 +576,7 @@ mod application_tests {
                 .unwrap();
 
         let private_key_plain_text =
-            crypto::decrypt_password(application.private_key.discard_box(), plain_text_password)
+            crypto::decrypt_password(application.private_key.discard_box(), plain_text_password.clone())
                 .await
                 .unwrap();
 
