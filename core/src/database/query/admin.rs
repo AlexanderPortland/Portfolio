@@ -18,10 +18,24 @@ impl Query {
 
         let public_keys = admins
             .iter()
-            .map(|admin| admin.public_key.to_owned())
+            .map(|admin| BBox::new(admin.public_key.to_owned().discard_box(), NoPolicy::new()))
             .collect();
 
         Ok(public_keys)
+    }
+
+    pub async fn get_all_admin_public_keys_together(db: &DbConn) -> Result<BBox<Vec<String>, NoPolicy>, DbErr> {
+        let admins = Admin::find().all(db).await?;
+
+        // convert them all to models
+        let admins: Vec<admin::Model> = admins.into_iter().map(Model::from).collect();
+
+        let public_keys = admins
+            .iter()
+            .map(|admin| admin.public_key.to_owned().discard_box())
+            .collect();
+
+        Ok(BBox::new(public_keys, NoPolicy::new()))
     }
 }
 
@@ -77,7 +91,7 @@ mod tests {
 
 
         let public_keys = Query::get_all_admin_public_keys(&db).await.unwrap().iter()
-            .map(|b|{b.discard_box()}).collect::<String>();
+            .map(|b|{b.to_owned().discard_box()}).collect::<String>();
 
         assert_eq!(public_keys.len(), 4);
 

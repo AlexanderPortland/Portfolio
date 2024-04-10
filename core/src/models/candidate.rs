@@ -1,7 +1,9 @@
+use alohomora::{bbox::BBox, policy::NoPolicy};
 use chrono::NaiveDate;
-use sea_orm::strum::Display;
+//use sea_orm::strum::Display;
 use entity::{application, candidate};
 use serde::{Deserialize, Serialize};
+use uuid::NoContext;
 use validator::Validate;
 
 use crate::{
@@ -10,7 +12,8 @@ use crate::{
 
 use super::{candidate_details::{EncryptedString, EncryptedCandidateDetails}, grade::GradeList, school::School};
 
-#[derive(Debug, Clone, Serialize, Display)]
+//#[derive(Debug, Clone, Serialize, Display)]
+#[derive(Debug, Clone, Serialize)]
 pub enum FieldOfStudy {
     G,
     IT,
@@ -61,84 +64,89 @@ impl Into<i32> for FieldOfStudy {
 }
 
 /// Minimal candidate response containing database only not null fields
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
+//#[derive(Debug, Serialize, Deserialize)]
+//#[serde(rename_all = "camelCase")]
 pub struct NewCandidateResponse {
-    pub current_application: i32,
-    pub applications: Vec<i32>,
-    pub personal_id_number: String,
-    pub details_filled: bool,
-    pub encrypted_by: Option<i32>,
-    pub field_of_study: String,
+    pub current_application: BBox<i32, NoPolicy>,
+    pub applications: Vec<BBox<i32, NoPolicy>>,
+    pub personal_id_number: BBox<String, NoPolicy>,
+    pub details_filled: BBox<bool, NoPolicy>,
+    pub encrypted_by: BBox<Option<i32>, NoPolicy>,
+    pub field_of_study: BBox<String, NoPolicy>,
 }
 
 /// Create candidate (admin endpoint)
 /// Password change  (admin endpoint)
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
+//#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug)]
+//#[serde(rename_all = "camelCase")]
 pub struct CreateCandidateResponse {
-    pub application_id: i32,
-    pub field_of_study: String,
-    pub applications: Vec<i32>,
-    pub personal_id_number: String,
-    pub password: String,
+    pub application_id: BBox<i32, NoPolicy>,
+    pub field_of_study: BBox<String, NoPolicy>,
+    pub applications: Vec<BBox<i32, NoPolicy>>,
+    pub personal_id_number: BBox<String, NoPolicy>,
+    pub password: BBox<String, NoPolicy>,
 }
-
-#[derive(Debug, Serialize, Deserialize, Validate, Clone, PartialEq, Eq)]
-#[serde(rename_all = "camelCase")]
+// used to be #[derive(Debug, Serialize, Deserialize, Validate, Clone, PartialEq, Eq)]
+// validation??
+#[derive(Debug, Clone, PartialEq)]
+//#[serde(rename_all = "camelCase")]
 pub struct CandidateDetails {
-    #[validate(length(min = 1, max = 255))]
-    pub name: String,
-    #[validate(length(min = 1, max = 255))]
-    pub surname: String,
-    pub birth_surname: String,
-    #[validate(length(min = 1, max = 255))]
-    pub birthplace: String,
+    //#[validate(length(min = 1, max = 255))]
+    pub name: BBox<String, NoPolicy>,
+    //#[validate(length(min = 1, max = 255))]
+    pub surname: BBox<String, NoPolicy>,
+    pub birth_surname: BBox<String, NoPolicy>,
+    // #[validate(length(min = 1, max = 255))]
+    pub birthplace: BBox<String, NoPolicy>,
     // NaiveDate validated natively
-    pub birthdate: NaiveDate,
-    #[validate(length(min = 1, max = 255))]
-    pub address: String,
-    pub letter_address: String,
-    #[validate(length(min = 1, max = 31))]
-    pub telephone: String,
-    #[validate(length(min = 1, max = 255))]
-    pub citizenship: String,
-    #[validate(email)]
-    pub email: String,
-    pub sex: String,
-    #[validate(length(min = 1, max = 255))]
-    pub personal_id_number: String,
-    #[validate(length(min = 1, max = 255))]
-    pub school_name: String,
-    #[validate(length(min = 1, max = 255))]
-    pub health_insurance: String,
-    pub grades: GradeList,
-    pub first_school: School,
-    pub second_school: School,
-    #[validate(length(min = 1, max = 255))]
-    pub test_language: String,
+    pub birthdate: BBox<NaiveDate, NoPolicy>,
+    // #[validate(length(min = 1, max = 255))]
+    pub address: BBox<String, NoPolicy>,
+    pub letter_address: BBox<String, NoPolicy>,
+    // #[validate(length(min = 1, max = 31))]
+    pub telephone: BBox<String, NoPolicy>,
+    // #[validate(length(min = 1, max = 255))]
+    pub citizenship: BBox<String, NoPolicy>,
+    // #[validate(email)]
+    pub email: BBox<String, NoPolicy>,
+    pub sex: BBox<String, NoPolicy>,
+    // #[validate(length(min = 1, max = 255))]
+    pub personal_id_number: BBox<String, NoPolicy>,
+    // #[validate(length(min = 1, max = 255))]
+    pub school_name: BBox<String, NoPolicy>,
+    // #[validate(length(min = 1, max = 255))]
+    pub health_insurance: BBox<String, NoPolicy>,
+    pub grades: BBox<GradeList, NoPolicy>,
+    pub first_school: BBox<School, NoPolicy>,
+    pub second_school: BBox<School, NoPolicy>,
+    // #[validate(length(min = 1, max = 255))]
+    pub test_language: BBox<String, NoPolicy>,
 }
 impl CandidateDetails {
     pub fn validate_self(&self) -> Result<(), ServiceError> {
-        self.first_school.validate()?;
-        self.second_school.validate()?;
-        self.grades.validate_self()?;
-        self.validate()
-            .map_err(ServiceError::ValidationError)
+        // self.first_school.validate()?;
+        // self.second_school.validate()?;
+        // self.grades.validate_self()?;
+        //self.validate()
+        //    .map_err(ServiceError::ValidationError)
+        Ok(())
     }
 }
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
-#[serde(rename_all = "camelCase")]
+// used to be #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
+//#[serde(rename_all = "camelCase")]
 pub struct ParentDetails {
-    pub name: String,
-    pub surname: String,
-    pub telephone: String,
-    pub email: String,
+    pub name: BBox<String, NoPolicy>,
+    pub surname: BBox<String, NoPolicy>,
+    pub telephone: BBox<String, NoPolicy>,
+    pub email: BBox<String, NoPolicy>,
 }
 
 /// Candidate details (admin and candidate endpoints)
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
-#[serde(rename_all = "camelCase")]
+//#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
+//#[serde(rename_all = "camelCase")]
 pub struct ApplicationDetails {
     // Candidate
     pub candidate: CandidateDetails,
@@ -147,23 +155,23 @@ pub struct ApplicationDetails {
 
 impl NewCandidateResponse {
     pub async fn from_encrypted(
-        current_application: i32,
+        current_application: BBox<i32, NoPolicy>,
         applications: Vec<application::Model>,
-        private_key: &String,
+        private_key: &BBox<String, NoPolicy>,
         c: candidate::Model,
     ) -> Result<Self, ServiceError> {
-        let field_of_study = FieldOfStudy::from(current_application).into();
-        let id_number = EncryptedString::from(c.personal_identification_number.to_owned())
-            .decrypt(private_key)
-            .await?;
-        let applications = applications.iter().map(|a| a.id).collect();
+        let field_of_study = BBox::new(FieldOfStudy::from(current_application.clone().discard_box()).into(), NoPolicy::new());
+        let id_number = BBox::new(EncryptedString::from(c.personal_identification_number.to_owned().discard_box())
+            .decrypt(&private_key.clone().discard_box())
+            .await?, NoPolicy::new());
+        let applications = applications.iter().map(|a| a.id.clone()).collect::<Vec<BBox<i32, NoPolicy>>>();
         let encrypted_details = EncryptedCandidateDetails::from(&c);
 
         Ok(Self {
             current_application,
             applications,
             personal_id_number: id_number,
-            details_filled: encrypted_details.is_filled(),
+            details_filled: BBox::new(encrypted_details.is_filled(), NoPolicy::new()),
             encrypted_by: c.encrypted_by_id,
             field_of_study,
         })

@@ -9,30 +9,30 @@ pub const PAGE_SIZE: u64 = 20;
 
 #[derive(FromQueryResult)]
 pub struct IdPersonalIdNumberJoin {
-    pub id: i32,
-    pub personal_id_number: String,
+    pub id: BBox<i32, NoPolicy>,
+    pub personal_id_number: BBox<String, NoPolicy>,
 }
 
 #[derive(FromQueryResult)]
 pub struct ApplicationId {
-    application: i32,
+    application: BBox<i32, NoPolicy>,
 }
 
 impl ApplicationId {
-    pub fn to_i32(&self) -> i32 {
+    pub fn to_i32(&self) -> BBox<i32, NoPolicy> {
         self.application
     }
 }
 
 #[derive(FromQueryResult, Clone)]
 pub struct CandidateResult {
-    pub application: i32,
-    pub name: Option<String>,
-    pub surname: Option<String>,
-    pub email: Option<String>,
-    pub telephone: Option<String>,
-    pub study: Option<String>,    
-    pub citizenship: Option<String>,
+    pub application: BBox<i32, NoPolicy>,
+    pub name: BBox<Option<String>, NoPolicy>,
+    pub surname: BBox<Option<String>, NoPolicy>,
+    pub email: BBox<Option<String>, NoPolicy>,
+    pub telephone: BBox<Option<String>, NoPolicy>,
+    pub study: BBox<Option<String>, NoPolicy>,
+    pub citizenship: BBox<Option<String>, NoPolicy>,
 }
 
 impl Query {

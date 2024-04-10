@@ -1,3 +1,4 @@
+use alohomora::{bbox::BBox, policy::NoPolicy};
 use chrono::{Utc, Duration, NaiveDateTime};
 use ::entity::session;
 use sea_orm::{*, prelude::Uuid};
@@ -8,20 +9,20 @@ use crate::Mutation;
 impl Mutation {
     pub async fn insert_candidate_session(
         db: &DbConn,
-        random_uuid: Uuid,
-        candidate_id: i32,
-        ip_addr: String,
+        random_uuid: BBox<Uuid, NoPolicy>,
+        candidate_id: BBox<i32, NoPolicy>,
+        ip_addr: BBox<String, NoPolicy>,
     ) -> Result<session::Model, DbErr> {
         session::ActiveModel {
             id: Set(random_uuid),
             candidate_id: Set(candidate_id),
             ip_address: Set(ip_addr),
-            created_at: Set(Utc::now().naive_local()),
-            expires_at: Set(Utc::now()
+            created_at: Set(BBox::new(Utc::now().naive_local(), NoPolicy::new())),
+            expires_at: Set(BBox::new(Utc::now()
                 .naive_local()
                 .checked_add_signed(Duration::days(14))
-                .unwrap()),
-            updated_at: Set(Utc::now().naive_local())
+                .unwrap(), NoPolicy::new())),
+            updated_at: Set(BBox::new(Utc::now().naive_local(), NoPolicy::new()))
         }
         .insert(db)
         .await
@@ -29,12 +30,12 @@ impl Mutation {
 
     pub async fn update_session_expiration(db: &DbConn, 
         session: session::Model, 
-        expires_at: NaiveDateTime,
+        expires_at: BBox<NaiveDateTime, NoPolicy>,
     ) -> Result<session::Model, DbErr> {
         let mut session = session.into_active_model();
 
         session.expires_at = Set(expires_at);
-        session.updated_at = Set(Utc::now().naive_local());
+        session.updated_at = Set(BBox::new(Utc::now().naive_local(), NoPolicy::new()));
         
         session.update(db).await
     }

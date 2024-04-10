@@ -4,57 +4,58 @@ use crate::{
     models::{application::ApplicationRow, candidate::ApplicationDetails},
     Query, services::application_service::ApplicationService,
 };
+use alohomora::{bbox::BBox, policy::NoPolicy};
 use sea_orm::DbConn;
 use async_trait::async_trait;
 use crate::models::candidate::{CandidateRow, FieldOfStudy, FieldsCombination};
 use crate::models::candidate_details::EncryptedCandidateDetails;
 use crate::models::school::School;
 
-impl TryFrom<(i32, ApplicationDetails)> for ApplicationRow {
+impl TryFrom<(BBox<i32, NoPolicy>, ApplicationDetails)> for ApplicationRow {
     type Error = ServiceError;
-    fn try_from((application, d): (i32, ApplicationDetails)) -> Result<Self, ServiceError> {
+    fn try_from((application, d): (BBox<i32, NoPolicy>, ApplicationDetails)) -> Result<Self, ServiceError> {
         let c = d.candidate;
         let (diploma_1_8,
             diploma_2_8,
             diploma_1_9,
             diploma_2_9
-        ) = c.grades.group_by_semester()?;
+        ) = c.grades.discard_box().group_by_semester()?;
         Ok(Self {
             application,
-            name: Some(c.name),
-            surname: Some(c.surname),
-            birth_surname: Some(c.birth_surname),
-            birthplace: Some(c.birthplace),
-            birthdate: Some(c.birthdate.to_string()),
-            address: Some(c.address),
-            letter_address: Some(c.letter_address),
-            telephone: Some(c.telephone),
-            citizenship: Some(c.citizenship),
-            email: Some(c.email),
-            sex: Some(c.sex),
-            personal_identification_number: Some(c.personal_id_number),
-            health_insurance: Some(c.health_insurance),
-            school_name: Some(c.school_name),
+            name: BBox::new(Some(c.name.discard_box()), NoPolicy::new()),
+            surname: BBox::new(Some(c.surname.discard_box()), NoPolicy::new()),
+            birth_surname: BBox::new(Some(c.birth_surname.discard_box()), NoPolicy::new()),
+            birthplace: BBox::new(Some(c.birthplace.discard_box()), NoPolicy::new()),
+            birthdate: BBox::new(Some(c.birthdate.discard_box().to_string()), NoPolicy::new()),
+            address: BBox::new(Some(c.address.discard_box()), NoPolicy::new()),
+            letter_address: BBox::new(Some(c.letter_address.discard_box()), NoPolicy::new()),
+            telephone: BBox::new(Some(c.telephone.discard_box()), NoPolicy::new()),
+            citizenship: BBox::new(Some(c.citizenship.discard_box()), NoPolicy::new()),
+            email: BBox::new(Some(c.email.discard_box()), NoPolicy::new()),
+            sex: BBox::new(Some(c.sex.discard_box()), NoPolicy::new()),
+            personal_identification_number: BBox::new(Some(c.personal_id_number.discard_box()), NoPolicy::new()),
+            health_insurance: BBox::new(Some(c.health_insurance.discard_box()), NoPolicy::new()),
+            school_name: BBox::new(Some(c.school_name.discard_box()), NoPolicy::new()),
 
-            diploma_1_8: diploma_1_8.to_string(),
-            diploma_2_8: diploma_2_8.to_string(),
-            diploma_1_9: diploma_1_9.to_string(),
-            diploma_2_9: diploma_2_9.to_string(),
+            diploma_1_8: BBox::new(diploma_1_8.to_string(), NoPolicy::new()),
+            diploma_2_8: BBox::new(diploma_2_8.to_string(), NoPolicy::new()),
+            diploma_1_9: BBox::new(diploma_1_9.to_string(), NoPolicy::new()),
+            diploma_2_9: BBox::new(diploma_2_9.to_string(), NoPolicy::new()),
 
-            first_school_name: Some(c.first_school.name().to_owned()),
-            first_school_field: Some(c.first_school.field().to_owned()),
-            second_school_name: Some(c.second_school.name().to_owned()),
-            second_school_field: Some(c.second_school.field().to_owned()),
+            first_school_name: BBox::new(Some(c.first_school.discard_box().name().to_owned()), NoPolicy::new()),
+            first_school_field: BBox::new(Some(c.first_school.discard_box().field().to_owned()), NoPolicy::new()),
+            second_school_name: BBox::new(Some(c.second_school.discard_box().name().to_owned()), NoPolicy::new()),
+            second_school_field: BBox::new(Some(c.second_school.discard_box().field().to_owned()), NoPolicy::new()),
 
-            parent_name: d.parents.get(0).map(|p| p.name.clone()),
-            parent_surname: d.parents.get(0).map(|p| p.surname.clone()),
-            parent_telephone: d.parents.get(0).map(|p| p.telephone.clone()),
-            parent_email: d.parents.get(0).map(|p| p.email.clone()),
+            parent_name: BBox::new(d.parents.get(0).map(|p| p.name.clone().discard_box()), NoPolicy::new()),
+            parent_surname: BBox::new(d.parents.get(0).map(|p| p.surname.clone().discard_box()), NoPolicy::new()),
+            parent_telephone: BBox::new(d.parents.get(0).map(|p| p.telephone.clone().discard_box()), NoPolicy::new()),
+            parent_email: BBox::new(d.parents.get(0).map(|p| p.email.clone().discard_box()), NoPolicy::new()),
 
-            second_parent_name: d.parents.get(1).map(|p| p.name.clone()),
-            second_parent_surname: d.parents.get(1).map(|p| p.surname.clone()),
-            second_parent_telephone: d.parents.get(1).map(|p| p.telephone.clone()),
-            second_parent_email: d.parents.get(1).map(|p| p.email.clone()),
+            second_parent_name: BBox::new(d.parents.get(1).map(|p| p.name.clone().discard_box()), NoPolicy::new()),
+            second_parent_surname: BBox::new(d.parents.get(1).map(|p| p.surname.clone().discard_box()), NoPolicy::new()),
+            second_parent_telephone: BBox::new(d.parents.get(1).map(|p| p.telephone.clone().discard_box()), NoPolicy::new()),
+            second_parent_email: BBox::new(d.parents.get(1).map(|p| p.email.clone().discard_box()), NoPolicy::new()),
         })
     }
 }
@@ -104,6 +105,7 @@ pub struct CandidateCsv;
 
 #[async_trait]
 impl CsvExporter for CandidateCsv {
+    // TODO! i think private_key should be BBox<String, NoPolicy> but that messes with the CsvExporter trait
     async fn export(db: &DbConn, private_key: String) -> Result<Vec<u8>, ServiceError> {
         let mut wtr = csv::Writer::from_writer(vec![]);
 
@@ -114,7 +116,7 @@ impl CsvExporter for CandidateCsv {
         for model in candidates {
             let (id, c) = (
                 model.id,
-                EncryptedCandidateDetails::from(&model).decrypt(&private_key).await?
+                EncryptedCandidateDetails::from(&model).decrypt(&BBox::new(private_key, NoPolicy::new())).await?
             );
             let related_applications = applications
                 .iter()

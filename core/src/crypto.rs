@@ -1,5 +1,7 @@
 use aes_gcm_siv::aead::Aead;
 use aes_gcm_siv::KeyInit;
+use alohomora::bbox::BBox;
+use alohomora::policy::NoPolicy;
 use argon2::{
     Argon2, PasswordHasher as ArgonPasswordHasher, PasswordVerifier as ArgonPasswordVerifier,
 };
@@ -190,13 +192,13 @@ pub async fn decrypt_password_age(
     Ok(String::from_utf8(decrypt_buffer)?)
 }
 
-pub fn create_identity() -> (String, String) {
+pub fn create_identity() -> (BBox<String, NoPolicy>, BBox<String, NoPolicy>) {
     let identity = age::x25519::Identity::generate();
 
     // Public Key & Private Key
     (
-        identity.to_public().to_string(),
-        identity.to_string().expose_secret().to_string(),
+        BBox::new(identity.to_public().to_string(), NoPolicy::new()),
+        BBox::new(identity.to_string().expose_secret().to_string(), NoPolicy::new()),
     )
 }
 
@@ -299,7 +301,7 @@ pub async fn decrypt_password_with_private_key(
 pub async fn encrypt_file_with_recipients<P: AsRef<Path>>(
     plain_file_path: P,
     cipher_file_path: P,
-    recipients: Vec<&str>,
+    recipients: Vec<String>,
 ) -> Result<(), ServiceError> {
     let mut cipher_file = tokio::fs::File::create(cipher_file_path).await?;
     let mut plain_file = tokio::fs::File::open(plain_file_path).await?;
@@ -313,7 +315,7 @@ pub async fn encrypt_file_with_recipients<P: AsRef<Path>>(
     age_encrypt_with_recipients(
         plain_file_contents.as_slice(),
         &mut cipher_file,
-        &recipients,
+        &recipients.iter().map(|s| s.as_str()).collect()
     )
     .await?;
 
@@ -472,8 +474,8 @@ mod tests {
     fn test_create_identity() {
         let identity = super::create_identity();
 
-        assert!(identity.0.contains("age"));
-        assert!(identity.1.contains("AGE-SECRET-KEY-"));
+        assert!(identity.0.discard_box().contains("age"));
+        assert!(identity.1.discard_box().contains("AGE-SECRET-KEY-"));
     }
 
     #[tokio::test]
@@ -568,7 +570,7 @@ mod tests {
         super::encrypt_file_with_recipients(
             &plain_file.file_path(),
             &encrypted_file.file_path(),
-            vec![PUBLIC_KEY],
+            vec![PUBLIC_KEY.to_string()],
         )
         .await
         .unwrap();
@@ -623,7 +625,7 @@ mod tests {
         super::encrypt_file_with_recipients(
             &plain_file.file_path(),
             &encrypted_file.file_path(),
-            vec![PUBLIC_KEY],
+            vec![PUBLIC_KEY.to_string()],
         )
         .await
         .unwrap();

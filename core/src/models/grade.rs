@@ -1,3 +1,4 @@
+use alohomora::{bbox::BBox, policy::NoPolicy};
 use serde::{Serialize, Deserialize};
 use validator::{Validate};
 
@@ -63,9 +64,9 @@ impl GradeList {
             .map(|_| ())
     }
 
-    pub fn from_opt_str(grades: Option<String>) -> Option<Self> {
+    pub fn from_opt_str(grades: Option<BBox<String, NoPolicy>>) -> Option<Self> {
         grades.map(
-            |grades| serde_json::from_str(&grades).unwrap() // TODO: handle error
+            |grades| serde_json::from_str(&grades.discard_box()).unwrap() // TODO: handle error
         )
     }
 

@@ -1,4 +1,5 @@
 use std::cmp::min;
+use alohomora::{bbox::BBox, policy::NoPolicy};
 use entity::{session_trait::UserSession};
 use sea_orm::{DbConn, ActiveModelTrait, ActiveModelBehavior};
 
@@ -13,7 +14,7 @@ impl SessionService {
     /// Check if session is valid
     pub async fn is_valid<T>(session: &T) -> Result<bool, ServiceError> where T: UserSession {
         let now = chrono::Utc::now().naive_utc();
-        if now >= session.expires_at().await {
+        if now >= session.expires_at().await.discard_box() {
             Ok(false)
         } else {
             Ok(true)
@@ -36,6 +37,7 @@ impl SessionService {
 
 #[cfg(test)]
 mod tests {
+    use alohomora::{bbox::BBox, policy::NoPolicy};
     use sea_orm::{
         prelude::Uuid,
     };
@@ -52,11 +54,16 @@ mod tests {
 
         let db = get_memory_sqlite_connection().await;
 
-        let application = ApplicationService::create(&"".to_string(), &db, 103151, &SECRET.to_string(), "".to_string()).await.unwrap().0;
+        let application = ApplicationService::create(
+            &BBox::new("".to_string(), NoPolicy::new()), 
+            &db, 
+            BBox::new(103151, NoPolicy::new()), 
+            &BBox::new(SECRET.to_string(), NoPolicy::new()), 
+            BBox::new("".to_string(), NoPolicy::new())).await.unwrap().0;
 
-        assert_eq!(application.id.to_owned(), 103151);
-        assert_ne!(application.password.to_owned(), SECRET.to_string());
-        assert!(crypto::verify_password(SECRET.to_string(), application.password)
+        assert_eq!(application.id.to_owned().discard_box(), 103151);
+        assert_ne!(application.password.to_owned().discard_box(), SECRET.to_string());
+        assert!(crypto::verify_password(SECRET.to_string(), application.password.discard_box())
             .await
             .ok()
             .unwrap());
@@ -66,19 +73,24 @@ mod tests {
     async fn test_candidate_session_correct_password() {
         let db = &get_memory_sqlite_connection().await;
 
-        let application = ApplicationService::create(&"".to_string(), &db, 103151, &SECRET.to_string(), "".to_string()).await.unwrap().0;
+        let application = ApplicationService::create(
+            &BBox::new("".to_string(), NoPolicy::new()), 
+            &db, 
+            BBox::new(103151, NoPolicy::new()), 
+            &BBox::new(SECRET.to_string(), NoPolicy::new()), 
+            BBox::new("".to_string(), NoPolicy::new())).await.unwrap().0;
 
         // correct password
         let session = ApplicationService::new_session(
             db,
             &application,
-            SECRET.to_string(),
-            "127.0.0.1".to_string(),
+            BBox::new(SECRET.to_string(), NoPolicy::new()),
+            BBox::new("127.0.0.1".to_string(), NoPolicy::new()),
         )
         .await
         .unwrap();
         assert!(
-            ApplicationService::auth(db, Uuid::parse_str(&session).unwrap())
+            ApplicationService::auth(db, BBox::new(Uuid::parse_str(&session.discard_box()).unwrap(), NoPolicy::new()))
                 .await
                 .is_ok()
         );
@@ -88,14 +100,19 @@ mod tests {
     async fn test_candidate_session_incorrect_password() {
         let db = &get_memory_sqlite_connection().await;
 
-        let application = ApplicationService::create(&"".to_string(), &db, 103151, &SECRET.to_string(), "".to_string()).await.unwrap().0;
+        let application = ApplicationService::create(
+            &BBox::new("".to_string(), NoPolicy::new()), 
+            &db, 
+            BBox::new(103151, NoPolicy::new()), 
+            &BBox::new(SECRET.to_string(), NoPolicy::new()), 
+            BBox::new("".to_string(), NoPolicy::new())).await.unwrap().0;
 
         // incorrect password
         assert!(ApplicationService::new_session(
             db,
             &application,
-            "Spatny_kod".to_string(),
-            "127.0.0.1".to_string()
+            BBox::new("Spatny_kod".to_string(), NoPolicy::new()),
+            BBox::new("127.0.0.1".to_string(), NoPolicy::new())
         )
         .await
         .is_err());

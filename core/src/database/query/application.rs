@@ -9,15 +9,15 @@ const PAGE_SIZE: u64 = 20;
 
 #[derive(FromQueryResult, Clone)]
 pub struct ApplicationCandidateJoin {
-    pub application_id: i32,
-    pub personal_id_number: String,
-    pub candidate_id: i32,
-    pub name: Option<String>,
-    pub surname: Option<String>,
-    pub email: Option<String>,
-    pub telephone: Option<String>,
-    pub field_of_study: Option<String>,
-    pub created_at: NaiveDateTime,
+    pub application_id: BBox<i32, NoPolicy>,
+    pub personal_id_number: BBox<String, NoPolicy>,
+    pub candidate_id: BBox<i32, NoPolicy>,
+    pub name: BBox<Option<String>, NoPolicy>,
+    pub surname: BBox<Option<String>, NoPolicy>,
+    pub email: BBox<Option<String>, NoPolicy>,
+    pub telephone: BBox<Option<String>, NoPolicy>,
+    pub field_of_study: BBox<Option<String>, NoPolicy>,
+    pub created_at: BBox<NaiveDateTime, NoPolicy>,
 }
 
 use crate::{Query};

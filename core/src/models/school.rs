@@ -1,3 +1,4 @@
+use alohomora::{bbox::BBox, policy::NoPolicy};
 use serde::{Serialize, Deserialize};
 use validator::Validate;
 
@@ -11,10 +12,32 @@ pub struct School {
     field: String,
 }
 
+// #[derive(Debug, Clone, PartialEq)]
+// pub struct BBoxSchool {
+//     name: BBox<String, NoPolicy>,
+//     field: BBox<String, NoPolicy>,
+// }
+
+// impl BBoxSchool {
+//     pub fn from_school(s: School) -> Self {
+//         BBoxSchool {
+//             name: BBox::new(s.name.clone(), NoPolicy::new()),
+//             field: BBox::new(s.field.clone(), NoPolicy::new())
+//         }
+//     }
+// }
+
+// fn bbox_a_school(s: School) -> BBoxSchool {
+//     BBoxSchool {
+//         name: BBox::new(s.name.clone(), NoPolicy::new()),
+//         field: BBox::new(s.field.clone(), NoPolicy::new())
+//     }
+// }
+
 impl School {
-    pub fn from_opt_str(school: Option<String>) -> Option<Self> {
+    pub fn from_opt_str(school: Option<BBox<String, NoPolicy>>) -> Option<Self> {
         school.map(
-            |school| serde_json::from_str(&school).unwrap() // TODO: handle error
+            |school| serde_json::from_str(&school.discard_box()).unwrap() // TODO: handle error
         )
     }
 

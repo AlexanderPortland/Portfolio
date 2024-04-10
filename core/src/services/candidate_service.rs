@@ -1,3 +1,4 @@
+use alohomora::{bbox::BBox, policy::NoPolicy};
 use entity::candidate;
 use sea_orm::DbConn;
 
@@ -19,7 +20,7 @@ impl CandidateService {
     /// Public key
     pub(in crate::services) async fn create(
         db: &DbConn,
-        enc_personal_id_number: String,
+        enc_personal_id_number: BBox<String, NoPolicy>,
     ) -> Result<candidate::Model, ServiceError> {
         let candidate = Mutation::create_candidate(
             db,
@@ -27,14 +28,14 @@ impl CandidateService {
         )
             .await?;
         
-        PortfolioService::create_user_dir(candidate.id).await?;
+        PortfolioService::create_user_dir(candidate.id.clone().discard_box()).await?;
 
             
         Ok(candidate)
     }
 
     pub async fn delete_candidate(db: &DbConn, candidate: candidate::Model) -> Result<(), ServiceError> {
-        PortfolioService::delete_candidate_root(candidate.id).await?;
+        PortfolioService::delete_candidate_root(candidate.id.clone().discard_box()).await?;
 
         Mutation::delete_candidate(db, candidate).await?;
         Ok(())
@@ -45,7 +46,7 @@ impl CandidateService {
         candidate: candidate::Model,
         details: &CandidateDetails,
         recipients: &Vec<String>,
-        encrypted_by: i32,
+        encrypted_by: BBox<i32, NoPolicy>,
     ) -> Result<entity::candidate::Model, ServiceError> {
         let enc_details = EncryptedCandidateDetails::new(&details, recipients).await?;
         let model = Mutation::update_candidate_opt_details(
@@ -60,6 +61,8 @@ impl CandidateService {
 
 #[cfg(test)]
 pub mod tests {
+    use alohomora::bbox::BBox;
+    use alohomora::policy::NoPolicy;
     use sea_orm::DbConn;
 
     use crate::models::candidate_details::tests::assert_all_application_details;
@@ -78,31 +81,35 @@ pub mod tests {
     async fn test_list_applications() {
         let db = get_memory_sqlite_connection().await;
         let admin = create_admin(&db).await;
-        let private_key = crypto::decrypt_password(admin.private_key, "admin".to_string()).await.unwrap();
-        let candidates = ApplicationService::list_applications(&private_key, &db, None, None, None).await.unwrap();
+        let private_key = crypto::decrypt_password(admin.private_key.discard_box(), "admin".to_string()).await.unwrap();
+        let private_key = BBox::new(private_key, NoPolicy::new());
+        let candidates = ApplicationService::list_applications(&private_key, &db, BBox::new(None, NoPolicy::new()), BBox::new(None, NoPolicy::new()), BBox::new(None, NoPolicy::new())).await.unwrap();
         assert_eq!(candidates.len(), 0);
 
         put_user_data(&db).await;
 
-        let candidates = ApplicationService::list_applications(&private_key, &db, None, None, None).await.unwrap();
+        let candidates = ApplicationService::list_applications(&private_key, &db, BBox::new(None, NoPolicy::new()), BBox::new(None, NoPolicy::new()), BBox::new(None, NoPolicy::new())).await.unwrap();
         assert_eq!(candidates.len(), 1);
     }
 
     #[cfg(test)]
     pub async fn put_user_data(db: &DbConn) -> (application::Model, candidate::Model, Vec<parent::Model>) {
+        use alohomora::{bbox::BBox, policy::NoPolicy};
+        use base64::engine::general_purpose::NO_PAD;
+
         use crate::{models::candidate_details::tests::APPLICATION_DETAILS, services::parent_service::ParentService};
 
         let plain_text_password = "test".to_string();
         let application = ApplicationService::create(
-            &"".to_string(),
+            &BBox::new("".to_string(), NoPolicy::new()),
             db,
-            APPLICATION_ID,
-            &plain_text_password,
-            "0000001111".to_string()
+            BBox::new(APPLICATION_ID, NoPolicy::new()),
+            &BBox::new(plain_text_password, NoPolicy::new()),
+            BBox::new("0000001111".to_string(), NoPolicy::new())
         ).await.unwrap().0;
 
         let candidate= ApplicationService::find_related_candidate(db, &application).await.unwrap();
-        ParentService::create(db, candidate.id).await.unwrap();
+        ParentService::create(db, candidate.id.clone()).await.unwrap();
 
         let form = APPLICATION_DETAILS.lock().unwrap().clone();
 
@@ -121,8 +128,8 @@ pub mod tests {
     async fn test_put_user_data() {
         let db = get_memory_sqlite_connection().await;
         let (_, candidate, parents) = put_user_data(&db).await;
-        assert!(candidate.name.is_some());
-        assert!(parents[0].name.is_some());
+        assert!(candidate.name.discard_box().is_some());
+        assert!(parents[0].name.discard_box().is_some());
     }
 
     #[tokio::test]
@@ -131,9 +138,10 @@ pub mod tests {
         let db = get_memory_sqlite_connection().await;
         let (application, enc_candidate, enc_parent) = put_user_data(&db).await;
 
-        let dec_priv_key = crypto::decrypt_password(application.private_key.clone(), password)
+        let dec_priv_key = crypto::decrypt_password(application.private_key.clone().discard_box(), password)
             .await
             .unwrap();
+        let dec_priv_key = BBox::new(dec_priv_key, NoPolicy::new());
         let enc_details = EncryptedApplicationDetails::try_from((&enc_candidate, &enc_parent))
             .ok()
             .unwrap();
