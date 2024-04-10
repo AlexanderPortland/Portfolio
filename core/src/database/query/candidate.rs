@@ -20,7 +20,7 @@ pub struct ApplicationId {
 
 impl ApplicationId {
     pub fn to_i32(&self) -> BBox<i32, NoPolicy> {
-        self.application
+        self.application.clone()
     }
 }
 

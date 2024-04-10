@@ -254,19 +254,19 @@ impl EncryptedCandidateDetails {
     }
 
     pub fn is_filled(&self) -> bool {
-        self.name.discard_box().is_some() &&
-        self.surname.discard_box().is_some() &&
-        self.birthplace.discard_box().is_some() &&
-        self.birthdate.discard_box().is_some() &&
-        self.address.discard_box().is_some() &&
-        self.telephone.discard_box().is_some() &&
-        self.citizenship.discard_box().is_some() &&
-        self.email.discard_box().is_some() &&
-        self.personal_id_number.discard_box().is_some() &&
-        self.school_name.discard_box().is_some() &&
-        self.health_insurance.discard_box().is_some() &&
-        self.first_school.discard_box().is_some() &&
-        self.second_school.discard_box().is_some()
+        self.name.clone().discard_box().is_some() &&
+        self.surname.clone().discard_box().is_some() &&
+        self.birthplace.clone().discard_box().is_some() &&
+        self.birthdate.clone().discard_box().is_some() &&
+        self.address.clone().discard_box().is_some() &&
+        self.telephone.clone().discard_box().is_some() &&
+        self.citizenship.clone().discard_box().is_some() &&
+        self.email.clone().discard_box().is_some() &&
+        self.personal_id_number.clone().discard_box().is_some() &&
+        self.school_name.clone().discard_box().is_some() &&
+        self.health_insurance.clone().discard_box().is_some() &&
+        self.first_school.clone().discard_box().is_some() &&
+        self.second_school.clone().discard_box().is_some()
 
     }
 }
@@ -274,7 +274,7 @@ impl From<&candidate::Model> for EncryptedCandidateDetails {
     fn from(
         candidate: &candidate::Model,
     ) -> Self {
-        let a = candidate.name;
+        let a = candidate.name.clone();
         EncryptedCandidateDetails {
             name: try_encrypt_bbox_str(&candidate.name),
             surname: try_encrypt_bbox_str(&candidate.surname),
@@ -299,7 +299,7 @@ impl From<&candidate::Model> for EncryptedCandidateDetails {
 }
 
 pub fn try_encrypt_bbox_str(b: &BBox<Option<String>, NoPolicy>) -> BBox<Option<EncryptedString>, NoPolicy> {
-    match b.discard_box() {
+    match b.clone().discard_box() {
         Some(s) => {
             let o = EncryptedString::try_from(s).ok();
             BBox::new(o, NoPolicy::new())
@@ -359,10 +359,10 @@ impl EncryptedParentDetails {
     }
 
     pub fn is_filled(&self) -> bool {
-        self.name.discard_box().is_some() &&
-        self.surname.discard_box().is_some() &&
-        self.telephone.discard_box().is_some() &&
-        self.email.discard_box().is_some()
+        self.name.clone().discard_box().is_some() &&
+        self.surname.clone().discard_box().is_some() &&
+        self.telephone.clone().discard_box().is_some() &&
+        self.email.clone().discard_box().is_some()
     }
 }
 impl From<&parent::Model> for EncryptedParentDetails {

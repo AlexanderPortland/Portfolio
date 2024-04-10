@@ -80,7 +80,7 @@ mod tests {
 
         session::ActiveModel {
             id: Set(BBox::new(Uuid::new_v4(), NoPolicy::new())),
-            candidate_id: Set(application.id),
+            candidate_id: Set(application.id.clone()),
             ip_address: Set(BBox::new("10.10.10.10".to_string(), NoPolicy::new())),
             created_at: Set(BBox::new(chrono::offset::Local::now().naive_local(), NoPolicy::new())),
             expires_at: Set(BBox::new(chrono::offset::Local::now().naive_local(), NoPolicy::new())),
@@ -109,7 +109,7 @@ mod tests {
 
         admin_session::ActiveModel {
             id: Set(BBox::new(Uuid::new_v4(), NoPolicy::new())),
-            admin_id: Set(application.id),
+            admin_id: Set(application.id.clone()),
             ip_address: Set(BBox::new("10.10.10.10".to_string(), NoPolicy::new())),
             created_at: Set(BBox::new(chrono::offset::Local::now().naive_local(), NoPolicy::new())),
             expires_at: Set(BBox::new(chrono::offset::Local::now().naive_local(), NoPolicy::new())),

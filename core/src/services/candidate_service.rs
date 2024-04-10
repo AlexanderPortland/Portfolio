@@ -129,7 +129,7 @@ pub mod tests {
         let db = get_memory_sqlite_connection().await;
         let (_, candidate, parents) = put_user_data(&db).await;
         assert!(candidate.name.discard_box().is_some());
-        assert!(parents[0].name.discard_box().is_some());
+        assert!(parents[0].name.clone().discard_box().is_some());
     }
 
     #[tokio::test]

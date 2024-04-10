@@ -88,7 +88,7 @@ impl AuthenticableTrait for AdminService {
         // user is authenticated, generate a new session
         let random_uuid: Uuid = Uuid::new_v4();
 
-        let session = Mutation::insert_admin_session(db, admin.id, BBox::new(random_uuid, NoPolicy::new()), ip_addr).await?;
+        let session = Mutation::insert_admin_session(db, admin.id.clone(), BBox::new(random_uuid, NoPolicy::new()), ip_addr).await?;
 
         Self::delete_old_sessions(db, &admin, 1).await?;
         let s = session.id.discard_box().to_string();
