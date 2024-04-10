@@ -3471,6 +3471,8 @@ dependencies = [
 name = "portfolio-api"
 version = "2.0.0"
 dependencies = [
+ "alohomora",
+ "alohomora_derive",
  "async-trait",
  "chrono",
  "dotenv",

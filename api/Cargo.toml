@@ -27,6 +27,9 @@ portfolio-entity = { path = "../entity" }
 portfolio-migration = { path = "../migration" }
 portfolio-core = { path = "../core" }
 
+alohomora = { path = "../../alohomora/alohomora" }
+alohomora_derive = { path = "../../alohomora/alohomora_derive" }
+
 [dependencies.sea-orm-rocket]
 version = "^0.5"
 
