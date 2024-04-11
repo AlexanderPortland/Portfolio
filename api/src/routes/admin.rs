@@ -8,6 +8,7 @@ use requests::{AdminLoginRequest, RegisterRequest};
 use rocket::http::{Cookie, Status, CookieJar};
 use rocket::response::status::Custom;
 use rocket::serde::json::Json;
+//use alohomora::rocket::{post, get};
 //use alohomora::rocket::*;
 
 use sea_orm_rocket::Connection;
@@ -156,8 +157,9 @@ pub async fn list_candidates_csv(
 ) -> Result<Vec<u8>, Custom<String>> {
     let db = conn.into_inner();
     let private_key = session.get_private_key();
+    let context = todo!();
 
-    let candidates = ApplicationCsv::export(db, private_key)
+    let candidates = ApplicationCsv::export(context, db, private_key)
         .await
         .map_err(to_custom_error)?;
 
@@ -173,8 +175,9 @@ pub async fn list_admissions_csv(
 ) -> Result<Vec<u8>, Custom<String>> {
     let db = conn.into_inner();
     let private_key = session.get_private_key();
+    let context = todo!();
 
-    let candidates = CandidateCsv::export(db, private_key)
+    let candidates = CandidateCsv::export(context, db, private_key)
         .await
         .map_err(to_custom_error)?;
 

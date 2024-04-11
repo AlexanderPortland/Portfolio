@@ -6,7 +6,7 @@ edition = "2021"
 publish = false
 
 [workspace]
-members = [".", "api", "core", "entity", "migration", "cli"]
+members = [".", "api", "core", "entity", "migration", "cli", "policies"]
 
 [dependencies]
 portfolio-api = { path = "api" }

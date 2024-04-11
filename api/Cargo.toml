@@ -26,6 +26,7 @@ fern = "^0.6"
 portfolio-entity = { path = "../entity" }
 portfolio-migration = { path = "../migration" }
 portfolio-core = { path = "../core" }
+#portfolio-policy = { path = "../policies" }
 
 alohomora = { path = "../../alohomora/alohomora" }
 alohomora_derive = { path = "../../alohomora/alohomora_derive" }

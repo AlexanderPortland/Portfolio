@@ -123,7 +123,7 @@ impl sea_orm_rocket::Pool for SeaOrmPool {
             let pwrd_hash = hash_password(password_plain_text.clone()).await.unwrap();
             println!("got password hash {}", pwrd_hash.clone());
             let (pub_key, priv_key) = crypto::create_identity();
-            let enc_priv_key = crypto::encrypt_password(priv_key, password_plain_text).await.unwrap();
+            let enc_priv_key = crypto::encrypt_password(priv_key.discard_box(), password_plain_text).await.unwrap();
             db.execute(Statement::from_string(
                 db.get_database_backend(),
                 format!("INSERT INTO admin VALUES (0, \"alex3\", \"{pub_key}\", \"{enc_priv_key}\", \"{pwrd_hash}\", NOW(), NOW());"),

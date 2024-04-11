@@ -24,7 +24,7 @@ async fn get_admin_private_key(db: &DbConn, sub_matches: &ArgMatches) -> Result<
                 .map_err(|e| format!("Admin {} not found: {}", admin_id, e))?
                 .ok_or("Admin not found")?;
             crypto::decrypt_password(
-                admin.private_key,
+                admin.private_key.discard_box(),
                 password.to_string()
             ).await?
 
@@ -254,7 +254,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             let key = get_admin_private_key(&db, sub_matches).await?;
 
             let output = sub_matches.get_one::<PathBuf>("output").unwrap();
-            let csv = ApplicationCsv::export(&db, key).await?;
+            let context = todo!();
+            let csv = ApplicationCsv::export(context, &db, key).await?;
             tokio::fs::write(output, csv).await?;
         },
         Some(("portfolio", sub_matches)) => {
@@ -277,7 +278,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             let output = sub_matches.get_one::<PathBuf>("output").unwrap();
             tokio::fs::create_dir_all(&output).await?;
 
-            let csv = ApplicationCsv::export(&db, key.to_string()).await?;
+            let context = todo!();
+            let csv = ApplicationCsv::export(context, &db, key.to_string()).await?;
             tokio::fs::write(output.join("personal_data.csv"), csv).await?;
             println!("Exported personal data to personal_data.csv");
 

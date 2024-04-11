@@ -4,7 +4,7 @@ use crate::{
     models::{application::ApplicationRow, candidate::ApplicationDetails},
     Query, services::application_service::ApplicationService,
 };
-use alohomora::{bbox::BBox, context::Context, pcr::PrivacyCriticalRegion, policy::NoPolicy};
+use alohomora::{bbox::BBox, context::{Context, ContextData}, pcr::PrivacyCriticalRegion, policy::NoPolicy, rocket::{self, BBoxRequestOutcome, FromBBoxRequest}, AlohomoraType};
 use sea_orm::DbConn;
 use async_trait::async_trait;
 use crate::models::candidate::{CandidateRow, FieldOfStudy, FieldsCombination};
@@ -62,14 +62,39 @@ impl TryFrom<(BBox<i32, NoPolicy>, ApplicationDetails)> for ApplicationRow {
 
 #[async_trait]
 pub trait CsvExporter {
-    async fn export(db: &DbConn, private_key: BBox<String, NoPolicy>) -> Result<BBox<Vec<u8>, NoPolicy>, ServiceError>;
+    async fn export(context: Context<ContextDataType>, db: &DbConn, private_key: BBox<String, NoPolicy>) -> Result<BBox<Vec<u8>, NoPolicy>, ServiceError>;
 }
 
 pub struct ApplicationCsv;
 
+#[derive(AlohomoraType, Clone)]
+//#[alohomora_out_type(to_derive = [db, config])]
+pub struct ContextDataType {
+
+}
+
+use ::rocket::http::Status;
+use rocket::BBoxRequest;
+use ::rocket::outcome::IntoOutcome;
+use ::rocket::State;
+
+#[::rocket::async_trait]
+impl<'a, 'r> FromBBoxRequest<'a, 'r> for ContextDataType {
+    type BBoxError = ();
+    
+    async fn from_bbox_request(request: BBoxRequest<'a, 'r>,) -> BBoxRequestOutcome<Self, Self::BBoxError> {
+        request.route().and_then(|_|{
+            Some(ContextDataType{
+                
+            })
+        }).into_outcome((Status::InternalServerError, 
+            ()))
+    }
+}
+
 #[async_trait]
 impl CsvExporter for ApplicationCsv {
-    async fn export(db: &DbConn, private_key: BBox<String, NoPolicy>) -> Result<BBox<Vec<u8>, NoPolicy>, ServiceError> {
+    async fn export(context: Context<ContextDataType>, db: &DbConn, private_key: BBox<String, NoPolicy>) -> Result<BBox<Vec<u8>, NoPolicy>, ServiceError> {
         let mut wtr = csv::Writer::from_writer(vec![]);
 
         let applications = Query::list_applications_compact(&db).await?;
@@ -94,7 +119,13 @@ impl CsvExporter for ApplicationCsv {
                     ..Default::default()
                 },
             };
-            wtr.serialize(row)?;
+
+            // wtr.serialize(row)?;
+
+            let out = alohomora::fold::fold(row).unwrap();
+            out.unbox(context.clone(), PrivacyCriticalRegion::new(|y, _| {
+                wtr.serialize(y).unwrap();
+            }), ());
         }
         match wtr.into_inner()
             .map_err(|_| ServiceError::CsvIntoInnerError){
@@ -108,7 +139,7 @@ pub struct CandidateCsv;
 
 #[async_trait]
 impl CsvExporter for CandidateCsv {
-    async fn export(db: &DbConn, private_key: BBox<String, NoPolicy>) -> Result<BBox<Vec<u8>, NoPolicy>, ServiceError> {
+    async fn export(context: Context<ContextDataType>, db: &DbConn, private_key: BBox<String, NoPolicy>) -> Result<BBox<Vec<u8>, NoPolicy>, ServiceError> {
         let mut wtr = csv::Writer::from_writer(vec![]);
 
         let candidates = Query::list_candidates_full(&db).await?;
@@ -169,14 +200,12 @@ impl CsvExporter for CandidateCsv {
             };
 
 
-            wtr.serialize(row)?;
+            // wtr.serialize(row)?;
             
-            // let out = alohomora::fold::fold(row).unwrap();
-            // let context = Context::new();
-            // out.unbox(context, PrivacyCriticalRegion::new(|y, _| {
-            //     wtr.serialize(y).unwrap();
-            // }), ());
-            
+            let out = alohomora::fold::fold(row).unwrap();
+            out.unbox(context.clone(), PrivacyCriticalRegion::new(|y, _| {
+                wtr.serialize(y).unwrap();
+            }), ());
         }
         // wtr.into_inner()
         //     .map_err(|_| ServiceError::CsvIntoInnerError)
