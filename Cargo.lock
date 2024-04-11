@@ -180,7 +180,7 @@ dependencies = [
  "rocket 0.5.0-rc.1",
  "rocket_dyn_templates",
  "sea-orm",
- "sea-orm-rocket 0.5.4 (git+https://github.com/KinanBab/sea-orm.git?branch=main)",
+ "sea-orm-rocket",
  "serde",
  "serde_json",
  "small_ctor",
@@ -3473,7 +3473,7 @@ dependencies = [
  "portfolio-entity",
  "portfolio-migration",
  "rocket 0.5.0",
- "sea-orm-rocket 0.5.4 (registry+https://github.com/rust-lang/crates.io-index)",
+ "sea-orm-migration",
  "serde_json",
  "tokio",
 ]
@@ -3482,6 +3482,7 @@ dependencies = [
 name = "portfolio-cli"
 version = "0.1.0"
 dependencies = [
+ "alohomora",
  "clap 4.5.4",
  "portfolio-core",
  "portfolio-entity",
@@ -4346,30 +4347,10 @@ dependencies = [
 [[package]]
 name = "sea-orm-rocket"
 version = "0.5.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "be1e2cd44db4886bcaee4271e895f7d25f41e4bd4c3dffa5b4a286667593c5bb"
-dependencies = [
- "rocket 0.5.0",
- "sea-orm-rocket-codegen 0.5.4 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
-name = "sea-orm-rocket"
-version = "0.5.4"
 source = "git+https://github.com/KinanBab/sea-orm.git?branch=main#70a69913ab23a49eaa143b333a25756113b3bedf"
 dependencies = [
  "rocket 0.5.0-rc.1",
- "sea-orm-rocket-codegen 0.5.4 (git+https://github.com/KinanBab/sea-orm.git?branch=main)",
-]
-
-[[package]]
-name = "sea-orm-rocket-codegen"
-version = "0.5.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cbd35bf98426401976aa90ed163a1cbe9228b6037e59489b25348691437860e1"
-dependencies = [
- "devise 0.3.1",
- "quote",
+ "sea-orm-rocket-codegen",
 ]
 
 [[package]]

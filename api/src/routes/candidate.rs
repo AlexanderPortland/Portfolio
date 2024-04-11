@@ -13,7 +13,8 @@ use rocket::http::{Cookie, CookieJar, Status};
 use rocket::response::status::Custom;
 use rocket::serde::json::Json;
 
-use sea_orm_rocket::Connection;
+use alohomora::orm::Connection;
+
 
 use crate::guards::data::letter::Letter;
 use crate::guards::data::portfolio::Portfolio;
@@ -106,7 +107,7 @@ pub async fn post_details(
     let application: application::Model = session.into();
     let candidate = ApplicationService::find_related_candidate(&db, &application).await.map_err(to_custom_error)?; // TODO
 
-    let _candidate_parent = ApplicationService::add_all_details(db, &application, candidate, &form)
+    let _candidate_parent = ApplicationService::add_all_details(&db, &application, candidate, &form)
         .await
         .map_err(to_custom_error)?;
 

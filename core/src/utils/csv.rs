@@ -10,6 +10,7 @@ use async_trait::async_trait;
 use crate::models::candidate::{CandidateRow, FieldOfStudy, FieldsCombination};
 use crate::models::candidate_details::EncryptedCandidateDetails;
 use crate::models::school::School;
+use crate::policies::context::ContextDataType;
 
 impl TryFrom<(BBox<i32, NoPolicy>, ApplicationDetails)> for ApplicationRow {
     type Error = ServiceError;
@@ -66,31 +67,6 @@ pub trait CsvExporter {
 }
 
 pub struct ApplicationCsv;
-
-#[derive(AlohomoraType, Clone)]
-//#[alohomora_out_type(to_derive = [db, config])]
-pub struct ContextDataType {
-
-}
-
-use ::rocket::http::Status;
-use rocket::BBoxRequest;
-use ::rocket::outcome::IntoOutcome;
-use ::rocket::State;
-
-#[::rocket::async_trait]
-impl<'a, 'r> FromBBoxRequest<'a, 'r> for ContextDataType {
-    type BBoxError = ();
-    
-    async fn from_bbox_request(request: BBoxRequest<'a, 'r>,) -> BBoxRequestOutcome<Self, Self::BBoxError> {
-        request.route().and_then(|_|{
-            Some(ContextDataType{
-                
-            })
-        }).into_outcome((Status::InternalServerError, 
-            ()))
-    }
-}
 
 #[async_trait]
 impl CsvExporter for ApplicationCsv {

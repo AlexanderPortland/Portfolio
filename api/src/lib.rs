@@ -8,7 +8,8 @@ use rocket::http::Header;
 use rocket::{Build, Request, Response, Rocket};
 
 use migration::MigratorTrait;
-use sea_orm_rocket::Database;
+//use sea_orm_rocket::Database;
+use alohomora::orm::BBoxDatabase;
 
 mod guards;
 mod pool;

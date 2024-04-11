@@ -10,6 +10,7 @@ clap = { version = "^4.3", features = ["cargo"] }
 
 portfolio-entity = { path = "../entity" }
 portfolio-core = { path = "../core" }
+alohomora = { path = "../../alohomora/alohomora" }
 
 [dependencies.tokio]
 version = "^1.28"

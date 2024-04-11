@@ -1,17 +1,17 @@
 use std::net::{SocketAddr, IpAddr, Ipv4Addr};
 
 use portfolio_core::{
-    crypto::random_12_char_string,
-    services::{admin_service::AdminService, application_service::ApplicationService, portfolio_service::PortfolioService}, models::{candidate::{CreateCandidateResponse, ApplicationDetails}, auth::AuthenticableTrait, application::ApplicationResponse}, sea_orm::prelude::Uuid, Query, error::ServiceError,
+    crypto::random_12_char_string, error::ServiceError, models::{application::ApplicationResponse, auth::AuthenticableTrait, candidate::{ApplicationDetails, CreateCandidateResponse}}, sea_orm::prelude::Uuid, services::{admin_service::AdminService, application_service::ApplicationService, portfolio_service::PortfolioService}, Query
 };
 use requests::{AdminLoginRequest, RegisterRequest};
 use rocket::http::{Cookie, Status, CookieJar};
 use rocket::response::status::Custom;
 use rocket::serde::json::Json;
-//use alohomora::rocket::{post, get};
+use portfolio_core::policies::context::ContextDataType;
+use alohomora::{bbox::BBox, context::Context, orm::Connection, policy::NoPolicy, rocket::{get, post, BBoxCookieJar, BBoxJson}};
 //use alohomora::rocket::*;
 
-use sea_orm_rocket::Connection;
+
 use portfolio_core::utils::csv::{ApplicationCsv, CandidateCsv, CsvExporter};
 
 use crate::{guards::request::{auth::AdminAuth}, pool::Db, requests};
@@ -21,9 +21,10 @@ use super::to_custom_error;
 #[post("/login", data = "<login_form>")]
 pub async fn login(
     conn: Connection<'_, Db>,
-    login_form: Json<AdminLoginRequest>,
+    login_form: BBoxJson<AdminLoginRequest>,
     // ip_addr: SocketAddr, // TODO uncomment in production
-    cookies: &CookieJar<'_>,
+    cookies: BBoxCookieJar<'_, '_>,
+    context: Context<ContextDataType>
 ) -> Result<(), Custom<String>> {
     let ip_addr: SocketAddr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 0);
     let db = conn.into_inner();
@@ -54,7 +55,7 @@ pub async fn login(
 }
 
 #[post("/logout")]
-pub async fn logout(conn: Connection<'_, Db>, _session: AdminAuth, cookies: &CookieJar<'_>,) -> Result<(), Custom<String>> {
+pub async fn logout(conn: Connection<'_, Db>, _session: AdminAuth, cookies: &CookieJar<'_>, context: Context<ContextDataType>) -> Result<(), Custom<String>> {
     let db = conn.into_inner();
 
     let cookie = cookies.get_private("id") // unwrap would be safe here because of the auth guard
@@ -75,13 +76,13 @@ pub async fn logout(conn: Connection<'_, Db>, _session: AdminAuth, cookies: &Coo
 
 
 #[get("/whoami")]
-pub async fn whoami(session: AdminAuth) -> Result<String, Custom<String>> {
+pub async fn whoami(session: AdminAuth, context: Context<ContextDataType>) -> Result<String, Custom<String>> {
     let admin: entity::admin::Model = session.into();
     Ok(admin.id.to_string())
 }
 
 #[get("/hello")]
-pub async fn hello(_session: AdminAuth) -> Result<String, Custom<String>> {
+pub async fn hello(_session: AdminAuth, context: Context<ContextDataType>) -> Result<String, Custom<String>> {
     Ok("Hello admin".to_string())
 }
 
@@ -89,13 +90,14 @@ pub async fn hello(_session: AdminAuth) -> Result<String, Custom<String>> {
 pub async fn create_candidate(
     conn: Connection<'_, Db>,
     session: AdminAuth,
-    request: Json<RegisterRequest>,
-) -> Result<Json<CreateCandidateResponse>, Custom<String>> {
+    request: BBoxJson<RegisterRequest>,
+    context: Context<ContextDataType>
+) -> Result<BBoxJson<CreateCandidateResponse>, Custom<String>> {
     let db = conn.into_inner();
     let form = request.into_inner();
     let private_key = session.get_private_key();
 
-    let plain_text_password = random_12_char_string();
+    let plain_text_password = BBox::new(random_12_char_string(), NoPolicy::new());
 
     //println!("trying to did the thing");
 
@@ -130,10 +132,11 @@ pub async fn create_candidate(
 pub async fn list_candidates(
     conn: Connection<'_, Db>,
     session: AdminAuth,
-    field: Option<String>,
-    page: Option<u64>, 
-    sort: Option<String>,
-) -> Result<Json<Vec<ApplicationResponse>>, Custom<String>> {
+    field: Option<BBox<String, NoPolicy>>,
+    page: Option<BBox<u64, NoPolicy>>,
+    sort: Option<BBox<String, NoPolicy>>, // how to do this part
+    context: Context<ContextDataType>
+) -> Result<BBoxJson<Vec<ApplicationResponse>>, Custom<String>> {
     let db = conn.into_inner();
     let private_key = session.get_private_key();
     if let Some(field) = field.clone() {
@@ -172,6 +175,7 @@ pub async fn list_candidates_csv(
 pub async fn list_admissions_csv(
     conn: Connection<'_, Db>,
     session: AdminAuth,
+    context: Context<ContextDataType>
 ) -> Result<Vec<u8>, Custom<String>> {
     let db = conn.into_inner();
     let private_key = session.get_private_key();
@@ -190,8 +194,8 @@ pub async fn list_admissions_csv(
 pub async fn get_candidate(
     conn: Connection<'_, Db>,
     session: AdminAuth,
-    id: i32,
-) -> Result<Json<ApplicationDetails>, Custom<String>> {
+    id: BBox<i32, NoPolicy>,
+) -> Result<BBoxJson<ApplicationDetails>, Custom<String>> {
     let db = conn.into_inner();
     let private_key = session.get_private_key();
 
@@ -217,7 +221,7 @@ pub async fn get_candidate(
 pub async fn delete_candidate(
     conn: Connection<'_, Db>,
     _session: AdminAuth,
-    id: i32,
+    id: BBox<i32, NoPolicy>,
 ) -> Result<(), Custom<String>> {
     let db = conn.into_inner();
 
@@ -237,8 +241,8 @@ pub async fn delete_candidate(
 pub async fn reset_candidate_password(
     conn: Connection<'_, Db>,
     session: AdminAuth,
-    id: i32,
-) -> Result<Json<CreateCandidateResponse>, Custom<String>> {
+    id: BBox<i32, NoPolicy>,
+) -> Result<BBoxJson<CreateCandidateResponse>, Custom<String>> {
     // TODO
     let db = conn.into_inner();
     let private_key = session.get_private_key();
@@ -248,7 +252,9 @@ pub async fn reset_candidate_password(
         .map_err(to_custom_error)?;
     
     Ok(
-        Json(response)
+        BBoxJson(response)
+        //response.to_json()
+        //Json(response)
     )
 }
 
@@ -256,7 +262,7 @@ pub async fn reset_candidate_password(
 pub async fn get_candidate_portfolio(
     conn: Connection<'_, Db>,
     session: AdminAuth, 
-    id: i32,
+    id: BBox<i32, NoPolicy>,
 ) -> Result<Vec<u8>, Custom<String>> {
     let db = conn.into_inner();
     let private_key = session.get_private_key();

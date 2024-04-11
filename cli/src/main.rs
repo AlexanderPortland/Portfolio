@@ -251,12 +251,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     match clap.subcommand() {
         Some(("export", sub_matches)) => {
             let db = get_db_conn(sub_matches).await?;
-            let key = get_admin_private_key(&db, sub_matches).await?;
+            let key = BBox::new(get_admin_private_key(&db, sub_matches).await?, NoPolicy::new());
 
             let output = sub_matches.get_one::<PathBuf>("output").unwrap();
             let context = todo!();
             let csv = ApplicationCsv::export(context, &db, key).await?;
-            tokio::fs::write(output, csv).await?;
+            
+            
+            //tokio::fs::write(output, csv).await?;
         },
         Some(("portfolio", sub_matches)) => {
             let db = get_db_conn(sub_matches).await?;

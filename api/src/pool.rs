@@ -2,11 +2,14 @@ use async_trait::async_trait;
 use portfolio_core::sea_orm::{self};
 #[cfg(not(test))]
 use sea_orm::ConnectOptions;
-use sea_orm_rocket::{rocket::figment::Figment, Database};
+//use sea_orm_rocket::{rocket::figment::Figment, Database};
+use alohomora::orm::Database;
 #[cfg(not(test))]
 use std::time::Duration;
 use entity::{admin_session, application};
 use sea_orm::DbConn;
+use alohomora::orm::Pool;
+use rocket::figment::Figment;
 
 #[derive(Database, Debug)]
 #[database("sea_orm")]
@@ -18,13 +21,14 @@ pub struct SeaOrmPool {
 }
 
 #[async_trait]
-impl sea_orm_rocket::Pool for SeaOrmPool {
+impl alohomora::orm::Pool for SeaOrmPool {
     type Error = sea_orm::DbErr;
 
     type Connection = sea_orm::DatabaseConnection;
 
     #[cfg(test)]
     async fn init(_figment: &Figment) -> Result<Self, Self::Error> {
+
         let conn = portfolio_core::utils::db::get_memory_sqlite_connection().await;
         crate::test::tests::run_test_migrations(&conn).await;
         return Ok(Self { conn });
