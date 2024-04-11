@@ -4,7 +4,7 @@ use crate::{
     models::{application::ApplicationRow, candidate::ApplicationDetails},
     Query, services::application_service::ApplicationService,
 };
-use alohomora::{bbox::BBox, policy::NoPolicy};
+use alohomora::{bbox::BBox, context::Context, pcr::PrivacyCriticalRegion, policy::NoPolicy};
 use sea_orm::DbConn;
 use async_trait::async_trait;
 use crate::models::candidate::{CandidateRow, FieldOfStudy, FieldsCombination};
@@ -42,10 +42,10 @@ impl TryFrom<(BBox<i32, NoPolicy>, ApplicationDetails)> for ApplicationRow {
             diploma_1_9: BBox::new(diploma_1_9.to_string(), NoPolicy::new()),
             diploma_2_9: BBox::new(diploma_2_9.to_string(), NoPolicy::new()),
 
-            first_school_name: BBox::new(Some(c.first_school.discard_box().name().to_owned()), NoPolicy::new()),
-            first_school_field: BBox::new(Some(c.first_school.discard_box().field().to_owned()), NoPolicy::new()),
-            second_school_name: BBox::new(Some(c.second_school.discard_box().name().to_owned()), NoPolicy::new()),
-            second_school_field: BBox::new(Some(c.second_school.discard_box().field().to_owned()), NoPolicy::new()),
+            first_school_name: BBox::new(Some(c.first_school.clone().discard_box().name().to_owned()), NoPolicy::new()),
+            first_school_field: BBox::new(Some(c.first_school.clone().discard_box().field().to_owned()), NoPolicy::new()),
+            second_school_name: BBox::new(Some(c.second_school.clone().discard_box().name().to_owned()), NoPolicy::new()),
+            second_school_field: BBox::new(Some(c.second_school.clone().discard_box().field().to_owned()), NoPolicy::new()),
 
             parent_name: BBox::new(d.parents.get(0).map(|p| p.name.clone().discard_box()), NoPolicy::new()),
             parent_surname: BBox::new(d.parents.get(0).map(|p| p.surname.clone().discard_box()), NoPolicy::new()),
@@ -62,14 +62,14 @@ impl TryFrom<(BBox<i32, NoPolicy>, ApplicationDetails)> for ApplicationRow {
 
 #[async_trait]
 pub trait CsvExporter {
-    async fn export(db: &DbConn, private_key: String) -> Result<Vec<u8>, ServiceError>;
+    async fn export(db: &DbConn, private_key: BBox<String, NoPolicy>) -> Result<BBox<Vec<u8>, NoPolicy>, ServiceError>;
 }
 
 pub struct ApplicationCsv;
 
 #[async_trait]
 impl CsvExporter for ApplicationCsv {
-    async fn export(db: &DbConn, private_key: String) -> Result<Vec<u8>, ServiceError> {
+    async fn export(db: &DbConn, private_key: BBox<String, NoPolicy>) -> Result<BBox<Vec<u8>, NoPolicy>, ServiceError> {
         let mut wtr = csv::Writer::from_writer(vec![]);
 
         let applications = Query::list_applications_compact(&db).await?;
@@ -80,9 +80,9 @@ impl CsvExporter for ApplicationCsv {
             let row: ApplicationRow = match EncryptedApplicationDetails::try_from((&candidate, &parents))
             {
                 Ok(d) => ApplicationRow::try_from(
-                    d.decrypt(private_key.to_string())
+                    d.decrypt(private_key.clone())
                         .await
-                        .map(|d| (application.id, d))?,
+                        .map(|d| (application.id.clone(), d))?,
                 )
                     .unwrap_or(ApplicationRow {
                         application: application.id,
@@ -96,8 +96,11 @@ impl CsvExporter for ApplicationCsv {
             };
             wtr.serialize(row)?;
         }
-        wtr.into_inner()
-            .map_err(|_| ServiceError::CsvIntoInnerError)
+        match wtr.into_inner()
+            .map_err(|_| ServiceError::CsvIntoInnerError){
+                Ok(o) => Ok(BBox::new(o, NoPolicy::new())),
+                Err(e) => Err(e)
+            }
     }
 }
 
@@ -105,8 +108,7 @@ pub struct CandidateCsv;
 
 #[async_trait]
 impl CsvExporter for CandidateCsv {
-    // TODO! i think private_key should be BBox<String, NoPolicy> but that messes with the CsvExporter trait
-    async fn export(db: &DbConn, private_key: String) -> Result<Vec<u8>, ServiceError> {
+    async fn export(db: &DbConn, private_key: BBox<String, NoPolicy>) -> Result<BBox<Vec<u8>, NoPolicy>, ServiceError> {
         let mut wtr = csv::Writer::from_writer(vec![]);
 
         let candidates = Query::list_candidates_full(&db).await?;
@@ -115,57 +117,74 @@ impl CsvExporter for CandidateCsv {
 
         for model in candidates {
             let (id, c) = (
-                model.id,
-                EncryptedCandidateDetails::from(&model).decrypt(&BBox::new(private_key, NoPolicy::new())).await?
+                model.id.clone(),
+                EncryptedCandidateDetails::from(&model).decrypt(&private_key).await?
             );
             let related_applications = applications
                 .iter()
-                .filter(|a| a.candidate_id == id)
-                .map(|a| a.id)
-                .collect::<Vec<i32>>();
+                .filter(|a| a.candidate_id.clone() == id)
+                .map(|a| a.id.clone())
+                .collect::<Vec<BBox<i32, NoPolicy>>>();
             let parents = parents
                 .iter()
-                .filter(|p| p.candidate_id == id)
-                .map(|p| p.id)
-                .collect::<Vec<i32>>();
+                .filter(|p| p.candidate_id.clone() == id)
+                .map(|p| p.id.clone())
+                .collect::<Vec<BBox<i32, NoPolicy>>>();
 
 
             let (first_field, second_field) = (
-                get_our_school_field(&c.first_school).map_err(|_| ServiceError::InvalidFieldOfStudy)?,
-                get_our_school_field(&c.second_school).map_err(|_| ServiceError::InvalidFieldOfStudy)?,
+                get_our_school_field(&c.first_school.clone().discard_box()).map_err(|_| ServiceError::InvalidFieldOfStudy)?,
+                get_our_school_field(&c.second_school.clone().discard_box()).map_err(|_| ServiceError::InvalidFieldOfStudy)?,
             );
 
-            let applications_fields_comb = get_applications_fields_comb(&related_applications);
+            let apps = related_applications.iter().map(|b|{b.clone().discard_box()}).collect::<Vec<i32>>();
+            let applications_fields_comb = get_applications_fields_comb(&apps);
 
-            let fields_combination = FieldsCombination::from_fields(&first_field, &second_field);
-            let fields_match = applications_fields_comb == fields_combination;
+            let fields_combination = BBox::new(FieldsCombination::from_fields(&first_field, &second_field), NoPolicy::new());
+            let fields_match = BBox::new(applications_fields_comb == fields_combination.clone().discard_box(), NoPolicy::new());
+
+            
 
             let row = CandidateRow {
                 id,
-                first_application: *related_applications.first().ok_or(ServiceError::CandidateNotFound)?,
-                second_application: related_applications.get(1).map(|id| *id).to_owned(),
-                first_school: c.first_school.name().to_string(),
-                first_school_field: c.first_school.field().to_string(),
-                second_school: c.second_school.name().to_string(),
-                second_school_field: c.second_school.field().to_string(),
-                first_day_admissions: first_field.is_some(),
-                second_day_admissions: second_field.is_some(),
-                first_day_field: first_field.to_owned(),
-                second_day_field: second_field.to_owned(),
+                first_application: related_applications.first().ok_or(ServiceError::CandidateNotFound)?.clone(),
+                second_application: BBox::new(related_applications.get(1).map(|id| id.clone().discard_box()).to_owned(), NoPolicy::new()),
+                first_school: BBox::new(c.first_school.clone().discard_box().name().to_string(), NoPolicy::new()),
+                first_school_field: BBox::new(c.first_school.clone().discard_box().field().to_string(), NoPolicy::new()),
+                second_school: BBox::new(c.second_school.clone().discard_box().name().to_string(), NoPolicy::new()),
+                second_school_field: BBox::new(c.second_school.clone().discard_box().field().to_string(), NoPolicy::new()),
+                first_day_admissions: BBox::new(first_field.is_some(), NoPolicy::new()),
+                second_day_admissions: BBox::new(first_field.is_some(), NoPolicy::new()),
+                first_day_field: BBox::new(first_field.to_owned(), NoPolicy::new()),
+                second_day_field: BBox::new(second_field.to_owned(), NoPolicy::new()),
                 fields_combination,
-                personal_id_number: c.personal_id_number.to_string(),
+                personal_id_number: c.personal_id_number,
                 fields_match,
                 name: c.name.to_owned(),
                 surname: c.surname.to_owned(),
                 email: c.email.to_owned(),
                 telephone: c.telephone.to_owned(),
-                parent_email: parents.first().map(|id| id.to_string()),
-                parent_telephone: parents.first().map(|id| id.to_string()),
+                parent_email: BBox::new(parents.first().map(|id| id.to_owned().discard_box().to_string()), NoPolicy::new()),
+                parent_telephone: BBox::new(parents.first().map(|id| id.to_owned().discard_box().to_string()), NoPolicy::new()),
             };
+
+
             wtr.serialize(row)?;
+            
+            // let out = alohomora::fold::fold(row).unwrap();
+            // let context = Context::new();
+            // out.unbox(context, PrivacyCriticalRegion::new(|y, _| {
+            //     wtr.serialize(y).unwrap();
+            // }), ());
+            
         }
-        wtr.into_inner()
-            .map_err(|_| ServiceError::CsvIntoInnerError)
+        // wtr.into_inner()
+        //     .map_err(|_| ServiceError::CsvIntoInnerError)
+        match wtr.into_inner()
+            .map_err(|_| ServiceError::CsvIntoInnerError){
+                Ok(o) => Ok(BBox::new(o, NoPolicy::new())),
+                Err(e) => Err(e)
+            }
     }
 }
 

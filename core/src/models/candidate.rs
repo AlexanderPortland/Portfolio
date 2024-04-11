@@ -1,4 +1,4 @@
-use alohomora::{bbox::BBox, policy::NoPolicy};
+use alohomora::{bbox::BBox, policy::NoPolicy, AlohomoraType};
 use chrono::NaiveDate;
 //use sea_orm::strum::Display;
 use entity::{application, candidate};
@@ -178,7 +178,7 @@ impl NewCandidateResponse {
     }
 }
 
-#[derive(Debug, Serialize, PartialEq)]
+#[derive(Debug, Serialize, PartialEq, Clone)]
 pub enum FieldsCombination {
     #[serde(rename = "Žádný obor na SSPŠ")]
     Unknown,
@@ -221,46 +221,48 @@ impl FieldsCombination {
     }
 }
 
-#[derive(Debug, Serialize)]
+//#[derive(Debug, Serialize)]
+#[derive(AlohomoraType)]
+#[alohomora_out_type(to_derive = [Serialize])]
 pub struct CandidateRow {
-    #[serde(rename = "Číslo uchazeče (přiděleno systémem)")]
-    pub id: i32,
-    #[serde(rename = "Ev. č. první přihlášky")]
-    pub first_application: i32,
-    #[serde(rename = "Ev. č. druhé přihlášky (pokud podával dvě)")]
-    pub second_application: Option<i32>,
-    #[serde(rename = "Rodné číslo")]
-    pub personal_id_number: String,
-    #[serde(rename = "Bude dělat JPZ na SSPŠ 13. 4.")]
-    pub first_day_admissions: bool,
-    #[serde(rename = "Bude dělat JPZ na SSPŠ 14. 4.")]
-    pub second_day_admissions: bool,
-    #[serde(rename = "Obor první přihlášky SSPŠ 13. 4.")]
-    pub first_day_field: Option<FieldOfStudy>,
-    #[serde(rename = "Obor druhé přihlášky SSPŠ 14. 4.")]
-    pub second_day_field: Option<FieldOfStudy>,
-    #[serde(rename = "Kombinace SSPŠ oborů")]
-    pub fields_combination: FieldsCombination,
-    #[serde(rename = "Název první školy (JPZ 13. 4.)")]
-    pub first_school: String,
-    #[serde(rename = "Obor první školy")]
-    pub first_school_field: String,
-    #[serde(rename = "Název druhé školy (JPZ 14. 4.)")]
-    pub second_school: String,
-    #[serde(rename = "Obor druhé školy")]
-    pub second_school_field: String,
-    #[serde(rename = "Obory vyplněné uchazečem odpovídají s přihláškami")]
-    pub fields_match: bool,
-    #[serde(rename = "Jméno (pokud vyplnil)")]
-    pub name: String,
-    #[serde(rename = "Příjmení (pokud vyplnil)")]
-    pub surname: String,
-    #[serde(rename = "Email uchazeče (pokud vyplnil)")]
-    pub email: String,
-    #[serde(rename = "Telefon uchazeče (pokud vyplnil)")]
-    pub telephone: String,
-    #[serde(rename = "Email zákonného zástupce (pokud vyplnil)")]
-    pub parent_email: Option<String>,
-    #[serde(rename = "Telefon zákonného zástupce (pokud vyplnil)")]
-    pub parent_telephone: Option<String>,
+    //#[serde(rename = "Číslo uchazeče (přiděleno systémem)")]
+    pub id: BBox<i32, NoPolicy>,
+    //#[serde(rename = "Ev. č. první přihlášky")]
+    pub first_application: BBox<i32, NoPolicy>,
+    //#[serde(rename = "Ev. č. druhé přihlášky (pokud podával dvě)")]
+    pub second_application: BBox<Option<i32>, NoPolicy>,
+    //#[serde(rename = "Rodné číslo")]
+    pub personal_id_number: BBox<String, NoPolicy>,
+    //#[serde(rename = "Bude dělat JPZ na SSPŠ 13. 4.")]
+    pub first_day_admissions: BBox<bool, NoPolicy>,
+    //#[serde(rename = "Bude dělat JPZ na SSPŠ 14. 4.")]
+    pub second_day_admissions: BBox<bool, NoPolicy>,
+    //#[serde(rename = "Obor první přihlášky SSPŠ 13. 4.")]
+    pub first_day_field: BBox<Option<FieldOfStudy>, NoPolicy>,
+    //#[serde(rename = "Obor druhé přihlášky SSPŠ 14. 4.")]
+    pub second_day_field: BBox<Option<FieldOfStudy>, NoPolicy>,
+    //#[serde(rename = "Kombinace SSPŠ oborů")]
+    pub fields_combination: BBox<FieldsCombination, NoPolicy>,
+    //#[serde(rename = "Název první školy (JPZ 13. 4.)")]
+    pub first_school: BBox<String, NoPolicy>,
+    //#[serde(rename = "Obor první školy")]
+    pub first_school_field: BBox<String, NoPolicy>,
+    //#[serde(rename = "Název druhé školy (JPZ 14. 4.)")]
+    pub second_school: BBox<String, NoPolicy>,
+    //#[serde(rename = "Obor druhé školy")]
+    pub second_school_field: BBox<String, NoPolicy>,
+    //#[serde(rename = "Obory vyplněné uchazečem odpovídají s přihláškami")]
+    pub fields_match: BBox<bool, NoPolicy>,
+    //#[serde(rename = "Jméno (pokud vyplnil)")]
+    pub name: BBox<String, NoPolicy>,
+    //#[serde(rename = "Příjmení (pokud vyplnil)")]
+    pub surname: BBox<String, NoPolicy>,
+    //#[serde(rename = "Email uchazeče (pokud vyplnil)")]
+    pub email: BBox<String, NoPolicy>,
+    //#[serde(rename = "Telefon uchazeče (pokud vyplnil)")]
+    pub telephone: BBox<String, NoPolicy>,
+    //#[serde(rename = "Email zákonného zástupce (pokud vyplnil)")]
+    pub parent_email: BBox<Option<String>, NoPolicy>,
+    //#[serde(rename = "Telefon zákonného zástupce (pokud vyplnil)")]
+    pub parent_telephone: BBox<Option<String>, NoPolicy>,
 }

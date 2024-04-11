@@ -59,7 +59,7 @@ impl ApplicationResponse {
 //     let x = Tmp { id: id };
 //     alohomora::unbox::unbox_(data, context, functor, arg)
 //     let y = alohomora::fold::fold(x).unwrap();
-//     y.unbox(todo!(), PrivacyCriticalRegion::new(|y, _| {
+//     y.unbox(BBox::new(None, NoPolicy::new()), PrivacyCriticalRegion::new(|y, _| {
 //         let x = serde_json::to_string(y);
 //     }), ());
 // }
@@ -135,4 +135,40 @@ pub struct ApplicationRow {
     pub second_parent_telephone: BBox<Option<String>, NoPolicy>,
     //#[serde(rename = "Email druhého zákonného zástupce")]
     pub second_parent_email: BBox<Option<String>, NoPolicy>,
+}
+
+impl Default for ApplicationRow {
+    fn default() -> Self {
+        ApplicationRow{ application: BBox::new(0, NoPolicy::new()), 
+            name: BBox::new(None, NoPolicy::new()), 
+            surname: BBox::new(None, NoPolicy::new()), 
+            birth_surname: BBox::new(None, NoPolicy::new()), 
+            birthplace: BBox::new(None, NoPolicy::new()), 
+            birthdate: BBox::new(None, NoPolicy::new()), 
+            address: BBox::new(None, NoPolicy::new()), 
+            letter_address: BBox::new(None, NoPolicy::new()), 
+            telephone: BBox::new(None, NoPolicy::new()), 
+            citizenship: BBox::new(None, NoPolicy::new()), 
+            email: BBox::new(None, NoPolicy::new()), 
+            sex: BBox::new(None, NoPolicy::new()), 
+            personal_identification_number: BBox::new(None, NoPolicy::new()), 
+            school_name: BBox::new(None, NoPolicy::new()), 
+            health_insurance: BBox::new(None, NoPolicy::new()), 
+            diploma_1_8: BBox::new("".to_string(), NoPolicy::new()), 
+            diploma_2_8: BBox::new("".to_string(), NoPolicy::new()), 
+            diploma_1_9: BBox::new("".to_string(), NoPolicy::new()), 
+            diploma_2_9: BBox::new("".to_string(), NoPolicy::new()), 
+            first_school_name: BBox::new(None, NoPolicy::new()), 
+            first_school_field: BBox::new(None, NoPolicy::new()), 
+            second_school_name: BBox::new(None, NoPolicy::new()), 
+            second_school_field: BBox::new(None, NoPolicy::new()), 
+            parent_name: BBox::new(None, NoPolicy::new()), 
+            parent_surname: BBox::new(None, NoPolicy::new()), 
+            parent_telephone: BBox::new(None, NoPolicy::new()), 
+            parent_email: BBox::new(None, NoPolicy::new()), 
+            second_parent_name: BBox::new(None, NoPolicy::new()), 
+            second_parent_surname: BBox::new(None, NoPolicy::new()), 
+            second_parent_telephone: BBox::new(None, NoPolicy::new()), 
+            second_parent_email: BBox::new(None, NoPolicy::new()) }
+    }
 }
