@@ -19,9 +19,6 @@ features = [
 ]
 
 [dependencies.sea-orm]
-version = "^0.11"
-features = [
-    "sqlx-mysql",
-    # TODO: Migrate to rustls for better compatibility with various OS
-    "runtime-tokio-native-tls"
-]
+git = "https://github.com/KinanBab/sea-orm.git"
+branch = "main"
+features = [ "sqlx-mysql", "sqlx-sqlite", "runtime-tokio-native-tls", "macros" ]

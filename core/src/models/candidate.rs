@@ -1,5 +1,5 @@
 use chrono::NaiveDate;
-use sea_orm::strum::Display;
+//use sea_orm::strum::Display;
 use entity::{application, candidate};
 use serde::{Deserialize, Serialize};
 use validator::Validate;
@@ -10,7 +10,7 @@ use crate::{
 
 use super::{candidate_details::{EncryptedString, EncryptedCandidateDetails}, grade::GradeList, school::School};
 
-#[derive(Debug, Clone, Serialize, Display)]
+#[derive(Debug, Clone, Serialize)]//, Display)]
 pub enum FieldOfStudy {
     G,
     IT,
