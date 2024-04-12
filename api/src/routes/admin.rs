@@ -8,7 +8,7 @@ use rocket::http::{Cookie, Status, CookieJar};
 use rocket::response::status::Custom;
 use rocket::serde::json::Json;
 use portfolio_core::policies::context::ContextDataType;
-use alohomora::{bbox::BBox, context::Context, orm::Connection, policy::NoPolicy, pure::PrivacyPureRegion, rocket::{get, post, BBoxCookie, BBoxCookieJar, BBoxJson}};
+use alohomora::{bbox::BBox, context::Context, orm::Connection, policy::{AnyPolicy, NoPolicy}, pure::PrivacyPureRegion, rocket::{get, post, BBoxCookie, BBoxCookieJar, BBoxJson}};
 //use alohomora::rocket::*;
 
 
@@ -25,14 +25,14 @@ pub async fn login(
     // ip_addr: SocketAddr, // TODO uncomment in production
     cookies: BBoxCookieJar<'_, '_>,
     context: Context<ContextDataType>
-) -> Result<(), Custom<String>> {
+) -> Result<(), String> {
     let ip_addr: SocketAddr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 0);
     let db = conn.into_inner();
     let session_token_key = AdminService::login(
         db,
-        login_form.admin_id,
-        login_form.password.to_string(),
-        ip_addr.ip().to_string(),
+        login_form.admin_id.clone(),
+        login_form.password.clone(),
+        BBox::new(ip_addr.ip().to_string(), NoPolicy::new()),
     )
     .await;
 
@@ -48,8 +48,8 @@ pub async fn login(
     let session_token = session_token_key.0;
     let private_key = session_token_key.1;
 
-    cookies.add(BBoxCookie::new("id", session_token.clone()), context);
-    cookies.add(BBoxCookie::new("key", private_key.clone()), context);
+    cookies.add(BBoxCookie::new("id", session_token.clone()), context.clone());
+    cookies.add(BBoxCookie::new("key", private_key.clone()), context.clone());
 
     return Ok(());
 }
@@ -60,8 +60,11 @@ pub async fn logout(conn: Connection<'_, Db>, _session: AdminAuth, cookies: BBox
 
     let cookie = cookies.get("id") // unwrap would be safe here because of the auth guard
         .ok_or(Custom(Status::Unauthorized, "No session cookie".to_string()))?;
-    let session_id = Uuid::try_parse(cookie.value()) // unwrap would be safe here because of the auth guard
-        .map_err(|e| Custom(Status::BadRequest, e.to_string()))?;
+    let session_id = cookie.value().into_ppr(PrivacyPureRegion::new(|c|{ 
+            Uuid::try_parse(c).unwrap()
+        }));
+    // let session_id = Uuid::try_parse(cookie.value()) // unwrap would be safe here because of the auth guard
+    //     .map_err(|e| Custom(Status::BadRequest, e.to_string()))?;
     let session = Query::find_admin_session_by_uuid(db, session_id).await.unwrap().unwrap();
     
     let _res = AdminService::logout(db, session)
@@ -81,7 +84,7 @@ pub async fn logout(conn: Connection<'_, Db>, _session: AdminAuth, cookies: BBox
 pub async fn whoami(session: AdminAuth, context: Context<ContextDataType>) -> BBox<String, NoPolicy> {
     let admin: entity::admin::Model = session.into();
 
-    let a: BBox<String, NoPolicy> = admin.id.ppr(PrivacyPureRegion::new(
+    let a = admin.id.ppr(PrivacyPureRegion::new(
         |n: &i32|{n.to_string()}
     ));
     a
@@ -145,13 +148,18 @@ pub async fn list_candidates(
 ) -> Result<BBoxJson<Vec<ApplicationResponse>>, Custom<String>> {
     let db = conn.into_inner();
     let private_key = session.get_private_key();
+    
     if let Some(field) = field.clone() {
         if !(field == "KB".to_string() || field == "IT".to_string() || field == "G") {
             return Err(Custom(Status::BadRequest, "Invalid field of study".to_string()));
         }
     }
 
-    let candidates = ApplicationService::list_applications(&private_key, db, field, page, sort)
+    let field_bbox = alohomora::fold::fold(field).unwrap();
+    let page_bbox = alohomora::fold::fold(page).unwrap();
+    let sort_bbox = alohomora::fold::fold(sort).unwrap();
+
+    let candidates = ApplicationService::list_applications(&private_key, db, field_bbox, page_bbox, sort_bbox)
         .await.map_err(to_custom_error)?;
 
     Ok(
@@ -185,7 +193,7 @@ pub async fn list_admissions_csv(
 ) -> Result<Vec<u8>, Custom<String>> {
     let db = conn.into_inner();
     let private_key = session.get_private_key();
-    let context = todo!();
+    //let context = todo!();
 
     let candidates = CandidateCsv::export(context, db, private_key)
         .await
