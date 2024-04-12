@@ -1,7 +1,8 @@
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 
-use alohomora::rocket::BBoxJson;
+use alohomora::rocket::BBoxForm;
 use entity::application;
+use portfolio_core::policies::context::ContextDataType;
 use portfolio_core::Query;
 use portfolio_core::error::ServiceError;
 use portfolio_core::models::auth::AuthenticableTrait;
@@ -14,7 +15,7 @@ use rocket::http::{Cookie, CookieJar, Status};
 use rocket::response::status::Custom;
 use rocket::serde::json::Json;
 
-use alohomora::orm::Connection;
+use alohomora::{bbox::BBox, context::Context, orm::Connection, policy::{AnyPolicy, NoPolicy}, pure::{execute_pure, PrivacyPureRegion}, rocket::{get, post, BBoxCookie, BBoxCookieJar, BBoxJson, FromBBoxData}};
 
 
 use crate::guards::data::letter::Letter;
@@ -26,23 +27,28 @@ use super::to_custom_error;
 #[post("/login", data = "<login_form>")]
 pub async fn login(
     conn: Connection<'_, Db>,
-    login_form: Json<LoginRequest>,
+    login_form: BBoxJson<LoginRequest>,
     // ip_addr: SocketAddr, // TODO uncomment in production
-    cookies: &CookieJar<'_>,
-) -> Result<(), Custom<String>> {
+    cookies: BBoxCookieJar<'_, '_>,
+    context: Context<ContextDataType>
+) -> Result<(), (rocket::http::Status, String)> {
     let ip_addr: SocketAddr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 0);
     let db = conn.into_inner();
-    let (session_token, private_key) = ApplicationService::login(
-        db,
-        login_form.application_id,
-        login_form.password.to_string(),
-        ip_addr.ip().to_string(),
-    )
-    .await
-    .map_err(to_custom_error)?;
 
-    cookies.add_private(Cookie::new("id", session_token.clone()));
-    cookies.add_private(Cookie::new("key", private_key.clone()));
+    let res = ApplicationService::login(
+        db,
+        login_form.application_id.clone(),
+        login_form.password.clone(),
+        BBox::new(ip_addr.ip().to_string(), NoPolicy::new()),
+    ).await.map_err(to_custom_error);
+
+    let (session_token, private_key) = match res {
+        Ok(a) => a,
+        Err(e) => return Err(e),
+    };
+
+    cookies.add(BBoxCookie::new("id", session_token.clone()), context.clone());
+    cookies.add(BBoxCookie::new("key", private_key.clone()), context.clone());
 
     return Ok(());
 }
@@ -51,38 +57,39 @@ pub async fn login(
 pub async fn logout(
     conn: Connection<'_, Db>,
     _session: ApplicationAuth,
-    cookies: &CookieJar<'_>,
-) -> Result<(), Custom<String>> {
+    cookies: BBoxCookieJar<'_, '_>,
+    context: Context<ContextDataType>
+) -> Result<(), (rocket::http::Status, String)> {
     let db = conn.into_inner();
 
-    let cookie = cookies
-        .get_private("id") // unwrap would be safe here because of the auth guard
-        .ok_or(Custom(
-            Status::Unauthorized,
-            "No session cookie".to_string(),
-        ))?;
-    let session_id = Uuid::try_parse(cookie.value()) // unwrap would be safe here because of the auth guard
-        .map_err(|e| Custom(Status::BadRequest, e.to_string()))?;
+    let cookie: BBoxCookie<'static, NoPolicy> = cookies
+        .get("id").unwrap(); // unwrap would be safe here because of the auth guard
+        //.ok_or(Custom(Status::Unauthorized,"No session cookie".to_string(),))?;
+
+    let session_id = execute_pure(cookie.value().to_owned(), PrivacyPureRegion::new(|c: String|{ 
+        Uuid::try_parse(c.as_str()).unwrap()
+    })).unwrap().specialize_policy().unwrap();
+
     let session = Query::find_session_by_uuid(db, session_id).await.unwrap().unwrap(); // TODO
     ApplicationService::logout(db, session)
         .await
         .map_err(to_custom_error)?;
 
-    cookies.remove_private(Cookie::named("id"));
-    cookies.remove_private(Cookie::named("key"));
+    cookies.remove(cookies.get::<NoPolicy>("id").unwrap());
+    cookies.remove(cookies.get::<NoPolicy>("key").unwrap());
 
     Ok(())
 }
 
 #[get("/whoami")]
-pub async fn whoami(conn: Connection<'_, Db>, session: ApplicationAuth) -> Result<Json<NewCandidateResponse>, Custom<String>> {
+pub async fn whoami(conn: Connection<'_, Db>, session: ApplicationAuth) -> Result<BBoxJson<NewCandidateResponse>, (rocket::http::Status, String)> {
     let db = conn.into_inner();
 
     let private_key = session.get_private_key();
     let application: entity::application::Model = session.into();
     let candidate = ApplicationService::find_related_candidate(&db, &application)
         .await.map_err(to_custom_error)?; // TODO more compact
-    let applications = Query::find_applications_by_candidate_id(&db, candidate.id)
+    let applications = Query::find_applications_by_candidate_id(&db, candidate.id.clone())
         .await.map_err(|e| to_custom_error(ServiceError::DbError(e)))?; 
     let response = NewCandidateResponse::from_encrypted(
         application.id,
@@ -92,7 +99,7 @@ pub async fn whoami(conn: Connection<'_, Db>, session: ApplicationAuth) -> Resul
     ).await
         .map_err(to_custom_error)?;
 
-    Ok(Json(response))
+    Ok(BBoxJson(response))
 }
 
 // TODO: use put instead of post???
@@ -101,7 +108,7 @@ pub async fn post_details(
     conn: Connection<'_, Db>,
     details: BBoxJson<ApplicationDetails>,
     session: ApplicationAuth,
-) -> Result<Json<ApplicationDetails>, Custom<String>> {
+) -> Result<BBoxJson<ApplicationDetails>, (rocket::http::Status, String)> {
     let db = conn.into_inner();
     let form = details.into_inner();
     form.candidate.validate_self().map_err(to_custom_error)?;
@@ -109,7 +116,7 @@ pub async fn post_details(
     let candidate = ApplicationService::find_related_candidate(&db, &application).await.map_err(to_custom_error)?; // TODO
 
     let _candidate_parent = ApplicationService::add_all_details(&db, &application, candidate, &form)
-        .await
+        .await 
         .map_err(to_custom_error)?;
 
     Ok(Json(form))
@@ -119,7 +126,7 @@ pub async fn post_details(
 pub async fn get_details(
     conn: Connection<'_, Db>,
     session: ApplicationAuth,
-) -> Result<Json<ApplicationDetails>, Custom<String>> {
+) -> Result<BBoxJson<ApplicationDetails>, (rocket::http::Status, String)> {
     let db = conn.into_inner();
     let private_key = session.get_private_key();
     let application: entity::application::Model = session.into();
@@ -130,7 +137,7 @@ pub async fn get_details(
         &application
     )
         .await
-        .map(|x| Json(x))
+        .map(|x| BBoxJson(x))
         .map_err(to_custom_error);
 
     details
@@ -138,8 +145,8 @@ pub async fn get_details(
 #[post("/cover_letter", data = "<letter>")]
 pub async fn upload_cover_letter(
     session: ApplicationAuth,
-    letter: Letter,
-) -> Result<(), Custom<String>> {
+    letter: BBoxForm<Letter>,
+) -> Result<(), (rocket::http::Status, String)> {
     let application: entity::application::Model = session.into();
 
     PortfolioService::add_cover_letter_to_cache(application.candidate_id, letter.into())
@@ -150,7 +157,7 @@ pub async fn upload_cover_letter(
 }
 
 #[delete("/cover_letter")]
-pub async fn delete_cover_letter(session: ApplicationAuth) -> Result<(), Custom<String>> {
+pub async fn delete_cover_letter(session: ApplicationAuth) -> Result<(), (rocket::http::Status, String)> {
     let application: entity::application::Model = session.into();
 
     PortfolioService::delete_cover_letter_from_cache(application.candidate_id)
@@ -164,7 +171,7 @@ pub async fn delete_cover_letter(session: ApplicationAuth) -> Result<(), Custom<
 pub async fn upload_portfolio_letter(
     session: ApplicationAuth,
     letter: Letter,
-) -> Result<(), Custom<String>> {
+) -> Result<(), (rocket::http::Status, String)> {
     let application: entity::application::Model = session.into();
 
     PortfolioService::add_portfolio_letter_to_cache(application.candidate_id, letter.into())
@@ -175,7 +182,7 @@ pub async fn upload_portfolio_letter(
 }
 
 #[delete("/portfolio_letter")]
-pub async fn delete_portfolio_letter(session: ApplicationAuth) -> Result<(), Custom<String>> {
+pub async fn delete_portfolio_letter(session: ApplicationAuth) -> Result<(), (rocket::http::Status, String)> {
     let candidate: entity::application::Model = session.into();
 
     PortfolioService::delete_portfolio_letter_from_cache(candidate.candidate_id)
@@ -189,7 +196,7 @@ pub async fn delete_portfolio_letter(session: ApplicationAuth) -> Result<(), Cus
 pub async fn upload_portfolio_zip(
     session: ApplicationAuth,
     portfolio: Portfolio,
-) -> Result<(), Custom<String>> {
+) -> Result<(), (rocket::http::Status, String)> {
     let application: entity::application::Model = session.into();
 
     PortfolioService::add_portfolio_zip_to_cache(application.candidate_id, portfolio.into())
@@ -200,7 +207,7 @@ pub async fn upload_portfolio_zip(
 }
 
 #[delete("/portfolio_zip")]
-pub async fn delete_portfolio_zip(session: ApplicationAuth) -> Result<(), Custom<String>> {
+pub async fn delete_portfolio_zip(session: ApplicationAuth) -> Result<(), (rocket::http::Status, String)> {
     let application: entity::application::Model = session.into();
 
     PortfolioService::delete_portfolio_zip_from_cache(application.candidate_id)
@@ -213,22 +220,30 @@ pub async fn delete_portfolio_zip(session: ApplicationAuth) -> Result<(), Custom
 #[get("/submission_progress")]
 pub async fn submission_progress(
     session: ApplicationAuth,
-) -> Result<Json<SubmissionProgress>, Custom<String>> {
+) -> BBox<Result<BBoxJson<SubmissionProgress>, (rocket::http::Status, String)>, NoPolicy> {
     let application: entity::application::Model = session.into();
 
-    let progress = PortfolioService::get_submission_progress(application.candidate_id)
-        .await
-        .map(|x| Json(x))
-        .map_err(to_custom_error);
+    let submission_progress = execute_pure(application.candidate_id, 
+        PrivacyPureRegion::new(|id| {
+            PortfolioService::get_submission_progress(id)
+                .map(|x| BBoxJson(x))
+                .map_err(to_custom_error)
+        })
+    ).unwrap().specialize_policy().unwrap();
 
-    progress
+    // let progress = PortfolioService::get_submission_progress(application.candidate_id)
+    //     .await
+    //     .map(|x| BBoxJson(x))
+    //     .map_err(to_custom_error);
+
+    submission_progress
 }
 
 #[post("/submit")]
 pub async fn submit_portfolio(
     conn: Connection<'_, Db>,
     session: ApplicationAuth,
-) -> Result<(), Custom<String>> {
+) -> Result<(), (rocket::http::Status, String)> {
     let db = conn.into_inner();
 
     let application: entity::application::Model = session.into();
@@ -254,7 +269,7 @@ pub async fn submit_portfolio(
 #[post("/delete")]
 pub async fn delete_portfolio(
     session: ApplicationAuth,
-) -> Result<(), Custom<String>> {
+) -> Result<(), (rocket::http::Status, String)> {
     let application: entity::application::Model = session.into();
 
     PortfolioService::delete_portfolio(application.candidate_id)
@@ -265,7 +280,7 @@ pub async fn delete_portfolio(
 }
 
 #[get("/download")]
-pub async fn download_portfolio(session: ApplicationAuth) -> Result<Vec<u8>, Custom<String>> {
+pub async fn download_portfolio(session: ApplicationAuth) -> Result<Vec<u8>, (rocket::http::Status, String)> {
     let private_key = session.get_private_key();
     let application: entity::application::Model = session.into();
 

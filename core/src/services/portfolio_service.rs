@@ -102,7 +102,7 @@ impl Serialize for FileType {
 
 pub struct PortfolioService;
 impl PortfolioService {
-    pub async fn get_submission_progress(candidate_id: i32) -> Result<SubmissionProgress, ServiceError> {
+    pub fn get_submission_progress(candidate_id: i32) -> Result<SubmissionProgress, ServiceError> {
         let path = Self::get_file_store_path().join(&candidate_id.to_string());
         if !path.exists() {
             return Err(ServiceError::CandidateNotFound);
@@ -217,7 +217,7 @@ impl PortfolioService {
 
     /// Returns true if portfolio is ready to be moved to the final directory
     async fn is_portfolio_prepared(candidate_id: i32) -> bool {
-        Self::get_submission_progress(candidate_id).await.ok() == Some(SubmissionProgress::AllInCache)
+        Self::get_submission_progress(candidate_id).ok() == Some(SubmissionProgress::AllInCache)
     }
 
     // Delete single item from cache

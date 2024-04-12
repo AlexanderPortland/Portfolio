@@ -209,7 +209,7 @@ impl ApplicationService {
         let applications = Query::find_applications_by_candidate_id(db, candidate.id.clone()).await?;
         if applications.len() <= 1 &&
             (EncryptedCandidateDetails::from(&candidate).is_filled() ||
-            PortfolioService::get_submission_progress(candidate.id.clone().discard_box()).await?.index() > 1) {
+            PortfolioService::get_submission_progress(candidate.id.clone().discard_box())?.index() > 1) {
             warn!("FAILED TO DELETE APPLICATION {} (CANDIDATE {}) - LOCKED", application.id.discard_box(), candidate.id.discard_box());
             return Err(ServiceError::Forbidden);
         }
@@ -383,7 +383,7 @@ impl ApplicationService {
              &admin_private_key
         ).await?;
 
-        if PortfolioService::get_submission_progress(candidate.id.clone().discard_box()).await? == SubmissionProgress::Submitted {
+        if PortfolioService::get_submission_progress(candidate.id.clone().discard_box())? == SubmissionProgress::Submitted {
             PortfolioService::reencrypt_portfolio(
                 candidate.id.discard_box(),
                 admin_private_key.discard_box(),

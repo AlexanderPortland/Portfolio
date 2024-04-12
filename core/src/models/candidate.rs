@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use alohomora::{bbox::BBox, policy::NoPolicy, AlohomoraType};
 use chrono::NaiveDate;
 //use sea_orm::strum::Display;
@@ -89,7 +90,7 @@ pub struct CreateCandidateResponse {
 }
 // used to be #[derive(Debug, Serialize, Deserialize, Validate, Clone, PartialEq, Eq)]
 // validation??
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]//, alohomora_derive::ResponseBBoxJson)]
 //#[serde(rename_all = "camelCase")]
 pub struct CandidateDetails {
     //#[validate(length(min = 1, max = 255))]
@@ -134,7 +135,7 @@ impl CandidateDetails {
     }
 }
 // used to be #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, alohomora_derive::ResponseBBoxJson)]
 //#[serde(rename_all = "camelCase")]
 pub struct ParentDetails {
     pub name: BBox<String, NoPolicy>,
@@ -145,7 +146,7 @@ pub struct ParentDetails {
 
 /// Candidate details (admin and candidate endpoints)
 //#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone)]//, alohomora_derive::ResponseBBoxJson)]//alohomora_derive::RequestBBoxJson
 //#[serde(rename_all = "camelCase")]
 pub struct ApplicationDetails {
     // Candidate

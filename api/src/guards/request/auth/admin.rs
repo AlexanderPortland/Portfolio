@@ -1,7 +1,9 @@
 use alohomora::bbox::BBox;
 use alohomora::policy::NoPolicy;
+use alohomora::pure::{execute_pure, PrivacyPureRegion};
 use alohomora::rocket::{BBoxRequest, BBoxRequestOutcome, FromBBoxRequest};
 use entity::admin::Model as Admin;
+use entity::session;
 use log::info;
 use portfolio_core::models::auth::AuthenticableTrait;
 use portfolio_core::sea_orm::prelude::Uuid;
@@ -39,11 +41,11 @@ impl<'a, 'r> FromBBoxRequest<'a, 'r> for AdminAuth {
         let cookie_private_key = request.cookies().get::<NoPolicy>("key");
 
         let Some(cookie_id) = cookie_id else {
-            return Outcome::Failure((Status::Unauthorized, None));
+            return BBoxRequestOutcome::Failure((Status::Unauthorized, ()));
         };
 
         let Some(cookie_private_key) = cookie_private_key else {
-            return Outcome::Failure((Status::Unauthorized, None));
+            return BBoxRequestOutcome::Failure((Status::Unauthorized, ()));
         };
 
         let session_id = cookie_id.value().to_owned();
@@ -51,21 +53,25 @@ impl<'a, 'r> FromBBoxRequest<'a, 'r> for AdminAuth {
 
         let conn = &request.rocket().state::<Db>().unwrap().conn;
 
-        let uuid = match Uuid::parse_str(&session_id) {
-            Ok(uuid) => uuid,
-            Err(_) => return Outcome::Failure((Status::BadRequest, None)),
-        };
+        let uuid_bbox = execute_pure(session_id, PrivacyPureRegion::new(
+            |session_id: String|{Uuid::parse_str(session_id.as_str()).unwrap()}
+        )).unwrap().specialize_policy().unwrap();
 
-        let session = AdminService::auth(conn, uuid).await;
+        // let uuid = match Uuid::parse_str(&session_id) {
+        //     Ok(uuid) => uuid,
+        //     Err(_) => return Outcome::Failure((Status::BadRequest, None)),
+        // };
+
+        let session = AdminService::auth(conn, uuid_bbox).await;
 
         match session {
             Ok(model) => {
-                warn!("{}: ADMIN {} AUTHENTICATED", format_request(request), model.id);
+                //warn!("{}: ADMIN {} AUTHENTICATED", format_request(request), model.id);
                 Outcome::Success(AdminAuth(model, private_key))
             },
             Err(e) => {
-                info!("{}: ADMIN AUTHENTICATION FAILED: {}", format_request(request), e);
-                Outcome::Failure((Status::Unauthorized, None))
+                //info!("{}: ADMIN AUTHENTICATION FAILED: {}", format_request(request), e);
+                Outcome::Failure((Status::Unauthorized, ()))
         },
         }
     }

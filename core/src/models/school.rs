@@ -1,10 +1,11 @@
+use std::collections::HashMap;
 use alohomora::{bbox::BBox, policy::NoPolicy};
 use serde::{Serialize, Deserialize};
 use validator::Validate;
 
 use crate::error::ServiceError;
 
-#[derive(Debug, Clone, Serialize, Deserialize, Validate, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, Validate, PartialEq, Eq, alohomora_derive::ResponseBBoxJson)]
 pub struct School {
     #[validate(length(min = 1, max = 255))]
     name: String,

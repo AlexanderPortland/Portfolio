@@ -5,11 +5,12 @@ use std::collections::HashMap;
 use rocket::serde::{Serialize, Deserialize};
 
 
-#[derive(Serialize, Deserialize, alohomora_derive::ResponseBBoxJson)]
-#[serde(crate = "rocket::serde", rename_all = "camelCase")]
+//#[derive(Serialize, Deserialize, alohomora_derive::ResponseBBoxJson)]
+#[derive(alohomora_derive::RequestBBoxJson)]
+//#[serde(crate = "rocket::serde", rename_all = "camelCase")]
 pub struct LoginRequest {
-    pub application_id: i32,
-    pub password: String,
+    pub application_id: BBox<i32, NoPolicy>,
+    pub password: BBox<String, NoPolicy>,
 }
 
 //#[derive(Serialize, Deserialize, alohomora_derive::ResponseBBoxJson)]

@@ -1,6 +1,7 @@
 #[macro_use]
 extern crate rocket;
 
+use alohomora::rocket::{BBoxRocket, routes};
 use logging::Logging;
 use rocket::fairing::{self, AdHoc, Fairing, Info, Kind};
 
@@ -100,8 +101,8 @@ async fn run_migrations(rocket: Rocket<Build>) -> fairing::Result {
     Ok(rocket)
 }
 
-pub fn rocket() -> Rocket<Build> {
-    rocket::build()
+pub fn rocket() -> BBoxRocket<Build> {
+    BBoxRocket::build()
         .attach(Logging)
         .attach(CORS)
         .attach(Db::init())

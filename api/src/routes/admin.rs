@@ -8,7 +8,7 @@ use rocket::http::{Cookie, Status, CookieJar};
 use rocket::response::status::Custom;
 use rocket::serde::json::Json;
 use portfolio_core::policies::context::ContextDataType;
-use alohomora::{bbox::BBox, context::Context, orm::Connection, policy::{AnyPolicy, NoPolicy}, pure::PrivacyPureRegion, rocket::{get, post, BBoxCookie, BBoxCookieJar, BBoxJson}};
+use alohomora::{bbox::BBox, context::Context, orm::Connection, policy::{AnyPolicy, NoPolicy}, pure::{execute_pure, PrivacyPureRegion}, rocket::{get, post, BBoxCookie, BBoxCookieJar, BBoxJson, FromBBoxData}};
 //use alohomora::rocket::*;
 
 
@@ -25,7 +25,7 @@ pub async fn login(
     // ip_addr: SocketAddr, // TODO uncomment in production
     cookies: BBoxCookieJar<'_, '_>,
     context: Context<ContextDataType>
-) -> Result<(), String> {
+) -> Result<(), (rocket::http::Status, String)> {
     let ip_addr: SocketAddr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 0);
     let db = conn.into_inner();
     let session_token_key = AdminService::login(
@@ -38,7 +38,7 @@ pub async fn login(
 
     let Ok(session_token_key) = session_token_key else {
         let e = session_token_key.unwrap_err();
-        return Err(Custom(
+        return Err((
             Status::from_code(e.code()).unwrap_or(Status::InternalServerError),
             e.to_string(),
         ));
@@ -55,14 +55,24 @@ pub async fn login(
 }
 
 #[post("/logout")]
-pub async fn logout(conn: Connection<'_, Db>, _session: AdminAuth, cookies: BBoxCookieJar<'_, '_>, context: Context<ContextDataType>) -> Result<(), Custom<String>> {
+pub async fn logout(conn: Connection<'_, Db>, 
+    _session: AdminAuth, 
+    cookies: BBoxCookieJar<'_, '_>, 
+    context: Context<ContextDataType>
+) -> Result<(), (rocket::http::Status, String)> {
     let db = conn.into_inner();
 
-    let cookie = cookies.get("id") // unwrap would be safe here because of the auth guard
-        .ok_or(Custom(Status::Unauthorized, "No session cookie".to_string()))?;
-    let session_id = cookie.value().into_ppr(PrivacyPureRegion::new(|c|{ 
-            Uuid::try_parse(c).unwrap()
-        }));
+    let cookie: Option<BBoxCookie<'static, NoPolicy>> = cookies.get("id");
+     // unwrap would be safe here because of the auth guard
+    let cookie_unwrapped: BBoxCookie<'static, NoPolicy> = cookie.ok_or(Custom(Status::Unauthorized, "No session cookie".to_string()))?;
+    // let session_id = cookie.value().into_ppr(PrivacyPureRegion::new(|c|{ 
+    //         Uuid::try_parse(c).unwrap()
+    //     }));
+    let cookie_value = cookie_unwrapped.value().to_owned();
+    let session_id = execute_pure(cookie_value, PrivacyPureRegion::new(|c: String|{ 
+        Uuid::try_parse(c.as_str()).unwrap()
+    })).unwrap().specialize_policy().unwrap();
+    
     // let session_id = Uuid::try_parse(cookie.value()) // unwrap would be safe here because of the auth guard
     //     .map_err(|e| Custom(Status::BadRequest, e.to_string()))?;
     let session = Query::find_admin_session_by_uuid(db, session_id).await.unwrap().unwrap();
@@ -71,27 +81,27 @@ pub async fn logout(conn: Connection<'_, Db>, _session: AdminAuth, cookies: BBox
         .await
         .map_err(to_custom_error)?;
 
-    cookies.remove(cookies.get("id").unwrap());
-    //cookies.remove(Cookie::named("key"));
-    cookies.remove(cookies.get("key").unwrap());
+    cookies.remove(cookies.get::<NoPolicy>("id").unwrap());
+    cookies.remove(cookies.get::<NoPolicy>("key").unwrap());
 
     Ok(())
 }
 
 
 #[get("/whoami")]
-//pub async fn whoami(session: AdminAuth, context: Context<ContextDataType>) -> Result<String, Custom<String>> {
-pub async fn whoami(session: AdminAuth, context: Context<ContextDataType>) -> BBox<String, NoPolicy> {
+//pub async fn whoami(session: AdminAuth, context: Context<ContextDataType>) -> Result<String, (rocket::http::Status, String)> {
+pub async fn whoami(session: AdminAuth, context: Context<ContextDataType>) -> Result<BBox<String, NoPolicy>, (rocket::http::Status, String)> {
     let admin: entity::admin::Model = session.into();
 
-    let a = admin.id.ppr(PrivacyPureRegion::new(
-        |n: &i32|{n.to_string()}
-    ));
-    a
+    let a = execute_pure(admin.id, PrivacyPureRegion::new(
+        |n: i32|{n.to_string()}
+    )).unwrap().specialize_policy().unwrap();
+    Ok(a)
 }
 
 #[get("/hello")]
-pub async fn hello(_session: AdminAuth, context: Context<ContextDataType>) -> Result<String, Custom<String>> {
+pub async fn hello(_session: AdminAuth, context: Context<ContextDataType>) -> Result<String, (rocket::http::Status, String)> {
+                                                                            //       ^^ should this be a bbox string
     Ok("Hello admin".to_string())
 }
 
@@ -101,16 +111,15 @@ pub async fn create_candidate(
     session: AdminAuth,
     request: BBoxJson<RegisterRequest>,
     context: Context<ContextDataType>
-) -> Result<BBoxJson<CreateCandidateResponse>, Custom<String>> {
+) -> Result<BBoxJson<CreateCandidateResponse>, (rocket::http::Status, String)> {
     let db = conn.into_inner();
     let form = request.into_inner();
     let private_key = session.get_private_key();
 
     let plain_text_password = BBox::new(random_12_char_string(), NoPolicy::new());
-
     //println!("trying to did the thing");
 
-    let (application, applications, personal_id_number) = ApplicationService::create(
+    let (application, applications, personal_id_number) = match ApplicationService::create(
         &private_key,
         &db,
         form.application_id,
@@ -118,22 +127,23 @@ pub async fn create_candidate(
         form.personal_id_number.clone()
     )
         .await
-        .map_err(to_custom_error)?;
+        .map_err(to_custom_error) {
+            Ok(a) => a,
+            Err(e) => return Err(e),
+        };
 
     println!("did the thing");
-    Ok(
-        Json( // return BBoxJson type thing and then alohomora will take care of getting rid of that
-            CreateCandidateResponse {
-                application_id: application.id,
-                field_of_study: application.field_of_study,
-                applications: applications.iter()
-                    .map(|a| a.id)
-                    .collect(),
-                personal_id_number,
-                password: plain_text_password,
-            }
-        )
-    )
+    let cand = CreateCandidateResponse {
+        application_id: application.id,
+        field_of_study: application.field_of_study,
+        applications: applications.iter()
+            .map(|a| a.id.to_owned())
+            .collect(),
+        personal_id_number,
+        password: plain_text_password,
+    };
+
+    Ok(BBoxJson(cand))
 }
 
 #[allow(unused_variables)]
@@ -145,13 +155,13 @@ pub async fn list_candidates(
     page: Option<BBox<u64, NoPolicy>>,
     sort: Option<BBox<String, NoPolicy>>, // how to do this part
     context: Context<ContextDataType>
-) -> Result<BBoxJson<Vec<ApplicationResponse>>, Custom<String>> {
+) -> Result<BBoxJson<Vec<ApplicationResponse>>, (rocket::http::Status, String)> {
     let db = conn.into_inner();
     let private_key = session.get_private_key();
     
     if let Some(field) = field.clone() {
         if !(field == "KB".to_string() || field == "IT".to_string() || field == "G") {
-            return Err(Custom(Status::BadRequest, "Invalid field of study".to_string()));
+            return Err((Status::BadRequest, "Invalid field of study".to_string()));
         }
     }
 
@@ -171,7 +181,7 @@ pub async fn list_candidates(
 pub async fn list_candidates_csv(
     conn: Connection<'_, Db>,
     session: AdminAuth,
-) -> Result<Vec<u8>, Custom<String>> {
+) -> Result<Vec<u8>, (rocket::http::Status, String)> {
     let db = conn.into_inner();
     let private_key = session.get_private_key();
     let context = todo!();
@@ -190,7 +200,7 @@ pub async fn list_admissions_csv(
     conn: Connection<'_, Db>,
     session: AdminAuth,
     context: Context<ContextDataType>
-) -> Result<Vec<u8>, Custom<String>> {
+) -> Result<BBox<Vec<u8>, NoPolicy>, (rocket::http::Status, String)> {
     let db = conn.into_inner();
     let private_key = session.get_private_key();
     //let context = todo!();
@@ -199,9 +209,7 @@ pub async fn list_admissions_csv(
         .await
         .map_err(to_custom_error)?;
 
-    Ok(
-        candidates
-    )
+    Ok(candidates)
 }
 
 #[get("/candidate/<id>")]
@@ -209,7 +217,7 @@ pub async fn get_candidate(
     conn: Connection<'_, Db>,
     session: AdminAuth,
     id: BBox<i32, NoPolicy>,
-) -> Result<BBoxJson<ApplicationDetails>, Custom<String>> {
+) -> Result<BBoxJson<ApplicationDetails>, (rocket::http::Status, String)> {
     let db = conn.into_inner();
     let private_key = session.get_private_key();
 
@@ -227,7 +235,7 @@ pub async fn get_candidate(
         .map_err(to_custom_error)?;
 
     Ok(
-        Json(details)
+        BBoxJson(details)
     )
 }
 
@@ -236,7 +244,7 @@ pub async fn delete_candidate(
     conn: Connection<'_, Db>,
     _session: AdminAuth,
     id: BBox<i32, NoPolicy>,
-) -> Result<(), Custom<String>> {
+) -> Result<(), (rocket::http::Status, String)> {
     let db = conn.into_inner();
 
     let application = Query::find_application_by_id(db, id)
@@ -256,7 +264,7 @@ pub async fn reset_candidate_password(
     conn: Connection<'_, Db>,
     session: AdminAuth,
     id: BBox<i32, NoPolicy>,
-) -> Result<BBoxJson<CreateCandidateResponse>, Custom<String>> {
+) -> Result<BBoxJson<CreateCandidateResponse>, (rocket::http::Status, String)> {
     // TODO
     let db = conn.into_inner();
     let private_key = session.get_private_key();
@@ -277,7 +285,7 @@ pub async fn get_candidate_portfolio(
     conn: Connection<'_, Db>,
     session: AdminAuth, 
     id: BBox<i32, NoPolicy>,
-) -> Result<Vec<u8>, Custom<String>> {
+) -> Result<BBox<Vec<u8>, NoPolicy>, (rocket::http::Status, String)> {
     let db = conn.into_inner();
     let private_key = session.get_private_key();
 
