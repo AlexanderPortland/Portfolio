@@ -8,7 +8,7 @@ use rocket::http::{Cookie, Status, CookieJar};
 use rocket::response::status::Custom;
 use rocket::serde::json::Json;
 use portfolio_core::policies::context::ContextDataType;
-use alohomora::{bbox::BBox, context::Context, orm::Connection, policy::NoPolicy, rocket::{get, post, BBoxCookieJar, BBoxJson}};
+use alohomora::{bbox::BBox, context::Context, orm::Connection, policy::NoPolicy, pure::PrivacyPureRegion, rocket::{get, post, BBoxCookie, BBoxCookieJar, BBoxJson}};
 //use alohomora::rocket::*;
 
 
@@ -48,17 +48,17 @@ pub async fn login(
     let session_token = session_token_key.0;
     let private_key = session_token_key.1;
 
-    cookies.add_private(Cookie::new("id", session_token.clone()));
-    cookies.add_private(Cookie::new("key", private_key.clone()));
+    cookies.add(BBoxCookie::new("id", session_token.clone()), context);
+    cookies.add(BBoxCookie::new("key", private_key.clone()), context);
 
     return Ok(());
 }
 
 #[post("/logout")]
-pub async fn logout(conn: Connection<'_, Db>, _session: AdminAuth, cookies: &CookieJar<'_>, context: Context<ContextDataType>) -> Result<(), Custom<String>> {
+pub async fn logout(conn: Connection<'_, Db>, _session: AdminAuth, cookies: BBoxCookieJar<'_, '_>, context: Context<ContextDataType>) -> Result<(), Custom<String>> {
     let db = conn.into_inner();
 
-    let cookie = cookies.get_private("id") // unwrap would be safe here because of the auth guard
+    let cookie = cookies.get("id") // unwrap would be safe here because of the auth guard
         .ok_or(Custom(Status::Unauthorized, "No session cookie".to_string()))?;
     let session_id = Uuid::try_parse(cookie.value()) // unwrap would be safe here because of the auth guard
         .map_err(|e| Custom(Status::BadRequest, e.to_string()))?;
@@ -68,17 +68,23 @@ pub async fn logout(conn: Connection<'_, Db>, _session: AdminAuth, cookies: &Coo
         .await
         .map_err(to_custom_error)?;
 
-    cookies.remove_private(Cookie::named("id"));
-    cookies.remove_private(Cookie::named("key"));
+    cookies.remove(cookies.get("id").unwrap());
+    //cookies.remove(Cookie::named("key"));
+    cookies.remove(cookies.get("key").unwrap());
 
     Ok(())
 }
 
 
 #[get("/whoami")]
-pub async fn whoami(session: AdminAuth, context: Context<ContextDataType>) -> Result<String, Custom<String>> {
+//pub async fn whoami(session: AdminAuth, context: Context<ContextDataType>) -> Result<String, Custom<String>> {
+pub async fn whoami(session: AdminAuth, context: Context<ContextDataType>) -> BBox<String, NoPolicy> {
     let admin: entity::admin::Model = session.into();
-    Ok(admin.id.to_string())
+
+    let a: BBox<String, NoPolicy> = admin.id.ppr(PrivacyPureRegion::new(
+        |n: &i32|{n.to_string()}
+    ));
+    a
 }
 
 #[get("/hello")]

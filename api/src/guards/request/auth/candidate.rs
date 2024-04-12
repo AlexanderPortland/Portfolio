@@ -28,7 +28,7 @@ impl<'r> FromRequest<'r> for ApplicationAuth {
     type Error = Option<String>;
     async fn from_request(
         req: &'r Request<'_>,
-    ) -> Outcome<ApplicationAuth, (Status, Self::Error), ()> {
+    ) -> Outcome<ApplicationAuth, (Status, Self::Error), Status> {
         let cookie_id = req.cookies().get_private("id");
         let cookie_private_key = req.cookies().get_private("key");
 

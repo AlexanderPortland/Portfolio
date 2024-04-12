@@ -3,16 +3,18 @@ use portfolio_core::sea_orm::{self};
 #[cfg(not(test))]
 use sea_orm::ConnectOptions;
 //use sea_orm_rocket::{rocket::figment::Figment, Database};
-use alohomora::orm::Database;
+use alohomora::{orm::{BBoxDatabase, Database}, AlohomoraType};
 #[cfg(not(test))]
 use std::time::Duration;
 use entity::{admin_session, application};
 use sea_orm::DbConn;
 use alohomora::orm::Pool;
+//use alohomora::orm::Database;
 use rocket::figment::Figment;
 
 #[derive(Database, Debug)]
 #[database("sea_orm")]
+//#[alohomora_derive(Database)]
 pub struct Db(SeaOrmPool);
 
 #[derive(Debug, Clone)]

@@ -1,5 +1,6 @@
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 
+use alohomora::rocket::BBoxJson;
 use entity::application;
 use portfolio_core::Query;
 use portfolio_core::error::ServiceError;
@@ -98,7 +99,7 @@ pub async fn whoami(conn: Connection<'_, Db>, session: ApplicationAuth) -> Resul
 #[post("/details", data = "<details>")]
 pub async fn post_details(
     conn: Connection<'_, Db>,
-    details: Json<ApplicationDetails>,
+    details: BBoxJson<ApplicationDetails>,
     session: ApplicationAuth,
 ) -> Result<Json<ApplicationDetails>, Custom<String>> {
     let db = conn.into_inner();

@@ -23,7 +23,7 @@ impl Into<Admin> for AdminAuth {
 }
 
 impl AdminAuth {
-    pub fn get_private_key(&self) -> String {
+    pub fn get_private_key(&self) -> BBox<String, NoPolicy> {
         self.1.clone()
     }
 }

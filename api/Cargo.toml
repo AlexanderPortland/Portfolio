@@ -5,10 +5,11 @@ edition = "2021"
 publish = false
 
 [dependencies]
-rocket = { version = "^0.5.0-rc.3", features = [
-  "json",
-  "secrets",
-] }
+# rocket = { version = "^0.5.0-rc.3", features = [
+#   "json",
+#   "secrets",
+# ] }
+rocket = { git = "https://github.com/KinanBab/Rocket.git", branch = "main" }
 
 async-trait = { version = "^0.1" }
 tokio = "^1.28"
@@ -35,6 +36,10 @@ alohomora_derive = { path = "../../alohomora/alohomora_derive" }
 git = "https://github.com/KinanBab/sea-orm.git"
 branch = "main"
 features = [ "sqlx-mysql", "sqlx-sqlite", "runtime-tokio-native-tls" ]
+
+[dependencies.sea-orm-rocket]
+git = "https://github.com/KinanBab/sea-orm.git"
+branch = "main"
 
 
 [dev-dependencies]

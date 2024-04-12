@@ -1,31 +1,31 @@
-[package]
-name = "portfolio-cli"
-version = "0.1.0"
-edition = "2021"
-publish = false
+# [package]
+# name = "portfolio-cli"
+# version = "0.1.0"
+# edition = "2021"
+# publish = false
 
-[dependencies]
-url = "^2.3"
-clap = { version = "^4.3", features = ["cargo"] }
+# [dependencies]
+# url = "^2.3"
+# clap = { version = "^4.3", features = ["cargo"] }
 
-portfolio-entity = { path = "../entity" }
-portfolio-core = { path = "../core" }
-alohomora = { path = "../../alohomora/alohomora" }
+# portfolio-entity = { path = "../entity" }
+# portfolio-core = { path = "../core" }
+# alohomora = { path = "../../alohomora/alohomora" }
 
-[dependencies.tokio]
-version = "^1.28"
-features = [
-    "process",
-    "macros",
-]
-
-[dependencies.sea-orm]
-# version = "^0.11"
+# [dependencies.tokio]
+# version = "^1.28"
 # features = [
-#     "sqlx-mysql",
-#     # TODO: Migrate to rustls for better compatibility with various OS
-#     "runtime-tokio-native-tls"
+#     "process",
+#     "macros",
 # ]
-git = "https://github.com/KinanBab/sea-orm.git"
-branch = "main"
-features = [ "sqlx-mysql", "sqlx-sqlite", "runtime-tokio-native-tls", "macros" ]
+
+# [dependencies.sea-orm]
+# # version = "^0.11"
+# # features = [
+# #     "sqlx-mysql",
+# #     # TODO: Migrate to rustls for better compatibility with various OS
+# #     "runtime-tokio-native-tls"
+# # ]
+# git = "https://github.com/KinanBab/sea-orm.git"
+# branch = "main"
+# features = [ "sqlx-mysql", "sqlx-sqlite", "runtime-tokio-native-tls", "macros" ]
