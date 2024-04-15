@@ -163,6 +163,7 @@ dependencies = [
  "lazy_static",
  "mysql",
  "mysql_common 0.22.2",
+ "pin-project-lite",
  "rocket",
  "rocket_cors",
  "rocket_dyn_templates",
@@ -2054,7 +2055,7 @@ dependencies = [
  "httpdate",
  "itoa",
  "pin-project-lite",
- "socket2 0.5.6",
+ "socket2 0.4.10",
  "tokio",
  "tower-service",
  "tracing",
@@ -4107,7 +4108,7 @@ dependencies = [
 [[package]]
 name = "sea-orm"
 version = "0.12.15"
-source = "git+https://github.com/KinanBab/sea-orm.git?branch=main#70a69913ab23a49eaa143b333a25756113b3bedf"
+source = "git+https://github.com/KinanBab/sea-orm.git?branch=main#883864421bbd14c24ea776835d5f57745b143bf9"
 dependencies = [
  "async-stream",
  "async-trait",
@@ -4134,7 +4135,7 @@ dependencies = [
 [[package]]
 name = "sea-orm-cli"
 version = "0.12.15"
-source = "git+https://github.com/KinanBab/sea-orm.git?branch=main#70a69913ab23a49eaa143b333a25756113b3bedf"
+source = "git+https://github.com/KinanBab/sea-orm.git?branch=main#883864421bbd14c24ea776835d5f57745b143bf9"
 dependencies = [
  "chrono",
  "clap 4.5.4",
@@ -4150,7 +4151,7 @@ dependencies = [
 [[package]]
 name = "sea-orm-macros"
 version = "0.12.15"
-source = "git+https://github.com/KinanBab/sea-orm.git?branch=main#70a69913ab23a49eaa143b333a25756113b3bedf"
+source = "git+https://github.com/KinanBab/sea-orm.git?branch=main#883864421bbd14c24ea776835d5f57745b143bf9"
 dependencies = [
  "heck 0.4.1",
  "proc-macro2",
@@ -4163,7 +4164,7 @@ dependencies = [
 [[package]]
 name = "sea-orm-migration"
 version = "0.12.15"
-source = "git+https://github.com/KinanBab/sea-orm.git?branch=main#70a69913ab23a49eaa143b333a25756113b3bedf"
+source = "git+https://github.com/KinanBab/sea-orm.git?branch=main#883864421bbd14c24ea776835d5f57745b143bf9"
 dependencies = [
  "async-trait",
  "clap 4.5.4",
@@ -4179,7 +4180,7 @@ dependencies = [
 [[package]]
 name = "sea-orm-rocket"
 version = "0.5.4"
-source = "git+https://github.com/KinanBab/sea-orm.git?branch=main#70a69913ab23a49eaa143b333a25756113b3bedf"
+source = "git+https://github.com/KinanBab/sea-orm.git?branch=main#883864421bbd14c24ea776835d5f57745b143bf9"
 dependencies = [
  "rocket",
  "sea-orm-rocket-codegen",
@@ -4188,7 +4189,7 @@ dependencies = [
 [[package]]
 name = "sea-orm-rocket-codegen"
 version = "0.5.4"
-source = "git+https://github.com/KinanBab/sea-orm.git?branch=main#70a69913ab23a49eaa143b333a25756113b3bedf"
+source = "git+https://github.com/KinanBab/sea-orm.git?branch=main#883864421bbd14c24ea776835d5f57745b143bf9"
 dependencies = [
  "devise",
  "quote",
@@ -5379,8 +5380,8 @@ version = "1.6.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "97fee6b57c6a41524a810daee9286c02d7752c4253064d0b05472833a438f675"
 dependencies = [
- "cfg-if 1.0.0",
- "rand 0.8.5",
+ "cfg-if 0.1.10",
+ "rand 0.7.3",
  "static_assertions",
 ]
 

@@ -1,5 +1,9 @@
 use std::collections::HashMap;
+use alohomora::policy::AnyPolicy;
 use alohomora::{bbox::BBox, policy::NoPolicy, AlohomoraType};
+use alohomora::rocket::{OutputBBoxValue, ResponseBBoxJson};
+use alohomora_derive::RequestBBoxJson;
+use async_zip::tokio::read;
 use chrono::NaiveDate;
 //use sea_orm::strum::Display;
 use entity::{application, candidate};
@@ -67,8 +71,9 @@ impl Into<i32> for FieldOfStudy {
 /// Minimal candidate response containing database only not null fields
 //#[derive(Debug, Serialize, Deserialize)]
 //#[serde(rename_all = "camelCase")]
+#[derive(ResponseBBoxJson, AlohomoraType)]
 pub struct NewCandidateResponse {
-    pub current_application: BBox<i32, NoPolicy>,
+    pub current_application: BBox<i32, AnyPolicy>,
     pub applications: Vec<BBox<i32, NoPolicy>>,
     pub personal_id_number: BBox<String, NoPolicy>,
     pub details_filled: BBox<bool, NoPolicy>,
@@ -90,7 +95,7 @@ pub struct CreateCandidateResponse {
 }
 // used to be #[derive(Debug, Serialize, Deserialize, Validate, Clone, PartialEq, Eq)]
 // validation??
-#[derive(Debug, Clone, PartialEq)]//, alohomora_derive::ResponseBBoxJson)]
+#[derive(Debug, Clone, PartialEq, ResponseBBoxJson)]//, alohomora_derive::ResponseBBoxJson)]
 //#[serde(rename_all = "camelCase")]
 pub struct CandidateDetails {
     //#[validate(length(min = 1, max = 255))]
@@ -146,7 +151,7 @@ pub struct ParentDetails {
 
 /// Candidate details (admin and candidate endpoints)
 //#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
-#[derive(Debug, Clone)]//, alohomora_derive::ResponseBBoxJson)]//alohomora_derive::RequestBBoxJson
+#[derive(Debug, Clone, ResponseBBoxJson)]//, alohomora_derive::ResponseBBoxJson)]//alohomora_derive::RequestBBoxJson
 //#[serde(rename_all = "camelCase")]
 pub struct ApplicationDetails {
     // Candidate
@@ -169,7 +174,7 @@ impl NewCandidateResponse {
         let encrypted_details = EncryptedCandidateDetails::from(&c);
 
         Ok(Self {
-            current_application,
+            current_application: current_application.into_any_policy(),
             applications,
             personal_id_number: id_number,
             details_filled: BBox::new(encrypted_details.is_filled(), NoPolicy::new()),

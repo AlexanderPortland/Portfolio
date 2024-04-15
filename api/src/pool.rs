@@ -130,10 +130,10 @@ impl alohomora::orm::Pool for SeaOrmPool {
             println!("got password hash {}", pwrd_hash.clone());
             let (pub_key, priv_key) = crypto::create_identity();
             let enc_priv_key = crypto::encrypt_password(priv_key.discard_box(), password_plain_text).await.unwrap();
-            db.execute(Statement::from_string(
-                db.get_database_backend(),
-                format!("INSERT INTO admin VALUES (0, \"alex3\", \"{pub_key}\", \"{enc_priv_key}\", \"{pwrd_hash}\", NOW(), NOW());"),
-            )).await?;
+            // db.execute(Statement::from_string(
+            //     db.get_database_backend(),
+            //     format!("INSERT INTO admin VALUES (0, \"alex3\", \"{pub_key}\", \"{enc_priv_key}\", \"{pwrd_hash}\", NOW(), NOW());"),
+            // )).await?;
 
             // switch everything from varchars to text
             let query = "ALTER TABLE candidate MODIFY COLUMN name text; ALTER TABLE candidate MODIFY COLUMN surname text; ALTER TABLE candidate MODIFY COLUMN birth_surname text; ALTER TABLE candidate MODIFY COLUMN birthplace text; ALTER TABLE candidate MODIFY COLUMN address text; ALTER TABLE candidate MODIFY COLUMN letter_address text; ALTER TABLE candidate MODIFY COLUMN telephone text; ALTER TABLE candidate MODIFY COLUMN citizenship text; ALTER TABLE candidate MODIFY COLUMN email text; ALTER TABLE candidate MODIFY COLUMN sex text; ALTER TABLE candidate MODIFY COLUMN school_name text; ALTER TABLE candidate MODIFY COLUMN personal_identification_number text; ALTER TABLE candidate MODIFY COLUMN health_insurance text; ALTER TABLE candidate MODIFY COLUMN grades_json text; ALTER TABLE candidate MODIFY COLUMN first_school text; ALTER TABLE candidate MODIFY COLUMN second_school text; ALTER TABLE candidate MODIFY COLUMN test_language text; ALTER TABLE parent MODIFY COLUMN name text; ALTER TABLE parent MODIFY COLUMN surname text; ALTER TABLE parent MODIFY COLUMN telephone text; ALTER TABLE parent MODIFY COLUMN email text; ALTER TABLE application MODIFY COLUMN personal_id_number text; ALTER TABLE candidate MODIFY COLUMN birthdate text;".to_string();

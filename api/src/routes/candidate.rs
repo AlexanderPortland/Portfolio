@@ -1,6 +1,7 @@
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 
-use alohomora::rocket::BBoxForm;
+use alohomora::context;
+use alohomora::rocket::{BBoxForm, JsonResponse};
 use entity::application;
 use portfolio_core::policies::context::ContextDataType;
 use portfolio_core::Query;
@@ -11,6 +12,7 @@ use portfolio_core::sea_orm::prelude::Uuid;
 use portfolio_core::services::application_service::ApplicationService;
 use portfolio_core::services::portfolio_service::{PortfolioService, SubmissionProgress};
 use requests::LoginRequest;
+use portfolio_core::models::candidate::NewCandidateResponseOut;
 use rocket::http::{Cookie, CookieJar, Status};
 use rocket::response::status::Custom;
 use rocket::serde::json::Json;
@@ -82,7 +84,7 @@ pub async fn logout(
 }
 
 #[get("/whoami")]
-pub async fn whoami(conn: Connection<'_, Db>, session: ApplicationAuth) -> Result<BBoxJson<NewCandidateResponse>, (rocket::http::Status, String)> {
+pub async fn whoami(conn: Connection<'_, Db>, session: ApplicationAuth, context: Context<ContextDataType>) -> Result<JsonResponse<NewCandidateResponse, ContextDataType>, (rocket::http::Status, String)> {
     let db = conn.into_inner();
 
     let private_key = session.get_private_key();
@@ -99,7 +101,9 @@ pub async fn whoami(conn: Connection<'_, Db>, session: ApplicationAuth) -> Resul
     ).await
         .map_err(to_custom_error)?;
 
-    Ok(BBoxJson(response))
+    //let a = alohomora::fold::fold(response).unwrap();
+
+    Ok(JsonResponse::from((response, context)))
 }
 
 // TODO: use put instead of post???
@@ -108,7 +112,8 @@ pub async fn post_details(
     conn: Connection<'_, Db>,
     details: BBoxJson<ApplicationDetails>,
     session: ApplicationAuth,
-) -> Result<BBoxJson<ApplicationDetails>, (rocket::http::Status, String)> {
+    context: Context<ContextDataType>
+) -> Result<JsonResponse<ApplicationDetails, ContextDataType>, (rocket::http::Status, String)> {
     let db = conn.into_inner();
     let form = details.into_inner();
     form.candidate.validate_self().map_err(to_custom_error)?;
@@ -119,14 +124,15 @@ pub async fn post_details(
         .await 
         .map_err(to_custom_error)?;
 
-    Ok(Json(form))
+    Ok(JsonResponse::from((form, context)))
 }
 
 #[get("/details")]
 pub async fn get_details(
     conn: Connection<'_, Db>,
     session: ApplicationAuth,
-) -> Result<BBoxJson<ApplicationDetails>, (rocket::http::Status, String)> {
+    context: Context<ContextDataType>
+) -> Result<JsonResponse<ApplicationDetails, ContextDataType>, (rocket::http::Status, String)> {
     let db = conn.into_inner();
     let private_key = session.get_private_key();
     let application: entity::application::Model = session.into();
@@ -137,7 +143,7 @@ pub async fn get_details(
         &application
     )
         .await
-        .map(|x| BBoxJson(x))
+        .map(|x| JsonResponse::from((x, context)))
         .map_err(to_custom_error);
 
     details

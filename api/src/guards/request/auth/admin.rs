@@ -14,7 +14,7 @@ use rocket::request::{FromRequest, Request};
 
 use crate::logging::format_request;
 use crate::pool::Db;
-use crate::routes::admin::reset_candidate_password;
+//use crate::routes::admin::reset_candidate_password;
 
 pub struct AdminAuth(Admin, BBox<String, NoPolicy>);
 
@@ -51,7 +51,7 @@ impl<'a, 'r> FromBBoxRequest<'a, 'r> for AdminAuth {
         let session_id = cookie_id.value().to_owned();
         let private_key = cookie_private_key.value().to_owned();
 
-        let conn = &request.rocket().state::<Db>().unwrap().conn;
+        let conn: &rocket::State<Db> = request.guard().await.unwrap();
 
         let uuid_bbox = execute_pure(session_id, PrivacyPureRegion::new(
             |session_id: String|{Uuid::parse_str(session_id.as_str()).unwrap()}
@@ -62,7 +62,7 @@ impl<'a, 'r> FromBBoxRequest<'a, 'r> for AdminAuth {
         //     Err(_) => return Outcome::Failure((Status::BadRequest, None)),
         // };
 
-        let session = AdminService::auth(conn, uuid_bbox).await;
+        let session = AdminService::auth(&conn.conn, uuid_bbox).await;
 
         match session {
             Ok(model) => {

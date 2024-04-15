@@ -7,6 +7,8 @@ use rocket::fairing::{self, AdHoc, Fairing, Info, Kind};
 
 use rocket::http::Header;
 use rocket::{Build, Request, Response, Rocket};
+use alohomora::rocket::get;
+use sea_orm_rocket::Database;
 
 use migration::MigratorTrait;
 //use sea_orm_rocket::Database;
@@ -107,62 +109,63 @@ pub fn rocket() -> BBoxRocket<Build> {
         .attach(CORS)
         .attach(Db::init())
         .attach(AdHoc::try_on_ignite("Migrations", run_migrations))
-        .mount("/", routes![hello, all_options])
+        //.mount("/", routes![hello, all_options])
+        .mount("/", routes![hello])
         .mount(
             "/candidate/",
             routes![
-                routes::candidate::login,
-                routes::candidate::logout,
-                routes::candidate::whoami,
-                routes::candidate::get_details,
-                routes::candidate::post_details,
+                // routes::candidate::login,
+                // routes::candidate::logout,
+                // routes::candidate::whoami,
+                // routes::candidate::get_details,
+                // routes::candidate::post_details,
             ],
         )
         .mount(
             "/candidate/add",
             routes![
-                routes::candidate::upload_portfolio_letter,
-                routes::candidate::upload_portfolio_zip,
-                routes::candidate::upload_cover_letter,
+                // routes::candidate::upload_portfolio_letter,
+                // routes::candidate::upload_portfolio_zip,
+                // routes::candidate::upload_cover_letter,
             ],
         )
-        .mount(
-            "/candidate/remove",
-            routes![
-                routes::candidate::delete_portfolio_letter,
-                routes::candidate::delete_portfolio_zip,
-                routes::candidate::delete_cover_letter,
-            ],
-        )
+        // .mount(
+        //     "/candidate/remove",
+        //     routes![
+        //         routes::candidate::delete_portfolio_letter,
+        //         routes::candidate::delete_portfolio_zip,
+        //         routes::candidate::delete_cover_letter,
+        //     ],
+        // )
         .mount(
             "/candidate/portfolio",
             routes![
-                routes::candidate::submit_portfolio,
-                routes::candidate::submission_progress,
-                routes::candidate::download_portfolio,
-                routes::candidate::delete_portfolio,
+                // routes::candidate::submit_portfolio,
+                // routes::candidate::submission_progress,
+                // routes::candidate::download_portfolio,
+                // routes::candidate::delete_portfolio,
             ],
         )
         .mount(
             "/admin/",
             routes![
                 routes::admin::login,
-                routes::admin::logout,
-                routes::admin::whoami,
-                routes::admin::hello,
-                routes::admin::create_candidate,
-                routes::admin::get_candidate,
-                routes::admin::reset_candidate_password,
-                routes::admin::get_candidate_portfolio,
-                routes::admin::delete_candidate,
+                // routes::admin::logout,
+                // routes::admin::whoami,
+                // routes::admin::hello,
+                // routes::admin::create_candidate,
+                // routes::admin::get_candidate,
+                // routes::admin::reset_candidate_password,
+                // routes::admin::get_candidate_portfolio,
+                //routes::admin::delete_candidate,
             ],
         )
         .mount(
             "/admin/list",
             routes![
-                routes::admin::list_candidates,
-                routes::admin::list_candidates_csv,
-                routes::admin::list_admissions_csv
+                // routes::admin::list_candidates,
+                // routes::admin::list_candidates_csv,
+                // routes::admin::list_admissions_csv
             ]
         )
         .register("/", catchers![])

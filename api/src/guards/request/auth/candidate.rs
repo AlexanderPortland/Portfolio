@@ -36,7 +36,7 @@ impl<'a, 'r> FromBBoxRequest<'a, 'r> for ApplicationAuth {
     async fn from_bbox_request(
         req: BBoxRequest<'a, 'r>,
     ) -> BBoxRequestOutcome<ApplicationAuth, Self::BBoxError> {
-        let cookie_id = req.cookies().get("id");
+        let cookie_id = req.cookies().get::<NoPolicy>("id");
         let cookie_private_key = req.cookies().get("key");
 
         let Some(cookie_id) = cookie_id else {
@@ -50,7 +50,7 @@ impl<'a, 'r> FromBBoxRequest<'a, 'r> for ApplicationAuth {
         let session_id = cookie_id.value().to_owned();
         let private_key = cookie_private_key.value().to_owned();
 
-        let conn = &req.rocket().state::<Db>().unwrap().conn;
+        let conn: &rocket::State<Db> = req.guard().await.unwrap();
 
         let uuid_bbox = execute_pure(session_id, PrivacyPureRegion::new(
             |session_id: String|{Uuid::parse_str(session_id.as_str()).unwrap()}
@@ -61,7 +61,7 @@ impl<'a, 'r> FromBBoxRequest<'a, 'r> for ApplicationAuth {
         //     Err(_) => return Outcome::Failure((Status::BadRequest, None)),
         // };
 
-        let session = ApplicationService::auth(conn, uuid_bbox).await;
+        let session = ApplicationService::auth(&conn.conn, uuid_bbox).await;
 
         match session {
             Ok(model) => {
