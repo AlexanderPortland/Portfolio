@@ -1,13 +1,16 @@
 use alohomora::{bbox::BBox, pcr::PrivacyCriticalRegion, policy::NoPolicy, AlohomoraType};
+use alohomora_derive::ResponseBBoxJson;
 use chrono::NaiveDateTime;
 //use sea_orm::sea_query::private;
 use serde::{Serialize, Deserialize};
+use std::collections::HashMap;
 
 use crate::{database::query::application::ApplicationCandidateJoin, error::ServiceError};
 
 use super::candidate_details::{try_encrypt_bbox_str, EncryptedString};
 
 //#[derive(Debug, Serialize, Deserialize)]
+#[derive(ResponseBBoxJson)]
 ////#[serde(rename_all = "camelCase")]
 pub struct ApplicationResponse {
     pub application_id: BBox<i32, NoPolicy>,

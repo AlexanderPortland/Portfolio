@@ -1,3 +1,5 @@
+#![feature(try_trait_v2)]
+
 pub use sea_orm;
 
 pub use database::mutation::*;

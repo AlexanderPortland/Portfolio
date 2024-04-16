@@ -84,7 +84,7 @@ pub struct NewCandidateResponse {
 /// Create candidate (admin endpoint)
 /// Password change  (admin endpoint)
 //#[derive(Debug, Serialize, Deserialize)]
-#[derive(Debug)]
+#[derive(Debug, ResponseBBoxJson)]
 //#[serde(rename_all = "camelCase")]
 pub struct CreateCandidateResponse {
     pub application_id: BBox<i32, NoPolicy>,

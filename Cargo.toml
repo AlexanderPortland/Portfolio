@@ -7,7 +7,7 @@ publish = false
 
 [workspace]
 #members = [".", "api", "core", "entity", "migration", "cli", "policies"]
-members = [".", "api", "core", "entity", "migration", "policies"]
+members = [".", "api", "core", "entity", "migration"]
 
 [dependencies]
 portfolio-api = { path = "api" }
