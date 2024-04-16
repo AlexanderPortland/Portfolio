@@ -21,9 +21,11 @@ impl ParentService {
         db: &DbConn,
         ref_candidate: &candidate::Model,
         parents_details: &Vec<ParentDetails>,
-        recipients: &BBox<Vec<String>, NoPolicy>, // put the bbox on the outside bc whole list will have 
+        recipients: &Vec<BBox<String, NoPolicy>>, // put the bbox on the outside bc whole list will have
                                                   // same policy
     ) -> Result<Vec<parent::Model>, ServiceError> {
+        let recipients = recipients.iter().cloned().map(|r| r.discard_box()).collect();
+
         if parents_details.len() > 2 {
             return Err(ServiceError::ParentOverflow);
         }
@@ -36,7 +38,7 @@ impl ParentService {
                 Some(parent) => parent.to_owned(),
                 None => ParentService::create(db, ref_candidate.id.clone()).await?,
             };
-            let enc_details = EncryptedParentDetails::new(&parents_details[i], &recipients.clone().discard_box()).await?;
+            let enc_details = EncryptedParentDetails::new(&parents_details[i], &recipients).await?;
             let parent = Mutation::add_parent_details(db, found_parent, enc_details.clone()).await?;
             result.push(parent);
         }

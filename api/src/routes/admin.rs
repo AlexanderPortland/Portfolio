@@ -1,17 +1,18 @@
-use std::net::{SocketAddr, IpAddr, Ipv4Addr};
+use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 
 use portfolio_core::{
-    crypto::random_12_char_string, error::ServiceError, models::{application::ApplicationResponse, auth::AuthenticableTrait, candidate::{ApplicationDetails, CreateCandidateResponse}}, policies::response::MyResult, sea_orm::prelude::Uuid, services::{admin_service::AdminService, application_service::ApplicationService, portfolio_service::PortfolioService}, Query
+    crypto::random_12_char_string, error::ServiceError, models::{application::ApplicationResponse, auth::AuthenticableTrait, candidate::{ApplicationDetails, CreateCandidateResponse}}, Query, sea_orm::prelude::Uuid, services::{admin_service::AdminService, application_service::ApplicationService, portfolio_service::PortfolioService}
 };
 use requests::{AdminLoginRequest, RegisterRequest};
-use rocket::http::{Cookie, Status, CookieJar};
+use rocket::http::{Cookie, CookieJar, Status};
 use rocket::response::status::Custom;
 use rocket::serde::json::Json;
 use portfolio_core::policies::context::ContextDataType;
-use alohomora::{bbox::BBox, context::{self, Context}, orm::Connection, policy::{AnyPolicy, NoPolicy}, pure::{execute_pure, PrivacyPureRegion}, rocket::{get, post, BBoxCookie, BBoxCookieJar, BBoxJson, ContextResponse, FromBBoxData, JsonResponse}};
+use alohomora::{bbox::BBox, context::{self, Context}, orm::Connection, policy::{AnyPolicy, NoPolicy}, pure::{execute_pure, PrivacyPureRegion}, rocket::{BBoxCookie, BBoxCookieJar, BBoxJson, ContextResponse, FromBBoxData, get, JsonResponse, post}};
 
 
 use portfolio_core::utils::csv::{ApplicationCsv, CandidateCsv, CsvExporter};
+use portfolio_core::utils::response::MyResult;
 
 use crate::{guards::{data::portfolio, request::auth::AdminAuth}, pool::Db, requests};
 
@@ -303,10 +304,10 @@ pub async fn get_candidate_portfolio(
 
 #[cfg(test)]
 pub mod tests {
-    use portfolio_core::models::candidate::{CleanCreateCandidateResponse, CreateCandidateResponse};
-    use rocket::{local::blocking::Client, http::{Cookie, Status}};
+    use portfolio_core::models::candidate::CleanCreateCandidateResponse;
+    use rocket::{http::{Cookie, Status}, local::blocking::Client};
 
-    use crate::test::tests::{test_client, ADMIN_PASSWORD, ADMIN_ID};
+    use crate::test::tests::{ADMIN_ID, ADMIN_PASSWORD, test_client};
 
     pub fn admin_login(client: &Client) -> (Cookie, Cookie) {
         let response = client

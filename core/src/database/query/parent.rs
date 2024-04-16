@@ -12,7 +12,6 @@ impl Query {
         db: &DbConn,
         candidate: &candidate::Model,
     ) -> Result<Vec<Model>, DbErr> {
-
         candidate.find_related(parent::Entity)
             .all(db)
             .await

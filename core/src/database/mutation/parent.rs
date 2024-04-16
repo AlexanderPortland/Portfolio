@@ -28,13 +28,11 @@ impl Mutation {
         enc_parent: EncryptedParentDetails,
     ) -> Result<Model, sea_orm::DbErr> {
         let mut parent: parent::ActiveModel = parent.into();
-        parent.name = Set(BBox::new(enc_parent.name.discard_box().map(|e| e.into()), NoPolicy::new()));
-        parent.surname = Set(BBox::new(enc_parent.surname.discard_box().map(|e| e.into()), NoPolicy::new()));
-        parent.telephone = Set(BBox::new(enc_parent.telephone.discard_box().map(|e| e.into()), NoPolicy::new()));
-        parent.email = Set(BBox::new(enc_parent.email.discard_box().map(|e| e.into()), NoPolicy::new()));
-
+        parent.name = Set(enc_parent.name.map(|e| e.into_bbox()));
+        parent.surname = Set(enc_parent.surname.map(|e| e.into_bbox()));
+        parent.telephone = Set(enc_parent.telephone.map(|e| e.into_bbox()));
+        parent.email = Set(enc_parent.email.map(|e| e.into_bbox()));
         parent.updated_at = Set(BBox::new(chrono::offset::Local::now().naive_local(), NoPolicy::new()));
-
         parent.update(db).await
     }
 }
@@ -55,7 +53,7 @@ mod tests {
 
         let candidate = Mutation::create_candidate(
             &db,
-            BBox::new("".to_string(), NoPolicy::new()),
+            BBox::new("candidate".to_string(), NoPolicy::new()),
         )
         .await
         .unwrap();
@@ -94,6 +92,6 @@ mod tests {
             .await
             .unwrap();
 
-        assert!(parents[0].surname.clone().discard_box().is_some());
+        assert!(parents[0].surname.is_some());
     }
 }

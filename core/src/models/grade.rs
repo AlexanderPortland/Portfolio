@@ -1,4 +1,6 @@
+use std::collections::HashMap;
 use alohomora::{bbox::BBox, policy::NoPolicy};
+use alohomora::rocket::{OutputBBoxValue, ResponseBBoxJson};
 use serde::{Serialize, Deserialize};
 use validator::{Validate};
 
@@ -55,6 +57,12 @@ impl Grade {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct GradeList(Vec<Grade>);
+
+impl ResponseBBoxJson for GradeList {
+    fn to_json(self) -> OutputBBoxValue {
+        OutputBBoxValue::Value(serde_json::to_value(self).unwrap())
+    }
+}
 
 impl GradeList {
     pub fn validate_self(&self) -> Result<(), ServiceError> {

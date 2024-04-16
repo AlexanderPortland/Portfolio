@@ -111,7 +111,7 @@ impl AuthenticableTrait for AdminService {
 
 }
 
-//#[cfg(test)]
+#[cfg(test)]
 pub mod admin_tests {
     use chrono::{Local, Utc};
     use entity::admin;

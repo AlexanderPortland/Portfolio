@@ -4,7 +4,7 @@ use alohomora::context;
 use alohomora::rocket::{BBoxForm, JsonResponse};
 use entity::application;
 use portfolio_core::policies::context::ContextDataType;
-use portfolio_core::policies::response::MyResult;
+use portfolio_core::utils::response::MyResult;
 use portfolio_core::Query;
 use portfolio_core::error::ServiceError;
 use portfolio_core::models::auth::AuthenticableTrait;

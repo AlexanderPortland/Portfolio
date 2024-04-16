@@ -43,24 +43,24 @@ impl Mutation {
         let application = candidate.id.clone();
         let mut candidate: candidate::ActiveModel = candidate.into();
 
-        candidate.name = Set(BBox::new(enc_candidate.name.discard_box().map(|e| e.into()), NoPolicy::new()));
-        candidate.surname = Set(BBox::new(enc_candidate.surname.discard_box().map(|e| e.into()), NoPolicy::new()));
-        candidate.birth_surname = Set(BBox::new(enc_candidate.birth_surname.discard_box().map(|e| e.into()), NoPolicy::new()));
-        candidate.birthplace = Set(BBox::new(enc_candidate.birthplace.discard_box().map(|e| e.into()), NoPolicy::new()));
-        candidate.birthdate = Set(BBox::new(enc_candidate.birthdate.discard_box().map(|e| e.into()), NoPolicy::new()));
-        candidate.address = Set(BBox::new(enc_candidate.address.discard_box().map(|e| e.into()), NoPolicy::new()));
-        candidate.letter_address = Set(BBox::new(enc_candidate.letter_address.discard_box().map(|e| e.into()), NoPolicy::new()));
-        candidate.telephone = Set(BBox::new(enc_candidate.telephone.discard_box().map(|e| e.into()), NoPolicy::new()));
-        candidate.citizenship = Set(BBox::new(enc_candidate.citizenship.discard_box().map(|e| e.into()), NoPolicy::new()));
-        candidate.email = Set(BBox::new(enc_candidate.email.discard_box().map(|e| e.into()), NoPolicy::new()));
-        candidate.sex = Set(BBox::new(enc_candidate.sex.discard_box().map(|e| e.into()), NoPolicy::new()));
-        candidate.school_name = Set(BBox::new(enc_candidate.school_name.discard_box().map(|e| e.into()), NoPolicy::new()));
-        candidate.health_insurance = Set(BBox::new(enc_candidate.health_insurance.discard_box().map(|e| e.into()), NoPolicy::new()));
-        candidate.grades_json = Set(BBox::new(enc_candidate.grades_json.discard_box().map(|e| e.into()), NoPolicy::new()));
-        candidate.first_school = Set(BBox::new(enc_candidate.first_school.discard_box().map(|e| e.into()), NoPolicy::new()));
-        candidate.second_school = Set(BBox::new(enc_candidate.second_school.discard_box().map(|e| e.into()), NoPolicy::new()));
-        candidate.test_language = Set(BBox::new(enc_candidate.test_language.discard_box().map(|s| s), NoPolicy::new()));
-        candidate.encrypted_by_id = Set(BBox::new(Some(encrypted_by_id.discard_box()), NoPolicy::new()));
+        candidate.name = Set(enc_candidate.name.clone().map(BBox::into_bbox));
+        candidate.surname = Set(enc_candidate.surname.clone().map(BBox::into_bbox));
+        candidate.birth_surname = Set(enc_candidate.birth_surname.clone().map(BBox::into_bbox));
+        candidate.birthplace = Set(enc_candidate.birthplace.clone().map(BBox::into_bbox));
+        candidate.birthdate = Set(enc_candidate.birthdate.clone().map(BBox::into_bbox));
+        candidate.address = Set(enc_candidate.address.clone().map(BBox::into_bbox));
+        candidate.letter_address = Set(enc_candidate.letter_address.clone().map(BBox::into_bbox));
+        candidate.telephone = Set(enc_candidate.telephone.clone().map(BBox::into_bbox));
+        candidate.citizenship = Set(enc_candidate.citizenship.clone().map(BBox::into_bbox));
+        candidate.email = Set(enc_candidate.email.clone().map(BBox::into_bbox));
+        candidate.sex = Set(enc_candidate.sex.clone().map(BBox::into_bbox));
+        candidate.school_name = Set(enc_candidate.school_name.clone().map(BBox::into_bbox));
+        candidate.health_insurance = Set(enc_candidate.health_insurance.clone().map(BBox::into_bbox));
+        candidate.grades_json = Set(enc_candidate.grades_json.clone().map(BBox::into_bbox));
+        candidate.first_school = Set(enc_candidate.first_school.clone().map(BBox::into_bbox));
+        candidate.second_school = Set(enc_candidate.second_school.clone().map(BBox::into_bbox));
+        candidate.test_language = Set(enc_candidate.test_language.clone());
+        candidate.encrypted_by_id = Set(Option::from(encrypted_by_id));
 
         candidate.updated_at = Set(BBox::new(chrono::offset::Local::now().naive_local(), NoPolicy::new()));
 
@@ -137,6 +137,6 @@ mod tests {
         .await
         .unwrap().unwrap();
 
-        assert!(candidate.name.discard_box().is_some());
+        assert!(candidate.name.is_some());
     }
 }

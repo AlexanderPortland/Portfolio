@@ -311,23 +311,23 @@ impl PortfolioService {
         writer.close().await?;
         archive.shutdown().await?;
 
-        let applications_pubkeys: Vec<BBox<String, NoPolicy>> = Query::find_applications_by_candidate_id(db, candidate_id.clone())
+        let mut applications_pubkeys: Vec<BBox<String, NoPolicy>> = Query::find_applications_by_candidate_id(db, candidate_id.clone())
             .await?
             .iter()
-            .map(|a| a.public_key.to_owned()).collect();
-        let admin_public_keys = Query::get_all_admin_public_keys_together(db).await?;
+            .map(|a| a.public_key.clone()).collect();
 
-        // ALO: do this whole bit in a pcr
+        let mut admin_public_keys = Query::get_all_admin_public_keys_together(db).await?;
         let mut recipients = vec![];
-        recipients.append(&mut admin_public_keys.discard_box().iter().map(|s| s.clone()).collect());
-        recipients.append(&mut applications_pubkeys.iter().map(|s| s.clone().discard_box()).collect());
-        let recipients = BBox::new(recipients, NoPolicy::new());
+        recipients.append(&mut admin_public_keys);
+        recipients.append(&mut applications_pubkeys);
         let final_path = path.join(FileType::PortfolioZip.as_str());
 
+
+        let recipients = recipients.into_iter().map(|r| r.discard_box()).collect();
         crypto::encrypt_file_with_recipients(
             &final_path,
             &final_path.with_extension("age"),
-            recipients.discard_box(),
+            recipients,
         ).await?;
         tokio::fs::remove_file(final_path).await?;
 
@@ -399,7 +399,7 @@ impl PortfolioService {
 
     pub async fn reencrypt_portfolio(candidate_id: i32,
         private_key: String,
-        recipients: &Vec<String>
+        recipients: &Vec<BBox<String, NoPolicy>>,
     ) -> Result<(), ServiceError> {
         info!("PORTFOLIO {} REENCRYPT STARTED", candidate_id);
         let path = Self::get_file_store_path()
@@ -412,10 +412,10 @@ impl PortfolioService {
             &private_key
         ).await?;
 
-        
+        let recipients = recipients.iter().cloned().map(|r| r.discard_box()).collect();
         let enc_portfolio= crypto::encrypt_buffer_with_recipients(
             &plain_portfolio, 
-            recipients
+            &recipients
         ).await?;
         
         tokio::fs::remove_file(path.to_owned()).await?;

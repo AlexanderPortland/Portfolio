@@ -10,10 +10,10 @@ pub struct Model {
     #[sea_orm(primary_key)]
     pub id: BBox<i32, NoPolicy>,
     pub candidate_id: BBox<i32, NoPolicy>,
-    pub name: BBox<Option<String>, NoPolicy>,
-    pub surname: BBox<Option<String>, NoPolicy>,
-    pub telephone: BBox<Option<String>, NoPolicy>,
-    pub email: BBox<Option<String>, NoPolicy>,
+    pub name: Option<BBox<String, NoPolicy>>,
+    pub surname: Option<BBox<String, NoPolicy>>,
+    pub telephone: Option<BBox<String, NoPolicy>>,
+    pub email: Option<BBox<String, NoPolicy>>,
     pub created_at: BBox<DateTime, NoPolicy>,
     pub updated_at: BBox<DateTime, NoPolicy>,
 }

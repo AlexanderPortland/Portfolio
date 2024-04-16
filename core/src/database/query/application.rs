@@ -12,11 +12,11 @@ pub struct ApplicationCandidateJoin {
     pub application_id: BBox<i32, NoPolicy>,
     pub personal_id_number: BBox<String, NoPolicy>,
     pub candidate_id: BBox<i32, NoPolicy>,
-    pub name: BBox<Option<String>, NoPolicy>,
-    pub surname: BBox<Option<String>, NoPolicy>,
-    pub email: BBox<Option<String>, NoPolicy>,
-    pub telephone: BBox<Option<String>, NoPolicy>,
-    pub field_of_study: BBox<Option<String>, NoPolicy>,
+    pub name: Option<BBox<String, NoPolicy>>,
+    pub surname: Option<BBox<String, NoPolicy>>,
+    pub email: Option<BBox<String, NoPolicy>>,
+    pub telephone: Option<BBox<String, NoPolicy>>,
+    pub field_of_study: Option<BBox<String, NoPolicy>>,
     pub created_at: BBox<NaiveDateTime, NoPolicy>,
 }
 
@@ -65,35 +65,27 @@ impl Query {
 
     pub async fn list_applications(
         db: &DbConn,
-        field_of_study: BBox<Option<String>, NoPolicy>,
-        page: BBox<Option<u64>, NoPolicy>,
-        sort: BBox<Option<String>, NoPolicy>,
+        field_of_study: Option<BBox<String, NoPolicy>>,
+        // TODO(babman): highly likely that page and sort do not need to be BBoxes.
+        page: Option<BBox<u64, NoPolicy>>,
+        sort: Option<BBox<String, NoPolicy>>,
     ) -> Result<Vec<ApplicationCandidateJoin>, DbErr> {
         let select = application::Entity::find();
 
-        // TODO: is this right for PCR?
-        // let f1 = PrivacyCriticalRegion::new(|sort: &Option<String>, _, _|{
-        //     let (column, order) = if let Some(sort) = *sort {
-        //         get_ordering(sort)
-        //     } else {
-        //         (application::Column::Id, sea_orm::Order::Asc)
-        //     };
-        //     (column, order)
-        // });
-        
-        // let (column, order) = sort.pcr(f1, ());
-
-        let (column, order) = if let Some(sort) = sort.discard_box() {
-            get_ordering(sort)
-        } else {
-            (application::Column::Id, sea_orm::Order::Asc)
+        // Are we sorting?
+        let (column, order) = match sort {
+            None => (application::Column::Id, sea_orm::Order::Asc),
+            Some(sort) => get_ordering(sort.discard_box()),
         };
-        
-        let query = if let Some(field) = field_of_study.discard_box() {
-            select.filter(application::Column::FieldOfStudy.eq(field)) 
-         } else {
-             select
-         }
+
+        // Are we filtering out by field_of_study?
+        let select = match field_of_study {
+            None => select,
+            Some(field_of_study) => select.filter(application::Column::FieldOfStudy.eq(field_of_study)),
+        };
+
+        // Rest of the query.
+        let query = select
             .order_by(column, order)
             .join(JoinType::InnerJoin, application::Relation::Candidate.def())
             .column_as(application::Column::Id, "application_id")
@@ -105,13 +97,13 @@ impl Query {
             .column_as(application::Column::CreatedAt, "created_at")
             .into_model::<ApplicationCandidateJoin>();
 
-        if let Some(page) = page.discard_box() {
-            query
+        // Do we have pagination?
+        match page {
+            None => query.all(db).await,
+            Some(page) => query
                 .paginate(db, PAGE_SIZE)
-                .fetch_page(page).await
-        } else {
-            query
-                .all(db).await
+                .fetch_page(page.discard_box())
+                .await,
         }
     }
 

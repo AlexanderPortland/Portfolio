@@ -145,7 +145,7 @@ impl ApplicationService {
             )
         } else {
             println!("b");
-            let recipients = get_recipients(db, pubkey).await?;
+            let recipients = get_recipients(db, pubkey.clone()).await?;
             println!("c");
             let enc_personal_id_number = EncryptedString::new(
                 &personal_id_number.clone().discard_box(),
@@ -188,12 +188,12 @@ impl ApplicationService {
         }
 
         let mut recipients = Query::get_all_admin_public_keys(db).await?;
-        recipients.append(&mut vec![linked_application.public_key.to_owned(), pubkey.to_owned()]);
-
+        recipients.push(linked_application.public_key.clone());
+        recipients.push(pubkey.clone());
             
         let enc_personal_id_number: BBox<String, NoPolicy> = BBox::new(EncryptedString::new(
             &personal_id_number.discard_box(),
-            &recipients.into_iter().map(|b|{b.discard_box()}).collect::<Vec<String>>(),
+            &recipients,
         ).await?.into(), NoPolicy::new());
 
         let candidate = Mutation::update_personal_id(db, candidate.clone(), &enc_personal_id_number).await?;
@@ -252,14 +252,15 @@ impl ApplicationService {
         candidate: candidate::Model,
         form: &ApplicationDetails,
     ) -> Result<(candidate::Model, Vec<parent::Model>), ServiceError> {
-        let mut recipients = Query::get_all_admin_public_keys_together(db).await?.discard_box();
+        let mut recipients = Query::get_all_admin_public_keys_together(db).await?;
         let applications = Query::find_applications_by_candidate_id(db, candidate.id.clone()).await?;
-        recipients.append(&mut applications.iter().map(|a| a.public_key.to_owned().discard_box()).collect());
-        
-        let recipients = BBox::new(recipients, NoPolicy::new());
 
+        let mut other_recipients = applications.iter()
+            .map(|a| a.public_key.clone())
+            .collect::<Vec<_>>();
+        recipients.append(&mut other_recipients);
 
-        let candidate = CandidateService::add_candidate_details(db, candidate, &form.candidate, &recipients.clone().discard_box(), application.id.clone()).await?;
+        let candidate = CandidateService::add_candidate_details(db, candidate, &form.candidate, &recipients, application.id.clone()).await?;
         let parents = ParentService::add_parents_details(db, &candidate, &form.parents, &recipients).await?;
         Ok(
             (
@@ -289,9 +290,9 @@ impl ApplicationService {
     pub async fn list_applications(
         private_key: &BBox<String, NoPolicy>,
         db: &DbConn,
-        field_of_study: BBox<Option<String>, NoPolicy>,
-        page: BBox<Option<u64>, NoPolicy>,
-        sort: BBox<Option<String>, NoPolicy>,
+        field_of_study: Option<BBox<String, NoPolicy>>,
+        page: Option<BBox<u64, NoPolicy>>,
+        sort: Option<BBox<String, NoPolicy>>,
     ) -> Result<Vec<ApplicationResponse>, ServiceError> {
         let applications = Query::list_applications(db, field_of_study, page, sort).await?;
 
@@ -372,9 +373,8 @@ impl ApplicationService {
         let applications = Query::find_applications_by_candidate_id(db, candidate.id.clone()).await?;
         let mut recipients = vec![]; 
         let mut admin_public_keys = Query::get_all_admin_public_keys_together(db).await?;
-        recipients.append(&mut admin_public_keys.discard_box());
-        recipients.append(&mut applications.iter().map(|a| a.public_key.to_owned().discard_box()).collect());
-        let recipients = BBox::new(recipients.clone(), NoPolicy::new());
+        recipients.append(&mut admin_public_keys);
+        recipients.append(&mut applications.iter().map(|a| a.public_key.clone()).collect());
         
         let candidate = Self::update_all_application_details(db,
              application.id,
@@ -387,7 +387,7 @@ impl ApplicationService {
             PortfolioService::reencrypt_portfolio(
                 candidate.id.discard_box(),
                 admin_private_key.discard_box(),
-                &recipients.discard_box()
+                &recipients,
             ).await?;
         }
 
@@ -407,20 +407,23 @@ impl ApplicationService {
     async fn update_all_application_details(db: &DbConn,
          application_id: BBox<i32, NoPolicy>,
          candidate: candidate::Model,
-         recipients: &BBox<Vec<String>, NoPolicy>,
+         recipients: &Vec<BBox<String, NoPolicy>>,
          admin_private_key: &BBox<String, NoPolicy>
     ) -> Result<candidate::Model, ServiceError> {
         let parents = Query::find_candidate_parents(db, &candidate).await?;
         let dec_details = EncryptedApplicationDetails::from((&candidate, &parents))
             .decrypt(admin_private_key.to_owned()).await?;
 
-        let recipients_raw = recipients.clone().discard_box();
+        let recipients_raw = recipients.iter().cloned().map(|r| r.discard_box()).collect();
         let enc_details = EncryptedApplicationDetails::new(&dec_details, &recipients_raw).await?;
 
+        let personal_id_number = enc_details.candidate.personal_id_number
+            .clone()
+            .ok_or(ServiceError::CandidateDetailsNotSet)?
+            .into_bbox();
         let candidate = Mutation::update_personal_id(db,
             candidate,
-            &BBox::new(enc_details.candidate.personal_id_number.to_owned()
-                .discard_box().ok_or(ServiceError::CandidateDetailsNotSet)?.to_string(), NoPolicy::new())
+            &personal_id_number,
         ).await?;
 
         let candidate = Mutation::update_candidate_opt_details(db, 
@@ -541,20 +544,28 @@ mod application_tests {
         let admin = create_admin(&db).await;
         let (application, _, _) = put_user_data(&db).await;
 
-        let private_key = BBox::new(crypto::decrypt_password(admin.private_key.discard_box(), "admin".to_string()).await.unwrap(), NoPolicy::new());
+        // The admin's private key.
+        let private_key = BBox::new(
+            crypto::decrypt_password(admin.private_key.discard_box(), "admin".to_string()).await.unwrap(),
+            NoPolicy::new());
 
+        // The ip and password for the login happens with.
         let ip = BBox::new("127.0.0.1".to_string(), NoPolicy::new());
-
+        let password = BBox::new("test".to_string(), NoPolicy::new());
         assert!(
-            ApplicationService::login(&db, application.id.clone(), BBox::new("test".to_string(), NoPolicy::new()), ip.clone()).await.is_ok()
+            ApplicationService::login(&db, application.id.clone(), password.clone(), ip.clone()).await.is_ok()
         );
 
-        let new_password = ApplicationService::reset_password(private_key, &db, application.id.clone()).await.unwrap().password;
-
+        let new_password = ApplicationService::reset_password(
+            private_key,
+            &db,
+            application.id.clone()
+        ).await
+            .unwrap()
+            .password;
         assert!(
-            ApplicationService::login(&db, application.id.clone(), BBox::new("test".to_string(), NoPolicy::new()), ip.clone()).await.is_err()
+            ApplicationService::login(&db, application.id.clone(), password, ip.clone()).await.is_err()
         );
-        
         assert!(
             ApplicationService::login(&db, application.id, new_password, ip.clone()).await.is_ok()
         );

@@ -11,7 +11,6 @@ use super::candidate_details::{try_encrypt_bbox_str, EncryptedString};
 
 //#[derive(Debug, Serialize, Deserialize)]
 #[derive(ResponseBBoxJson)]
-////#[serde(rename_all = "camelCase")]
 pub struct ApplicationResponse {
     pub application_id: BBox<i32, NoPolicy>,
     pub candidate_id: BBox<i32, NoPolicy>,
@@ -21,7 +20,7 @@ pub struct ApplicationResponse {
     pub surname: BBox<String, NoPolicy>,
     pub email: BBox<String, NoPolicy>,
     pub telephone: BBox<String, NoPolicy>,
-    pub field_of_study: BBox<Option<String>, NoPolicy>,
+    pub field_of_study: Option<BBox<String, NoPolicy>>,
     pub created_at: BBox<NaiveDateTime, NoPolicy>,
 }
 
@@ -53,19 +52,6 @@ impl ApplicationResponse {
         )
     }
 }
-
-// pub struct Tmp {
-//     pub id: BBox<i32, NoPolicy>,
-// }
-
-// fn tmp_f(id: BBox<i32, NoPolicy>) {
-//     let x = Tmp { id: id };
-//     alohomora::unbox::unbox_(data, context, functor, arg)
-//     let y = alohomora::fold::fold(x).unwrap();
-//     y.unbox(BBox::new(None, NoPolicy::new()), PrivacyCriticalRegion::new(|y, _| {
-//         let x = serde_json::to_string(y);
-//     }), ());
-// }
 
 /// CSV export (admin endpoint)
 #[derive(AlohomoraType)]

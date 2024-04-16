@@ -45,10 +45,11 @@ impl CandidateService {
         db: &DbConn,
         candidate: candidate::Model,
         details: &CandidateDetails,
-        recipients: &Vec<String>,
+        recipients: &Vec<BBox<String, NoPolicy>>,
         encrypted_by: BBox<i32, NoPolicy>,
     ) -> Result<entity::candidate::Model, ServiceError> {
-        let enc_details = EncryptedCandidateDetails::new(&details, recipients).await?;
+        let recipients = recipients.iter().cloned().map(|r| r.discard_box()).collect();
+        let enc_details = EncryptedCandidateDetails::new(&details, &recipients).await?;
         let model = Mutation::update_candidate_opt_details(
             db,
             candidate,
@@ -83,12 +84,12 @@ pub mod tests {
         let admin = create_admin(&db).await;
         let private_key = crypto::decrypt_password(admin.private_key.discard_box(), "admin".to_string()).await.unwrap();
         let private_key = BBox::new(private_key, NoPolicy::new());
-        let candidates = ApplicationService::list_applications(&private_key, &db, BBox::new(None, NoPolicy::new()), BBox::new(None, NoPolicy::new()), BBox::new(None, NoPolicy::new())).await.unwrap();
+        let candidates = ApplicationService::list_applications(&private_key, &db, None, None, None).await.unwrap();
         assert_eq!(candidates.len(), 0);
 
         put_user_data(&db).await;
 
-        let candidates = ApplicationService::list_applications(&private_key, &db, BBox::new(None, NoPolicy::new()), BBox::new(None, NoPolicy::new()), BBox::new(None, NoPolicy::new())).await.unwrap();
+        let candidates = ApplicationService::list_applications(&private_key, &db, None, None, None).await.unwrap();
         assert_eq!(candidates.len(), 1);
     }
 
@@ -128,8 +129,8 @@ pub mod tests {
     async fn test_put_user_data() {
         let db = get_memory_sqlite_connection().await;
         let (_, candidate, parents) = put_user_data(&db).await;
-        assert!(candidate.name.discard_box().is_some());
-        assert!(parents[0].name.clone().discard_box().is_some());
+        assert!(candidate.name.is_some());
+        assert!(parents[0].name.is_some());
     }
 
     #[tokio::test]

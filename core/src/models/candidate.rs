@@ -77,7 +77,7 @@ pub struct NewCandidateResponse {
     pub applications: Vec<BBox<i32, NoPolicy>>,
     pub personal_id_number: BBox<String, NoPolicy>,
     pub details_filled: BBox<bool, NoPolicy>,
-    pub encrypted_by: BBox<Option<i32>, NoPolicy>,
+    pub encrypted_by: Option<BBox<i32, NoPolicy>>,
     pub field_of_study: BBox<String, NoPolicy>,
 }
 
@@ -105,7 +105,7 @@ pub struct CleanCreateCandidateResponse {
 }
 // used to be #[derive(Debug, Serialize, Deserialize, Validate, Clone, PartialEq, Eq)]
 // validation??
-#[derive(Debug, Clone, PartialEq, ResponseBBoxJson)]//, alohomora_derive::ResponseBBoxJson)]
+#[derive(Debug, Clone, PartialEq, ResponseBBoxJson)]
 //#[serde(rename_all = "camelCase")]
 pub struct CandidateDetails {
     //#[validate(length(min = 1, max = 255))]
