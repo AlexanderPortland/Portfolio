@@ -114,10 +114,10 @@ pub fn rocket() -> BBoxRocket<Build> {
         .mount(
             "/candidate/",
             routes![
-                // routes::candidate::login,
-                // routes::candidate::logout,
-                // routes::candidate::whoami,
-                // routes::candidate::get_details,
+                routes::candidate::login,
+                routes::candidate::logout,
+                routes::candidate::whoami,
+                routes::candidate::get_details,
                 // routes::candidate::post_details,
             ],
         )
@@ -140,22 +140,22 @@ pub fn rocket() -> BBoxRocket<Build> {
         .mount(
             "/candidate/portfolio",
             routes![
-                // routes::candidate::submit_portfolio,
+                routes::candidate::submit_portfolio,
                 // routes::candidate::submission_progress,
                 // routes::candidate::download_portfolio,
-                // routes::candidate::delete_portfolio,
+                routes::candidate::delete_portfolio,
             ],
         )
         .mount(
             "/admin/",
             routes![
                 routes::admin::login,
-                // routes::admin::logout,
-                // routes::admin::whoami,
-                // routes::admin::hello,
-                // routes::admin::create_candidate,
-                // routes::admin::get_candidate,
-                // routes::admin::reset_candidate_password,
+                routes::admin::logout,
+                routes::admin::whoami,
+                routes::admin::hello,
+                routes::admin::create_candidate,
+                routes::admin::get_candidate,
+                routes::admin::reset_candidate_password,
                 // routes::admin::get_candidate_portfolio,
                 //routes::admin::delete_candidate,
             ],
@@ -164,8 +164,8 @@ pub fn rocket() -> BBoxRocket<Build> {
             "/admin/list",
             routes![
                 // routes::admin::list_candidates,
-                // routes::admin::list_candidates_csv,
-                // routes::admin::list_admissions_csv
+                routes::admin::list_candidates_csv,
+                routes::admin::list_admissions_csv
             ]
         )
         .register("/", catchers![])

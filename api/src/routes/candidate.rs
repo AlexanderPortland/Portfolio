@@ -4,6 +4,7 @@ use alohomora::context;
 use alohomora::rocket::{BBoxForm, JsonResponse};
 use entity::application;
 use portfolio_core::policies::context::ContextDataType;
+use portfolio_core::policies::response::MyResult;
 use portfolio_core::Query;
 use portfolio_core::error::ServiceError;
 use portfolio_core::models::auth::AuthenticableTrait;
@@ -18,6 +19,7 @@ use rocket::response::status::Custom;
 use rocket::serde::json::Json;
 
 use alohomora::{bbox::BBox, context::Context, orm::Connection, policy::{AnyPolicy, NoPolicy}, pure::{execute_pure, PrivacyPureRegion}, rocket::{get, post, BBoxCookie, BBoxCookieJar, BBoxJson, FromBBoxData}};
+use rocket::serde::Serialize;
 
 
 use crate::guards::data::letter::Letter;
@@ -33,7 +35,7 @@ pub async fn login(
     // ip_addr: SocketAddr, // TODO uncomment in production
     cookies: BBoxCookieJar<'_, '_>,
     context: Context<ContextDataType>
-) -> Result<(), (rocket::http::Status, String)> {
+) -> MyResult<(), (rocket::http::Status, String)> {
     let ip_addr: SocketAddr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 0);
     let db = conn.into_inner();
 
@@ -46,13 +48,13 @@ pub async fn login(
 
     let (session_token, private_key) = match res {
         Ok(a) => a,
-        Err(e) => return Err(e),
+        Err(e) => return MyResult::Err(e),
     };
 
     cookies.add(BBoxCookie::new("id", session_token.clone()), context.clone());
     cookies.add(BBoxCookie::new("key", private_key.clone()), context.clone());
 
-    return Ok(());
+    return MyResult::Ok(());
 }
 
 #[post("/logout")]
@@ -61,7 +63,7 @@ pub async fn logout(
     _session: ApplicationAuth,
     cookies: BBoxCookieJar<'_, '_>,
     context: Context<ContextDataType>
-) -> Result<(), (rocket::http::Status, String)> {
+) -> MyResult<(), (rocket::http::Status, String)> {
     let db = conn.into_inner();
 
     let cookie: BBoxCookie<'static, NoPolicy> = cookies
@@ -80,11 +82,14 @@ pub async fn logout(
     cookies.remove(cookies.get::<NoPolicy>("id").unwrap());
     cookies.remove(cookies.get::<NoPolicy>("key").unwrap());
 
-    Ok(())
+    MyResult::Ok(())
 }
 
 #[get("/whoami")]
-pub async fn whoami(conn: Connection<'_, Db>, session: ApplicationAuth, context: Context<ContextDataType>) -> Result<JsonResponse<NewCandidateResponse, ContextDataType>, (rocket::http::Status, String)> {
+pub async fn whoami(conn: Connection<'_, Db>, 
+    session: ApplicationAuth, 
+    context: Context<ContextDataType>
+) -> MyResult<JsonResponse<NewCandidateResponse, ContextDataType>, (rocket::http::Status, String)> {
     let db = conn.into_inner();
 
     let private_key = session.get_private_key();
@@ -103,7 +108,7 @@ pub async fn whoami(conn: Connection<'_, Db>, session: ApplicationAuth, context:
 
     //let a = alohomora::fold::fold(response).unwrap();
 
-    Ok(JsonResponse::from((response, context)))
+    MyResult::Ok(JsonResponse::from((response, context)))
 }
 
 // TODO: use put instead of post???
@@ -113,7 +118,7 @@ pub async fn post_details(
     details: BBoxJson<ApplicationDetails>,
     session: ApplicationAuth,
     context: Context<ContextDataType>
-) -> Result<JsonResponse<ApplicationDetails, ContextDataType>, (rocket::http::Status, String)> {
+) -> MyResult<JsonResponse<ApplicationDetails, ContextDataType>, (rocket::http::Status, String)> {
     let db = conn.into_inner();
     let form = details.into_inner();
     form.candidate.validate_self().map_err(to_custom_error)?;
@@ -124,7 +129,7 @@ pub async fn post_details(
         .await 
         .map_err(to_custom_error)?;
 
-    Ok(JsonResponse::from((form, context)))
+    MyResult::Ok(JsonResponse::from((form, context)))
 }
 
 #[get("/details")]
@@ -132,7 +137,7 @@ pub async fn get_details(
     conn: Connection<'_, Db>,
     session: ApplicationAuth,
     context: Context<ContextDataType>
-) -> Result<JsonResponse<ApplicationDetails, ContextDataType>, (rocket::http::Status, String)> {
+) -> MyResult<JsonResponse<ApplicationDetails, ContextDataType>, (rocket::http::Status, String)> {
     let db = conn.into_inner();
     let private_key = session.get_private_key();
     let application: entity::application::Model = session.into();
@@ -143,10 +148,9 @@ pub async fn get_details(
         &application
     )
         .await
-        .map(|x| JsonResponse::from((x, context)))
-        .map_err(to_custom_error);
+        .map_err(to_custom_error)?;
 
-    details
+    MyResult::Ok(JsonResponse::from((details, context)))
 }
 #[post("/cover_letter", data = "<letter>")]
 pub async fn upload_cover_letter(
@@ -176,7 +180,7 @@ pub async fn delete_cover_letter(session: ApplicationAuth) -> Result<(), (rocket
 #[post("/portfolio_letter", data = "<letter>")]
 pub async fn upload_portfolio_letter(
     session: ApplicationAuth,
-    letter: Letter,
+    letter: BBoxForm<BBox<Letter, NoPolicy>>,
 ) -> Result<(), (rocket::http::Status, String)> {
     let application: entity::application::Model = session.into();
 
@@ -201,7 +205,7 @@ pub async fn delete_portfolio_letter(session: ApplicationAuth) -> Result<(), (ro
 #[post("/portfolio_zip", data = "<portfolio>")]
 pub async fn upload_portfolio_zip(
     session: ApplicationAuth,
-    portfolio: Portfolio,
+    portfolio: BBoxForm<Portfolio>,
 ) -> Result<(), (rocket::http::Status, String)> {
     let application: entity::application::Model = session.into();
 
@@ -226,13 +230,13 @@ pub async fn delete_portfolio_zip(session: ApplicationAuth) -> Result<(), (rocke
 #[get("/submission_progress")]
 pub async fn submission_progress(
     session: ApplicationAuth,
-) -> BBox<Result<BBoxJson<SubmissionProgress>, (rocket::http::Status, String)>, NoPolicy> {
+) -> MyResult<JsonResponse<String, ContextDataType>, (rocket::http::Status, String)> {
     let application: entity::application::Model = session.into();
 
     let submission_progress = execute_pure(application.candidate_id, 
         PrivacyPureRegion::new(|id| {
             PortfolioService::get_submission_progress(id)
-                .map(|x| BBoxJson(x))
+                .map(|x| Json(x).0)
                 .map_err(to_custom_error)
         })
     ).unwrap().specialize_policy().unwrap();
@@ -249,7 +253,7 @@ pub async fn submission_progress(
 pub async fn submit_portfolio(
     conn: Connection<'_, Db>,
     session: ApplicationAuth,
-) -> Result<(), (rocket::http::Status, String)> {
+) -> MyResult<(), (rocket::http::Status, String)> {
     let db = conn.into_inner();
 
     let application: entity::application::Model = session.into();
@@ -262,27 +266,27 @@ pub async fn submit_portfolio(
         // Delete on critical error
         if e.code() == 500 {
             // Cleanup
-            PortfolioService::delete_portfolio(application.id)
+            PortfolioService::delete_portfolio(application.id.discard_box())
                 .await
                 .unwrap();
         }
-        return Err(to_custom_error(e));
+        return MyResult::Err(to_custom_error(e));
     }
 
-    Ok(())
+    MyResult::Ok(())
 }
 
 #[post("/delete")]
 pub async fn delete_portfolio(
     session: ApplicationAuth,
-) -> Result<(), (rocket::http::Status, String)> {
+) -> MyResult<(), (rocket::http::Status, String)> {
     let application: entity::application::Model = session.into();
 
-    PortfolioService::delete_portfolio(application.candidate_id)
+    PortfolioService::delete_portfolio(application.candidate_id.discard_box())
         .await
         .map_err(to_custom_error)?;
 
-    Ok(())
+    MyResult::Ok(())
 }
 
 #[get("/download")]

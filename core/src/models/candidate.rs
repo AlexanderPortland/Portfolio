@@ -93,6 +93,16 @@ pub struct CreateCandidateResponse {
     pub personal_id_number: BBox<String, NoPolicy>,
     pub password: BBox<String, NoPolicy>,
 }
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CleanCreateCandidateResponse {
+    pub application_id: i32,
+    pub field_of_study: String,
+    pub applications: Vec<i32>,
+    pub personal_id_number: String,
+    pub password: String,
+}
 // used to be #[derive(Debug, Serialize, Deserialize, Validate, Clone, PartialEq, Eq)]
 // validation??
 #[derive(Debug, Clone, PartialEq, ResponseBBoxJson)]//, alohomora_derive::ResponseBBoxJson)]

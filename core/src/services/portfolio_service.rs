@@ -1,6 +1,6 @@
-use std::{path::{PathBuf, Path}};
+use std::{collections::HashMap, path::{Path, PathBuf}};
 
-use alohomora::{bbox::BBox, policy::NoPolicy};
+use alohomora::{bbox::BBox, policy::NoPolicy, rocket::ResponseBBoxJson};
 use entity::candidate;
 use log::{info, warn};
 use sea_orm::{DbConn};
@@ -16,6 +16,20 @@ pub enum SubmissionProgress {
     AllInCache,
     Submitted,
 }
+
+// impl ResponseBBoxJson for SubmissionProgress {
+//     fn to_json(self) -> alohomora::rocket::OutputBBoxValue {
+//         alohomora::rocket::OutputBBoxValue::Object(HashMap::from(value))
+//         //     ::alohomora::rocket::OutputBBoxValue::Object(HashMap::from([
+//         //         #((String::from(#fields_strings), self.#fields.to_json()),)*
+//         //         #((
+//         //             String::from(#as_is_strings),
+//         //             ::alohomora::rocket::OutputBBoxValue::Value(serde_json::to_value(self.#as_is).unwrap()),
+//         //         )),*
+//         //     ]))
+//         // }
+//     }
+// }
 
 impl SubmissionProgress {
     pub fn index(&self) -> usize {
