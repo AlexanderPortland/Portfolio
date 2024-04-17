@@ -82,7 +82,7 @@ pub struct NewCandidateResponse {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
+//#[serde(rename_all = "camelCase")]
 pub struct CleanNewCandidateResponse {
     pub current_application: i32,
     pub applications: Vec<i32>,
@@ -120,56 +120,56 @@ pub struct CleanCreateCandidateResponse {
 pub struct CandidateDetails {
     pub name: BBox<String, NoPolicy>,
     pub surname: BBox<String, NoPolicy>,
-    pub birth_surname: BBox<String, NoPolicy>,
+    pub birthSurname: BBox<String, NoPolicy>,
     pub birthplace: BBox<String, NoPolicy>,
     pub birthdate: BBox<NaiveDate, NoPolicy>,
     pub address: BBox<String, NoPolicy>,
-    pub letter_address: BBox<String, NoPolicy>,
+    pub letterAddress: BBox<String, NoPolicy>,
     pub telephone: BBox<String, NoPolicy>,
     pub citizenship: BBox<String, NoPolicy>,
     pub email: BBox<String, NoPolicy>,
     pub sex: BBox<String, NoPolicy>,
-    pub personal_id_number: BBox<String, NoPolicy>,
-    pub school_name: BBox<String, NoPolicy>,
-    pub health_insurance: BBox<String, NoPolicy>,
+    pub personalIdNumber: BBox<String, NoPolicy>,
+    pub schoolName: BBox<String, NoPolicy>,
+    pub healthInsurance: BBox<String, NoPolicy>,
     pub grades: BBox<GradeList, NoPolicy>,
-    pub first_school: BBox<School, NoPolicy>,
-    pub second_school: BBox<School, NoPolicy>,
-    pub test_language: BBox<String, NoPolicy>,
+    pub firstSchool: BBox<School, NoPolicy>,
+    pub secondSchool: BBox<School, NoPolicy>,
+    pub testLanguage: BBox<String, NoPolicy>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Validate, Clone, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct CleanCandidateDetails {
-    #[validate(length(min = 1, max = 255))]
+    // #[validate(length(min = 1, max = 255))]
     pub name: String,
-    #[validate(length(min = 1, max = 255))]
+    // #[validate(length(min = 1, max = 255))]
     pub surname: String,
     pub birth_surname: String,
-    #[validate(length(min = 1, max = 255))]
+    // #[validate(length(min = 1, max = 255))]
     pub birthplace: String,
     // NaiveDate validated natively
     pub birthdate: NaiveDate,
-    #[validate(length(min = 1, max = 255))]
+    // #[validate(length(min = 1, max = 255))]
     pub address: String,
     pub letter_address: String,
-    #[validate(length(min = 1, max = 31))]
+    // #[validate(length(min = 1, max = 31))]
     pub telephone: String,
-    #[validate(length(min = 1, max = 255))]
+    // #[validate(length(min = 1, max = 255))]
     pub citizenship: String,
     #[validate(email)]
     pub email: String,
     pub sex: String,
-    #[validate(length(min = 1, max = 255))]
+    // #[validate(length(min = 1, max = 255))]
     pub personal_id_number: String,
-    #[validate(length(min = 1, max = 255))]
+    // #[validate(length(min = 1, max = 255))]
     pub school_name: String,
-    #[validate(length(min = 1, max = 255))]
+    // #[validate(length(min = 1, max = 255))]
     pub health_insurance: String,
     pub grades: GradeList,
     pub first_school: School,
     pub second_school: School,
-    #[validate(length(min = 1, max = 255))]
+    // #[validate(length(min = 1, max = 255))]
     pub test_language: String,
 }
 

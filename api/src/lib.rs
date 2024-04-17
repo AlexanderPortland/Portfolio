@@ -118,31 +118,31 @@ pub fn rocket() -> BBoxRocket<Build> {
                 routes::candidate::logout,
                 routes::candidate::whoami,
                 routes::candidate::get_details,
-                // routes::candidate::post_details,
+                routes::candidate::post_details,
             ],
         )
         .mount(
             "/candidate/add",
             routes![
-                // routes::candidate::upload_portfolio_letter,
-                // routes::candidate::upload_portfolio_zip,
-                // routes::candidate::upload_cover_letter,
+                routes::candidate::upload_portfolio_letter,
+                routes::candidate::upload_portfolio_zip,
+                routes::candidate::upload_cover_letter,
             ],
         )
-        // .mount(
-        //     "/candidate/remove",
-        //     routes![
-        //         routes::candidate::delete_portfolio_letter,
-        //         routes::candidate::delete_portfolio_zip,
-        //         routes::candidate::delete_cover_letter,
-        //     ],
-        // )
+        .mount(
+            "/candidate/remove",
+            routes![
+                routes::candidate::delete_portfolio_letter,
+                routes::candidate::delete_portfolio_zip,
+                routes::candidate::delete_cover_letter,
+            ],
+        )
         .mount(
             "/candidate/portfolio",
             routes![
                 routes::candidate::submit_portfolio,
-                // routes::candidate::submission_progress,
-                // routes::candidate::download_portfolio,
+                routes::candidate::submission_progress,
+                routes::candidate::download_portfolio,
                 routes::candidate::delete_portfolio,
             ],
         )
