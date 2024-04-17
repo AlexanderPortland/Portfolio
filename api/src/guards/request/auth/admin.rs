@@ -53,9 +53,11 @@ impl<'a, 'r> FromBBoxRequest<'a, 'r> for AdminAuth {
 
         let conn: &rocket::State<Db> = request.guard().await.unwrap();
 
-        let uuid_bbox = execute_pure(session_id, PrivacyPureRegion::new(
-            |session_id: String|{Uuid::parse_str(session_id.as_str()).unwrap()}
-        )).unwrap().specialize_policy().unwrap();
+        let uuid_bbox = session_id.into_ppr(
+            PrivacyPureRegion::new(|session_id: String| {
+                Uuid::parse_str(session_id.as_str()).unwrap()
+            })
+        );
 
         // let uuid = match Uuid::parse_str(&session_id) {
         //     Ok(uuid) => uuid,

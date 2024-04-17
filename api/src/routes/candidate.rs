@@ -1,7 +1,7 @@
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 
-
 use alohomora::rocket::{ContextResponse, JsonResponse};
+use alohomora::{bbox::BBox, context::Context, orm::Connection, policy::NoPolicy, pure::{execute_pure, PrivacyPureRegion}, rocket::{get, post, route, BBoxCookie, BBoxCookieJar, BBoxJson}};
 use entity::application;
 use portfolio_core::policies::context::ContextDataType;
 use portfolio_core::utils::response::MyResult;
@@ -12,17 +12,7 @@ use portfolio_core::models::candidate::{ApplicationDetails, NewCandidateResponse
 use portfolio_core::sea_orm::prelude::Uuid;
 use portfolio_core::services::application_service::ApplicationService;
 use portfolio_core::services::portfolio_service::PortfolioService;
-// use rocket::http::Method::Delete;
 use requests::LoginRequest;
-
-
-
-
-
-use alohomora::{bbox::BBox, context::Context, orm::Connection, policy::NoPolicy, pure::{execute_pure, PrivacyPureRegion}, rocket::{get, post, route, BBoxCookie, BBoxCookieJar, BBoxJson}};
-
-
-
 use crate::guards::data::letter::Letter;
 use crate::guards::data::portfolio::Portfolio;
 use crate::{guards::request::auth::ApplicationAuth, pool::Db, requests};
