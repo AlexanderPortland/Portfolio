@@ -4,17 +4,17 @@ use portfolio_core::{
     crypto::random_12_char_string, error::ServiceError, models::{application::ApplicationResponse, auth::AuthenticableTrait, candidate::{ApplicationDetails, CreateCandidateResponse}}, Query, sea_orm::prelude::Uuid, services::{admin_service::AdminService, application_service::ApplicationService, portfolio_service::PortfolioService}
 };
 use requests::{AdminLoginRequest, RegisterRequest};
-use rocket::http::{Status};
+use rocket::http::Status;
 
 
 use portfolio_core::policies::context::ContextDataType;
-use alohomora::{bbox::BBox, context::{Context}, orm::Connection, policy::{NoPolicy}, pure::{execute_pure, PrivacyPureRegion}, rocket::{BBoxCookie, BBoxCookieJar, BBoxJson, ContextResponse, get, JsonResponse, post, route}};
+use alohomora::{bbox::BBox, context::Context, orm::Connection, policy::NoPolicy, pure::{execute_pure, PrivacyPureRegion}, rocket::{BBoxCookie, BBoxCookieJar, BBoxJson, ContextResponse, get, JsonResponse, post, route}};
 
 
 use portfolio_core::utils::csv::{ApplicationCsv, CandidateCsv, CsvExporter};
 use portfolio_core::utils::response::MyResult;
 
-use crate::{guards::{request::auth::AdminAuth}, pool::Db, requests};
+use crate::{guards::request::auth::AdminAuth, pool::Db, requests};
 
 use super::to_custom_error;
 

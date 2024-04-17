@@ -1,6 +1,6 @@
-use std::{collections::HashMap, path::{Path, PathBuf}};
+use std::{path::{Path, PathBuf}};
 
-use alohomora::{bbox::BBox, policy::NoPolicy, rocket::ResponseBBoxJson};
+use alohomora::{bbox::BBox, policy::NoPolicy};
 use entity::candidate;
 use log::{info, warn};
 use sea_orm::{DbConn};

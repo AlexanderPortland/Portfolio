@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use entity::{admin, admin_session, session};
+use entity::{admin, admin_session};
 use sea_orm::{prelude::Uuid, DbConn, IntoActiveModel};
 use alohomora::{bbox::BBox, policy::NoPolicy};
 

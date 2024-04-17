@@ -96,7 +96,7 @@ pub mod tests {
     #[cfg(test)]
     pub async fn put_user_data(db: &DbConn) -> (application::Model, candidate::Model, Vec<parent::Model>) {
         use alohomora::{bbox::BBox, policy::NoPolicy};
-        use base64::engine::general_purpose::NO_PAD;
+        
 
         use crate::{models::candidate_details::tests::APPLICATION_DETAILS, services::parent_service::ParentService};
 

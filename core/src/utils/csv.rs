@@ -4,7 +4,7 @@ use crate::{
     models::{application::ApplicationRow, candidate::ApplicationDetails},
     Query, services::application_service::ApplicationService,
 };
-use alohomora::{bbox::BBox, context::{Context, ContextData}, pcr::PrivacyCriticalRegion, policy::NoPolicy, rocket::{self, BBoxRequestOutcome, FromBBoxRequest}, AlohomoraType};
+use alohomora::{bbox::BBox, context::{Context}, pcr::PrivacyCriticalRegion, policy::NoPolicy};
 use sea_orm::DbConn;
 use async_trait::async_trait;
 use crate::models::candidate::{CandidateRow, FieldOfStudy, FieldsCombination};

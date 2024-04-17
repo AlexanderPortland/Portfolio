@@ -11,7 +11,7 @@ use portfolio_core::models::auth::AuthenticableTrait;
 use portfolio_core::models::candidate::{ApplicationDetails, NewCandidateResponse};
 use portfolio_core::sea_orm::prelude::Uuid;
 use portfolio_core::services::application_service::ApplicationService;
-use portfolio_core::services::portfolio_service::{PortfolioService};
+use portfolio_core::services::portfolio_service::PortfolioService;
 // use rocket::http::Method::Delete;
 use requests::LoginRequest;
 
@@ -19,7 +19,7 @@ use requests::LoginRequest;
 
 
 
-use alohomora::{bbox::BBox, context::Context, orm::Connection, policy::{NoPolicy}, pure::{execute_pure, PrivacyPureRegion}, rocket::{get, post, route, BBoxCookie, BBoxCookieJar, BBoxJson}};
+use alohomora::{bbox::BBox, context::Context, orm::Connection, policy::NoPolicy, pure::{execute_pure, PrivacyPureRegion}, rocket::{get, post, route, BBoxCookie, BBoxCookieJar, BBoxJson}};
 
 
 
@@ -52,8 +52,8 @@ pub async fn login(
         Err(e) => return MyResult::Err(e),
     };
 
-    cookies.add(BBoxCookie::new("id", session_token.clone()), context.clone());
-    cookies.add(BBoxCookie::new("key", private_key.clone()), context.clone());
+    let _ = cookies.add(BBoxCookie::new("id", session_token.clone()), context.clone());
+    let _ = cookies.add(BBoxCookie::new("key", private_key.clone()), context.clone());
 
     return MyResult::Ok(());
 }
