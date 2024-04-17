@@ -9,7 +9,7 @@ use rocket::serde::{Serialize, Deserialize};
 #[derive(alohomora_derive::RequestBBoxJson)]
 //#[serde(crate = "rocket::serde", rename_all = "camelCase")]
 pub struct LoginRequest {
-    pub application_id: BBox<i32, NoPolicy>,
+    pub applicationId: BBox<i32, NoPolicy>,
     pub password: BBox<String, NoPolicy>,
 }
 
@@ -17,8 +17,8 @@ pub struct LoginRequest {
 #[derive(alohomora_derive::RequestBBoxJson)]
 //#[serde(crate = "rocket::serde", rename_all = "camelCase")]
 pub struct RegisterRequest {
-    pub application_id: BBox<i32, NoPolicy>,
-    pub personal_id_number: BBox<String, NoPolicy>,
+    pub applicationId: BBox<i32, NoPolicy>,
+    pub personalIdNumber: BBox<String, NoPolicy>,
 }
 
 //RequestBBoxJson
@@ -26,7 +26,7 @@ pub struct RegisterRequest {
 #[derive(alohomora_derive::RequestBBoxJson)]
 //#[serde(crate = "rocket::serde", rename_all = "camelCase")]
 pub struct AdminLoginRequest {
-    pub admin_id: BBox<i32, NoPolicy>,
+    pub adminId: BBox<i32, NoPolicy>,
     pub password: BBox<String, NoPolicy>,
 }
 

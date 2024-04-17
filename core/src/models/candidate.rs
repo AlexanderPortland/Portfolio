@@ -106,7 +106,7 @@ pub struct CreateCandidateResponse {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
+//#[serde(rename_all = "camelCase")]
 pub struct CleanCreateCandidateResponse {
     pub application_id: i32,
     pub field_of_study: String,

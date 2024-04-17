@@ -30,7 +30,7 @@ pub async fn login(
     let db = conn.into_inner();
     let session_token_key = AdminService::login(
         db,
-        login_form.admin_id.clone(),
+        login_form.adminId.clone(),
         login_form.password.clone(),
         BBox::new(ip_addr.ip().to_string(), NoPolicy::new()),
     )
@@ -116,15 +116,17 @@ pub async fn create_candidate(
     let form = request.into_inner();
     let private_key = session.get_private_key();
 
+    println!("im in admin rn");
+
     let plain_text_password = BBox::new(random_12_char_string(), NoPolicy::new());
     //println!("trying to did the thing");
 
     let (application, applications, personal_id_number) = match ApplicationService::create(
         &private_key,
         &db,
-        form.application_id,
+        form.applicationId,
         &plain_text_password,
-        form.personal_id_number.clone()
+        form.personalIdNumber.clone()
     )
         .await
         .map_err(to_custom_error) {
@@ -326,6 +328,10 @@ pub mod tests {
             ))
             .dispatch();
 
+        println!("res {:?}", response);
+        println!("id cookee {:?}", response.cookies().get("id"));
+        println!("key cookee {:?}", response.cookies().get("key"));
+
         (
             response.cookies().get("id").unwrap().to_owned(),
             response.cookies().get("key").unwrap().to_owned(),
@@ -353,6 +359,8 @@ pub mod tests {
 
         assert_eq!(response.status(), Status::Ok);
 
+        println!("got response {:?}", response);
+
         response.into_json::<CleanCreateCandidateResponse>().unwrap()
     }
 
@@ -360,6 +368,7 @@ pub mod tests {
     fn test_create_candidate() {
         let client = test_client().lock().unwrap();
         let cookies = admin_login(&client);
+        println!("+++got some cookies {:?}", cookies);
         let response = create_candidate(&client, cookies, 1031511, "0".to_string());
     
         assert_eq!(response.password.len(), 12);

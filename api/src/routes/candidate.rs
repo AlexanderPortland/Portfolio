@@ -42,7 +42,7 @@ pub async fn login(
 
     let res = ApplicationService::login(
         db,
-        login_form.application_id.clone(),
+        login_form.applicationId.clone(),
         login_form.password.clone(),
         BBox::new(ip_addr.ip().to_string(), NoPolicy::new()),
     ).await.map_err(to_custom_error);
