@@ -8,7 +8,7 @@ use rocket::http::{Cookie, CookieJar, Status};
 use rocket::response::status::Custom;
 use rocket::serde::json::Json;
 use portfolio_core::policies::context::ContextDataType;
-use alohomora::{bbox::BBox, context::{self, Context}, orm::Connection, policy::{AnyPolicy, NoPolicy}, pure::{execute_pure, PrivacyPureRegion}, rocket::{BBoxCookie, BBoxCookieJar, BBoxJson, ContextResponse, FromBBoxData, get, JsonResponse, post}};
+use alohomora::{bbox::BBox, context::{self, Context}, orm::Connection, policy::{AnyPolicy, NoPolicy}, pure::{execute_pure, PrivacyPureRegion}, rocket::{BBoxCookie, BBoxCookieJar, BBoxJson, ContextResponse, FromBBoxData, get, JsonResponse, post, route}};
 
 
 use portfolio_core::utils::csv::{ApplicationCsv, CandidateCsv, CsvExporter};
@@ -146,6 +146,10 @@ pub async fn create_candidate(
     MyResult::Ok(JsonResponse::from((cand, context)))
 }
 
+use alohomora::rocket::FromBBoxFormField;
+use alohomora::rocket::FromBBoxForm;
+
+
 #[allow(unused_variables)]
 #[get("/candidates?<field>&<page>&<sort>")]
 pub async fn list_candidates(
@@ -160,16 +164,17 @@ pub async fn list_candidates(
     let private_key = session.get_private_key();
     
     if let Some(field) = field.clone() {
+        let field = field.discard_box();
         if !(field == "KB".to_string() || field == "IT".to_string() || field == "G") {
-            return Err((Status::BadRequest, "Invalid field of study".to_string()));
+            return MyResult::Err((Status::BadRequest, "Invalid field of study".to_string()));
         }
     }
 
-    let field_bbox = alohomora::fold::fold(field).unwrap().specialize_policy().unwrap();
-    let page_bbox = alohomora::fold::fold(page).unwrap().specialize_policy().unwrap();
-    let sort_bbox = alohomora::fold::fold(sort).unwrap().specialize_policy().unwrap();
+    //let field_bbox = alohomora::fold::fold(field).unwrap().specialize_policy().unwrap();
+    //let page_bbox = alohomora::fold::fold(page).unwrap().specialize_policy().unwrap();
+    //let sort_bbox = alohomora::fold::fold(sort).unwrap().specialize_policy().unwrap();
 
-    let candidates = ApplicationService::list_applications(&private_key, db, field_bbox, page_bbox, sort_bbox)
+    let candidates = ApplicationService::list_applications(&private_key, db, field, page, sort)
         .await.map_err(to_custom_error)?;
 
     let a = MyResult::Ok(JsonResponse::from((candidates, context)));
@@ -239,7 +244,7 @@ pub async fn get_candidate(
     )
 }
 
-#[delete("/candidate/<id>")]
+#[route(DELETE, "/candidate/<id>")]
 pub async fn delete_candidate(
     conn: Connection<'_, Db>,
     _session: AdminAuth,
@@ -294,7 +299,7 @@ pub async fn get_candidate_portfolio(
         .map_err(|e| to_custom_error(ServiceError::DbError(e)))?
         .ok_or(to_custom_error(ServiceError::CandidateNotFound))?;
 
-    let portfolio = PortfolioService::get_portfolio(application.candidate_id, private_key)
+    let portfolio = PortfolioService::get_portfolio(application.candidate_id.discard_box(), private_key.discard_box())
         .await
         .map_err(to_custom_error)?;
     let portfolio = BBox::new(portfolio, NoPolicy::new());

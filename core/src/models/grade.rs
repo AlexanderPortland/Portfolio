@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use alohomora::{bbox::BBox, policy::NoPolicy};
 use alohomora::rocket::{OutputBBoxValue, ResponseBBoxJson};
+use alohomora_derive::RequestBBoxJson;
 use serde::{Serialize, Deserialize};
 use validator::{Validate};
 

@@ -1,41 +1,49 @@
-use rocket::data::{self, Data, FromData, ToByteUnit};
+use alohomora::bbox::BBox;
+use alohomora::policy::FrontendPolicy;
+use alohomora::pure::PrivacyPureRegion;
+use alohomora::rocket::{BBoxData, BBoxDataOutcome, BBoxRequest, FromBBoxData};
+use rocket::data::{self, Capped, Data, FromData, ToByteUnit};
 use rocket::http::{ContentType, Status};
 use rocket::outcome::Outcome;
 use rocket::request::Request;
 
-pub struct Portfolio(Vec<u8>);
+pub struct Portfolio<P: FrontendPolicy>(BBox<Vec<u8>, P>);
 
-impl Into<Vec<u8>> for Portfolio {
-    fn into(self) -> Vec<u8> {
+impl<P: FrontendPolicy> Into<BBox<Vec<u8>, P>> for Portfolio<P> {
+    fn into(self) -> BBox<Vec<u8>, P> {
         self.0
     }
 }
 
 #[rocket::async_trait]
-impl<'r> FromData<'r> for Portfolio {
-    type Error = Option<String>;
+impl<'a, 'r, P: FrontendPolicy> FromBBoxData<'a, 'r> for Portfolio<P> {
+    type BBoxError = Option<String>;
 
-    async fn from_data(req: &'r Request<'_>, data: Data<'r>) -> data::Outcome<'r, Self> {
+    async fn from_data(req: BBoxRequest<'a, 'r>, data: BBoxData<'a>) -> BBoxDataOutcome<'a, 'r, Portfolio<P>> {
         if req.content_type() != Some(&ContentType::ZIP) {
             return Outcome::Failure((Status::BadRequest, None))
         }
 
-        let data = data.open(101.megabytes());
+        let data = data.open::<P>(101.megabytes(), req);
 
         let data_bytes = data.into_bytes().await.unwrap();
 
-        if !data_bytes.is_complete() {
-            return Outcome::Failure((Status::BadRequest, None))
+        let result = data_bytes.into_ppr(PrivacyPureRegion::new(
+            |data_bytes: Capped<Vec<u8>>| {
+                if !data_bytes.is_complete() { return Err(()); }
+
+                let data_bytes = data_bytes.into_inner();
+
+                let is_zip = portfolio_core::utils::filetype::filetype_is_zip(&data_bytes);
+                if !is_zip { return Err(()); }
+
+                return Ok(data_bytes);
+            }
+        ));
+
+        match result.transpose() {
+            Err(_) => Outcome::Failure((Status::BadRequest, None)),
+            Ok(data_bytes) => Outcome::Success(Portfolio(data_bytes)),
         }
-
-        let data_bytes = data_bytes.into_inner();
-
-        let is_zip = portfolio_core::utils::filetype::filetype_is_zip(&data_bytes);
-
-        if !is_zip {
-            return Outcome::Failure((Status::BadRequest, None))
-        }
-
-        Outcome::Success(Portfolio(data_bytes))
     }
 }

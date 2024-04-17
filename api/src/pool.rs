@@ -67,7 +67,6 @@ impl alohomora::orm::Pool for SeaOrmPool {
         let db: sea_orm::DbConn = sea_orm::Database::connect(options).await?;
 
         use portfolio_core::crypto::{self, hash_password};
-        use portfolio_core::services::admin_service::admin_tests::create_admin;
         use sea_orm::{Schema, Database, Statement};
         use sea_orm::{sea_query::TableCreateStatement, ConnectionTrait, DbBackend};
 

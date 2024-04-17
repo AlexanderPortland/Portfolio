@@ -81,6 +81,17 @@ pub struct NewCandidateResponse {
     pub field_of_study: BBox<String, NoPolicy>,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CleanNewCandidateResponse {
+    pub current_application: i32,
+    pub applications: Vec<i32>,
+    pub personal_id_number: String,
+    pub details_filled: bool,
+    pub encrypted_by: Option<i32>,
+    pub field_of_study: String,
+}
+
 /// Create candidate (admin endpoint)
 /// Password change  (admin endpoint)
 //#[derive(Debug, Serialize, Deserialize)]
@@ -105,40 +116,63 @@ pub struct CleanCreateCandidateResponse {
 }
 // used to be #[derive(Debug, Serialize, Deserialize, Validate, Clone, PartialEq, Eq)]
 // validation??
-#[derive(Debug, Clone, PartialEq, ResponseBBoxJson)]
-//#[serde(rename_all = "camelCase")]
+#[derive(Debug, Clone, PartialEq, ResponseBBoxJson, RequestBBoxJson)]
 pub struct CandidateDetails {
-    //#[validate(length(min = 1, max = 255))]
     pub name: BBox<String, NoPolicy>,
-    //#[validate(length(min = 1, max = 255))]
     pub surname: BBox<String, NoPolicy>,
     pub birth_surname: BBox<String, NoPolicy>,
-    // #[validate(length(min = 1, max = 255))]
     pub birthplace: BBox<String, NoPolicy>,
-    // NaiveDate validated natively
     pub birthdate: BBox<NaiveDate, NoPolicy>,
-    // #[validate(length(min = 1, max = 255))]
     pub address: BBox<String, NoPolicy>,
     pub letter_address: BBox<String, NoPolicy>,
-    // #[validate(length(min = 1, max = 31))]
     pub telephone: BBox<String, NoPolicy>,
-    // #[validate(length(min = 1, max = 255))]
     pub citizenship: BBox<String, NoPolicy>,
-    // #[validate(email)]
     pub email: BBox<String, NoPolicy>,
     pub sex: BBox<String, NoPolicy>,
-    // #[validate(length(min = 1, max = 255))]
     pub personal_id_number: BBox<String, NoPolicy>,
-    // #[validate(length(min = 1, max = 255))]
     pub school_name: BBox<String, NoPolicy>,
-    // #[validate(length(min = 1, max = 255))]
     pub health_insurance: BBox<String, NoPolicy>,
     pub grades: BBox<GradeList, NoPolicy>,
     pub first_school: BBox<School, NoPolicy>,
     pub second_school: BBox<School, NoPolicy>,
-    // #[validate(length(min = 1, max = 255))]
     pub test_language: BBox<String, NoPolicy>,
 }
+
+#[derive(Debug, Serialize, Deserialize, Validate, Clone, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct CleanCandidateDetails {
+    #[validate(length(min = 1, max = 255))]
+    pub name: String,
+    #[validate(length(min = 1, max = 255))]
+    pub surname: String,
+    pub birth_surname: String,
+    #[validate(length(min = 1, max = 255))]
+    pub birthplace: String,
+    // NaiveDate validated natively
+    pub birthdate: NaiveDate,
+    #[validate(length(min = 1, max = 255))]
+    pub address: String,
+    pub letter_address: String,
+    #[validate(length(min = 1, max = 31))]
+    pub telephone: String,
+    #[validate(length(min = 1, max = 255))]
+    pub citizenship: String,
+    #[validate(email)]
+    pub email: String,
+    pub sex: String,
+    #[validate(length(min = 1, max = 255))]
+    pub personal_id_number: String,
+    #[validate(length(min = 1, max = 255))]
+    pub school_name: String,
+    #[validate(length(min = 1, max = 255))]
+    pub health_insurance: String,
+    pub grades: GradeList,
+    pub first_school: School,
+    pub second_school: School,
+    #[validate(length(min = 1, max = 255))]
+    pub test_language: String,
+}
+
 impl CandidateDetails {
     pub fn validate_self(&self) -> Result<(), ServiceError> {
         // self.first_school.validate()?;
@@ -149,8 +183,11 @@ impl CandidateDetails {
         Ok(())
     }
 }
+
+
+
 // used to be #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
-#[derive(Debug, Clone, PartialEq, alohomora_derive::ResponseBBoxJson)]
+#[derive(Debug, Clone, PartialEq, alohomora_derive::ResponseBBoxJson, RequestBBoxJson)]
 //#[serde(rename_all = "camelCase")]
 pub struct ParentDetails {
     pub name: BBox<String, NoPolicy>,
@@ -159,14 +196,30 @@ pub struct ParentDetails {
     pub email: BBox<String, NoPolicy>,
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct CleanParentDetails {
+    pub name: String,
+    pub surname: String,
+    pub telephone: String,
+    pub email: String,
+}
+
 /// Candidate details (admin and candidate endpoints)
 //#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
-#[derive(Debug, Clone, ResponseBBoxJson)]//, alohomora_derive::ResponseBBoxJson)]//alohomora_derive::RequestBBoxJson
+#[derive(Debug, Clone, ResponseBBoxJson, RequestBBoxJson)]//, alohomora_derive::ResponseBBoxJson)]//alohomora_derive::RequestBBoxJson
 //#[serde(rename_all = "camelCase")]
 pub struct ApplicationDetails {
     // Candidate
     pub candidate: CandidateDetails,
     pub parents: Vec<ParentDetails>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct CleanApplicationDetails {
+    // Candidate
+    pub candidate: CleanCandidateDetails,
+    pub parents: Vec<CleanParentDetails>,
 }
 
 impl NewCandidateResponse {

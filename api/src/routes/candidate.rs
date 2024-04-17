@@ -1,7 +1,7 @@
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 
 use alohomora::context;
-use alohomora::rocket::{BBoxForm, JsonResponse};
+use alohomora::rocket::{BBoxForm, ContextResponse, JsonResponse};
 use entity::application;
 use portfolio_core::policies::context::ContextDataType;
 use portfolio_core::utils::response::MyResult;
@@ -12,13 +12,14 @@ use portfolio_core::models::candidate::{ApplicationDetails, NewCandidateResponse
 use portfolio_core::sea_orm::prelude::Uuid;
 use portfolio_core::services::application_service::ApplicationService;
 use portfolio_core::services::portfolio_service::{PortfolioService, SubmissionProgress};
+// use rocket::http::Method::Delete;
 use requests::LoginRequest;
 use portfolio_core::models::candidate::NewCandidateResponseOut;
 use rocket::http::{Cookie, CookieJar, Status};
 use rocket::response::status::Custom;
 use rocket::serde::json::Json;
 
-use alohomora::{bbox::BBox, context::Context, orm::Connection, policy::{AnyPolicy, NoPolicy}, pure::{execute_pure, PrivacyPureRegion}, rocket::{get, post, BBoxCookie, BBoxCookieJar, BBoxJson, FromBBoxData}};
+use alohomora::{bbox::BBox, context::Context, orm::Connection, policy::{AnyPolicy, NoPolicy}, pure::{execute_pure, PrivacyPureRegion}, rocket::{get, post, route, BBoxCookie, BBoxCookieJar, BBoxJson, FromBBoxData}};
 use rocket::serde::Serialize;
 
 
@@ -155,47 +156,46 @@ pub async fn get_details(
 #[post("/cover_letter", data = "<letter>")]
 pub async fn upload_cover_letter(
     session: ApplicationAuth,
-    letter: BBoxForm<Letter>,
-) -> Result<(), (rocket::http::Status, String)> {
+    letter: Letter<NoPolicy>,
+) -> MyResult<(), (rocket::http::Status, String)> {
     let application: entity::application::Model = session.into();
 
-    PortfolioService::add_cover_letter_to_cache(application.candidate_id, letter.into())
+    PortfolioService::add_cover_letter_to_cache(application.candidate_id.discard_box(), Into::<BBox<Vec<u8>, NoPolicy>>::into(letter).discard_box())
         .await
         .map_err(to_custom_error)?;
-
-    Ok(())
+    MyResult::Ok(())
 }
 
-#[delete("/cover_letter")]
-pub async fn delete_cover_letter(session: ApplicationAuth) -> Result<(), (rocket::http::Status, String)> {
+#[route(DELETE, "/cover_letter")]
+pub async fn delete_cover_letter(session: ApplicationAuth) -> MyResult<(), (rocket::http::Status, String)> {
     let application: entity::application::Model = session.into();
 
-    PortfolioService::delete_cover_letter_from_cache(application.candidate_id)
+    PortfolioService::delete_cover_letter_from_cache(application.candidate_id.discard_box())
         .await
         .map_err(to_custom_error)?;
 
-    Ok(())
+    MyResult::Ok(())
 }
 
 #[post("/portfolio_letter", data = "<letter>")]
 pub async fn upload_portfolio_letter(
     session: ApplicationAuth,
-    letter: BBoxForm<BBox<Letter, NoPolicy>>,
-) -> Result<(), (rocket::http::Status, String)> {
+    letter: Letter<NoPolicy>,
+) -> MyResult<(), (rocket::http::Status, String)> {
     let application: entity::application::Model = session.into();
 
-    PortfolioService::add_portfolio_letter_to_cache(application.candidate_id, letter.into())
+    PortfolioService::add_portfolio_letter_to_cache(application.candidate_id.discard_box(), Into::<BBox<Vec<u8>, NoPolicy>>::into(letter).discard_box())
         .await
         .map_err(to_custom_error)?;
 
-    Ok(())
+    MyResult::Ok(())
 }
 
-#[delete("/portfolio_letter")]
+#[route(DELETE, "/portfolio_letter")]
 pub async fn delete_portfolio_letter(session: ApplicationAuth) -> Result<(), (rocket::http::Status, String)> {
     let candidate: entity::application::Model = session.into();
 
-    PortfolioService::delete_portfolio_letter_from_cache(candidate.candidate_id)
+    PortfolioService::delete_portfolio_letter_from_cache(candidate.candidate_id.discard_box())
         .await
         .map_err(to_custom_error)?;
 
@@ -205,22 +205,22 @@ pub async fn delete_portfolio_letter(session: ApplicationAuth) -> Result<(), (ro
 #[post("/portfolio_zip", data = "<portfolio>")]
 pub async fn upload_portfolio_zip(
     session: ApplicationAuth,
-    portfolio: BBoxForm<Portfolio>,
+    portfolio: Portfolio<NoPolicy>,
 ) -> Result<(), (rocket::http::Status, String)> {
     let application: entity::application::Model = session.into();
 
-    PortfolioService::add_portfolio_zip_to_cache(application.candidate_id, portfolio.into())
+    PortfolioService::add_portfolio_zip_to_cache(application.candidate_id.discard_box(), Into::<BBox<Vec<u8>, NoPolicy>>::into(portfolio).discard_box())
         .await
         .map_err(to_custom_error)?;
 
     Ok(())
 }
 
-#[delete("/portfolio_zip")]
+#[route(DELETE, "/portfolio_zip")]
 pub async fn delete_portfolio_zip(session: ApplicationAuth) -> Result<(), (rocket::http::Status, String)> {
     let application: entity::application::Model = session.into();
 
-    PortfolioService::delete_portfolio_zip_from_cache(application.candidate_id)
+    PortfolioService::delete_portfolio_zip_from_cache(application.candidate_id.discard_box())
         .await
         .map_err(to_custom_error)?;
 
@@ -230,23 +230,24 @@ pub async fn delete_portfolio_zip(session: ApplicationAuth) -> Result<(), (rocke
 #[get("/submission_progress")]
 pub async fn submission_progress(
     session: ApplicationAuth,
-) -> MyResult<JsonResponse<String, ContextDataType>, (rocket::http::Status, String)> {
+    context: Context<ContextDataType>
+) -> MyResult<ContextResponse<String, NoPolicy, ContextDataType>, (rocket::http::Status, String)> {
     let application: entity::application::Model = session.into();
 
     let submission_progress = execute_pure(application.candidate_id, 
         PrivacyPureRegion::new(|id| {
             PortfolioService::get_submission_progress(id)
-                .map(|x| Json(x).0)
-                .map_err(to_custom_error)
+                .map(|x| {
+                    let s = serde_json::to_string(&x).unwrap();
+                    s
+                }).map_err(to_custom_error)
         })
     ).unwrap().specialize_policy().unwrap();
-
-    // let progress = PortfolioService::get_submission_progress(application.candidate_id)
-    //     .await
-    //     .map(|x| BBoxJson(x))
-    //     .map_err(to_custom_error);
-
-    submission_progress
+    
+    match submission_progress.transpose() {
+        Ok(o) => MyResult::Ok(ContextResponse(o, context)),
+        Err(e) => MyResult::Err(e),
+    }
 }
 
 #[post("/submit")]
@@ -294,7 +295,7 @@ pub async fn download_portfolio(session: ApplicationAuth) -> Result<Vec<u8>, (ro
     let private_key = session.get_private_key();
     let application: entity::application::Model = session.into();
 
-    let file = PortfolioService::get_portfolio(application.candidate_id, private_key)
+    let file = PortfolioService::get_portfolio(application.candidate_id.discard_box(), private_key.discard_box())
         .await
         .map_err(to_custom_error);
 
@@ -303,7 +304,7 @@ pub async fn download_portfolio(session: ApplicationAuth) -> Result<Vec<u8>, (ro
 
 #[cfg(test)]
 mod tests {
-    use portfolio_core::{crypto, models::candidate::{ApplicationDetails, NewCandidateResponse}, sea_orm::prelude::Uuid};
+    use portfolio_core::{crypto, models::candidate::{ApplicationDetails, CleanApplicationDetails, CleanNewCandidateResponse, NewCandidateResponse}, sea_orm::prelude::Uuid};
     use rocket::{
         http::{Cookie, Status},
         local::blocking::Client,
@@ -381,7 +382,7 @@ mod tests {
 
         assert_eq!(response.status(), Status::Ok);
 
-        let candidate = response.into_json::<NewCandidateResponse>().unwrap();
+        let candidate = response.into_json::<CleanNewCandidateResponse>().unwrap();
         // assert_eq!(candidate.id, APPLICATION_ID); // TODO
         assert_eq!(candidate.personal_id_number, PERSONAL_ID_NUMBER);
     }
@@ -391,7 +392,7 @@ mod tests {
         let client = test_client().lock().unwrap();
         let cookies = candidate_login(&client);
 
-        let details_orig: ApplicationDetails = serde_json::from_str(CANDIDATE_DETAILS).unwrap();
+        let details_orig: CleanApplicationDetails = serde_json::from_str(CANDIDATE_DETAILS).unwrap();
 
         let response = client
             .post("/candidate/details")
@@ -410,7 +411,7 @@ mod tests {
 
         assert_eq!(response.status(), Status::Ok);
 
-        let details_resp: ApplicationDetails = serde_json::from_str(&response.into_string().unwrap()).unwrap();
+        let details_resp: CleanApplicationDetails = serde_json::from_str(&response.into_string().unwrap()).unwrap();
         assert_eq!(details_orig, details_resp);
     }
 
@@ -420,7 +421,7 @@ mod tests {
 
         let id = Cookie::new("id", Uuid::new_v4().to_string());
         let (private_key, _) = crypto::create_identity();
-        let key = Cookie::new("key", private_key);
+        let key = Cookie::new("key", private_key.discard_box());
 
         let response = client
             .post("/candidate/details")
