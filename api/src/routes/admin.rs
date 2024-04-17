@@ -4,17 +4,17 @@ use portfolio_core::{
     crypto::random_12_char_string, error::ServiceError, models::{application::ApplicationResponse, auth::AuthenticableTrait, candidate::{ApplicationDetails, CreateCandidateResponse}}, Query, sea_orm::prelude::Uuid, services::{admin_service::AdminService, application_service::ApplicationService, portfolio_service::PortfolioService}
 };
 use requests::{AdminLoginRequest, RegisterRequest};
-use rocket::http::{Cookie, CookieJar, Status};
-use rocket::response::status::Custom;
-use rocket::serde::json::Json;
+use rocket::http::{Status};
+
+
 use portfolio_core::policies::context::ContextDataType;
-use alohomora::{bbox::BBox, context::{self, Context}, orm::Connection, policy::{AnyPolicy, NoPolicy}, pure::{execute_pure, PrivacyPureRegion}, rocket::{BBoxCookie, BBoxCookieJar, BBoxJson, ContextResponse, FromBBoxData, get, JsonResponse, post, route}};
+use alohomora::{bbox::BBox, context::{Context}, orm::Connection, policy::{NoPolicy}, pure::{execute_pure, PrivacyPureRegion}, rocket::{BBoxCookie, BBoxCookieJar, BBoxJson, ContextResponse, get, JsonResponse, post, route}};
 
 
 use portfolio_core::utils::csv::{ApplicationCsv, CandidateCsv, CsvExporter};
 use portfolio_core::utils::response::MyResult;
 
-use crate::{guards::{data::portfolio, request::auth::AdminAuth}, pool::Db, requests};
+use crate::{guards::{request::auth::AdminAuth}, pool::Db, requests};
 
 use super::to_custom_error;
 
@@ -58,7 +58,7 @@ pub async fn login(
 pub async fn logout(conn: Connection<'_, Db>, 
     _session: AdminAuth, 
     cookies: BBoxCookieJar<'_, '_>, 
-    context: Context<ContextDataType>
+    _context: Context<ContextDataType>
 ) -> Result<(), (rocket::http::Status, String)> {
     let db = conn.into_inner();
 
@@ -100,7 +100,7 @@ pub async fn whoami(session: AdminAuth, context: Context<ContextDataType>) -> My
 }
 
 #[get("/hello")]
-pub async fn hello(_session: AdminAuth, context: Context<ContextDataType>) -> Result<String, (rocket::http::Status, String)> {
+pub async fn hello(_session: AdminAuth, _context: Context<ContextDataType>) -> Result<String, (rocket::http::Status, String)> {
                                                                             //       ^^ should this be a bbox string
     Ok("Hello admin".to_string())
 }
@@ -148,8 +148,8 @@ pub async fn create_candidate(
     MyResult::Ok(JsonResponse::from((cand, context)))
 }
 
-use alohomora::rocket::FromBBoxFormField;
-use alohomora::rocket::FromBBoxForm;
+
+
 
 
 #[allow(unused_variables)]

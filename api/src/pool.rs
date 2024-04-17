@@ -2,11 +2,10 @@ use async_trait::async_trait;
 use portfolio_core::sea_orm::{self};
 #[cfg(not(test))]
 use sea_orm::ConnectOptions;
-//use sea_orm_rocket::{rocket::figment::Figment, Database};
-use alohomora::{orm::{BBoxDatabase, Database}, AlohomoraType};
+use alohomora::orm::Database;
 #[cfg(not(test))]
 use std::time::Duration;
-use entity::{admin_session, application};
+
 use rocket::figment::Figment;
 
 #[derive(Database, Debug)]
@@ -93,10 +92,10 @@ impl alohomora::orm::Pool for SeaOrmPool {
             // make schema from all our entities
             let schema = Schema::new(DbBackend::MySql);
             let stmt: TableCreateStatement = schema.create_table_from_entity(candidate::Entity);
-            let stmt2: TableCreateStatement = schema.create_table_from_entity(application::Entity);
+            let stmt2: TableCreateStatement = schema.create_table_from_entity(entity::application::Entity);
             let stmt3: TableCreateStatement = schema.create_table_from_entity(session::Entity);
             let stmt4: TableCreateStatement = schema.create_table_from_entity(admin::Entity);
-            let stmt5: TableCreateStatement = schema.create_table_from_entity(admin_session::Entity);
+            let stmt5: TableCreateStatement = schema.create_table_from_entity(entity::admin_session::Entity);
             let stmt6: TableCreateStatement = schema.create_table_from_entity(parent::Entity);
             
             // build db based on that schema

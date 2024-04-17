@@ -1,7 +1,7 @@
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 
-use alohomora::context;
-use alohomora::rocket::{BBoxForm, ContextResponse, JsonResponse};
+
+use alohomora::rocket::{ContextResponse, JsonResponse};
 use entity::application;
 use portfolio_core::policies::context::ContextDataType;
 use portfolio_core::utils::response::MyResult;
@@ -11,16 +11,16 @@ use portfolio_core::models::auth::AuthenticableTrait;
 use portfolio_core::models::candidate::{ApplicationDetails, NewCandidateResponse};
 use portfolio_core::sea_orm::prelude::Uuid;
 use portfolio_core::services::application_service::ApplicationService;
-use portfolio_core::services::portfolio_service::{PortfolioService, SubmissionProgress};
+use portfolio_core::services::portfolio_service::{PortfolioService};
 // use rocket::http::Method::Delete;
 use requests::LoginRequest;
-use portfolio_core::models::candidate::NewCandidateResponseOut;
-use rocket::http::{Cookie, CookieJar, Status};
-use rocket::response::status::Custom;
-use rocket::serde::json::Json;
 
-use alohomora::{bbox::BBox, context::Context, orm::Connection, policy::{AnyPolicy, NoPolicy}, pure::{execute_pure, PrivacyPureRegion}, rocket::{get, post, route, BBoxCookie, BBoxCookieJar, BBoxJson, FromBBoxData}};
-use rocket::serde::Serialize;
+
+
+
+
+use alohomora::{bbox::BBox, context::Context, orm::Connection, policy::{NoPolicy}, pure::{execute_pure, PrivacyPureRegion}, rocket::{get, post, route, BBoxCookie, BBoxCookieJar, BBoxJson}};
+
 
 
 use crate::guards::data::letter::Letter;
@@ -63,7 +63,7 @@ pub async fn logout(
     conn: Connection<'_, Db>,
     _session: ApplicationAuth,
     cookies: BBoxCookieJar<'_, '_>,
-    context: Context<ContextDataType>
+    _context: Context<ContextDataType>
 ) -> MyResult<(), (rocket::http::Status, String)> {
     let db = conn.into_inner();
 
@@ -304,7 +304,7 @@ pub async fn download_portfolio(session: ApplicationAuth) -> Result<Vec<u8>, (ro
 
 #[cfg(test)]
 mod tests {
-    use portfolio_core::{crypto, models::candidate::{ApplicationDetails, CleanApplicationDetails, CleanNewCandidateResponse, NewCandidateResponse}, sea_orm::prelude::Uuid};
+    use portfolio_core::{crypto, models::candidate::{CleanApplicationDetails, CleanNewCandidateResponse}, sea_orm::prelude::Uuid};
     use rocket::{
         http::{Cookie, Status},
         local::blocking::Client,

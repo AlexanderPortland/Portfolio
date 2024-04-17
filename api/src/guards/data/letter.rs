@@ -2,11 +2,11 @@ use alohomora::bbox::BBox;
 use alohomora::policy::FrontendPolicy;
 use alohomora::pure::PrivacyPureRegion;
 use alohomora::rocket::{BBoxData, BBoxDataOutcome, BBoxRequest, FromBBoxData};
-use alohomora_derive::FromBBoxForm;
-use rocket::data::{self, Capped, Data, DataStream, FromData, ToByteUnit};
+
+use rocket::data::{Capped, ToByteUnit};
 use rocket::http::{ContentType, Status};
 use rocket::outcome::Outcome;
-use rocket::request::Request;
+
 
 //
 pub struct Letter<P: FrontendPolicy>(BBox<Vec<u8>, P>);

@@ -3,16 +3,16 @@ use alohomora::policy::NoPolicy;
 use alohomora::pure::{execute_pure, PrivacyPureRegion};
 use alohomora::rocket::{BBoxRequest, BBoxRequestOutcome, FromBBoxRequest};
 use entity::admin::Model as Admin;
-use entity::session;
-use log::info;
+
+
 use portfolio_core::models::auth::AuthenticableTrait;
 use portfolio_core::sea_orm::prelude::Uuid;
 use portfolio_core::services::admin_service::AdminService;
 use rocket::http::Status;
 use rocket::outcome::Outcome;
-use rocket::request::{FromRequest, Request};
 
-use crate::logging::format_request;
+
+
 use crate::pool::Db;
 //use crate::routes::admin::reset_candidate_password;
 
@@ -69,7 +69,7 @@ impl<'a, 'r> FromBBoxRequest<'a, 'r> for AdminAuth {
                 //warn!("{}: ADMIN {} AUTHENTICATED", format_request(request), model.id);
                 Outcome::Success(AdminAuth(model, private_key))
             },
-            Err(e) => {
+            Err(_e) => {
                 //info!("{}: ADMIN AUTHENTICATION FAILED: {}", format_request(request), e);
                 Outcome::Failure((Status::Unauthorized, ()))
         },

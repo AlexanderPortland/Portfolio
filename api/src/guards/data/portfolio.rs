@@ -2,10 +2,10 @@ use alohomora::bbox::BBox;
 use alohomora::policy::FrontendPolicy;
 use alohomora::pure::PrivacyPureRegion;
 use alohomora::rocket::{BBoxData, BBoxDataOutcome, BBoxRequest, FromBBoxData};
-use rocket::data::{self, Capped, Data, FromData, ToByteUnit};
+use rocket::data::{Capped, ToByteUnit};
 use rocket::http::{ContentType, Status};
 use rocket::outcome::Outcome;
-use rocket::request::Request;
+
 
 pub struct Portfolio<P: FrontendPolicy>(BBox<Vec<u8>, P>);
 

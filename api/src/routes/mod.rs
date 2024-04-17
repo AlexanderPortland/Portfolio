@@ -1,5 +1,5 @@
 use portfolio_core::error::ServiceError;
-use rocket::{response::status::Custom, http::Status};
+use rocket::{http::Status};
 
 pub mod admin;
 pub mod candidate;

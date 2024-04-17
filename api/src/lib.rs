@@ -12,7 +12,7 @@ use sea_orm_rocket::Database;
 
 use migration::MigratorTrait;
 //use sea_orm_rocket::Database;
-use alohomora::orm::BBoxDatabase;
+
 
 mod guards;
 mod pool;

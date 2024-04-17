@@ -8,11 +8,11 @@ use portfolio_core::sea_orm::prelude::Uuid;
 use portfolio_core::services::application_service::ApplicationService;
 use rocket::http::Status;
 use rocket::outcome::Outcome;
-use rocket::request::{FromRequest, Request};
-use rocket::response::status::NoContent;
+
+
 use alohomora::pure::PrivacyPureRegion;
 
-use crate::logging::format_request;
+
 use crate::pool::Db;
 
 pub struct ApplicationAuth(Application, BBox<String, NoPolicy>);
@@ -68,7 +68,7 @@ impl<'a, 'r> FromBBoxRequest<'a, 'r> for ApplicationAuth {
                 //info!("{}: CANDIDATE {} AUTHENTICATED", format_request(req), model.id);
                 Outcome::Success(ApplicationAuth(model, private_key))
             },
-            Err(e) => {
+            Err(_e) => {
                 //info!("{}: CANDIDATE {} AUTHENTICATION FAILED", format_request(req), e);
                 Outcome::Failure((Status::Unauthorized, ()))
             },

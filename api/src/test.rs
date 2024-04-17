@@ -9,9 +9,7 @@ pub mod tests {
         sea_orm::{ActiveModelTrait, DbConn, Set},
         services::application_service::ApplicationService,
     };
-    use rocket::{
-        local::blocking::Client,
-    };
+    
     use std::sync::Mutex;
 
     pub const ADMIN_ID: i32 = 1;
