@@ -245,7 +245,6 @@ impl From<&candidate::Model> for EncryptedCandidateDetails {
     fn from(
         candidate: &candidate::Model,
     ) -> Self {
-        let a = candidate.name.clone();
         EncryptedCandidateDetails {
             name: try_encrypt_bbox_str(&candidate.name),
             surname: try_encrypt_bbox_str(&candidate.surname),

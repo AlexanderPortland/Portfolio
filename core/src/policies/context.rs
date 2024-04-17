@@ -2,10 +2,8 @@ use alohomora::AlohomoraType;
 use ::rocket::http::Status;
 use alohomora::rocket::{BBoxRequest, BBoxRequestOutcome, FromBBoxRequest};
 use ::rocket::outcome::IntoOutcome;
-use ::rocket::State;
 
 #[derive(AlohomoraType, Clone)]
-//#[alohomora_out_type(to_derive = [db, config])]
 pub struct ContextDataType {
 
 }

@@ -47,7 +47,7 @@ mod tests {
 
     use crate::services::candidate_service::tests::put_user_data;
     use crate::utils::db::get_memory_sqlite_connection;
-    use crate::{Query};
+    use crate::Query;
 
     #[tokio::test]
     async fn test_find_session_by_uuid() {

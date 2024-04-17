@@ -1,9 +1,8 @@
-use alohomora::pcr::PrivacyCriticalRegion;
 use alohomora::{bbox::BBox, policy::NoPolicy};
-use alohomora::*;
 use chrono::NaiveDateTime;
 use entity::{application, candidate};
 use sea_orm::{EntityTrait, DbErr, DbConn, ModelTrait, FromQueryResult, QuerySelect, JoinType, RelationTrait, QueryFilter, ColumnTrait, QueryOrder, PaginatorTrait};
+use crate::Query;
 
 const PAGE_SIZE: u64 = 20;
 
@@ -19,8 +18,6 @@ pub struct ApplicationCandidateJoin {
     pub field_of_study: Option<BBox<String, NoPolicy>>,
     pub created_at: BBox<NaiveDateTime, NoPolicy>,
 }
-
-use crate::{Query};
 
 fn get_ordering(sort: String) -> (application::Column, sea_orm::Order)
 {

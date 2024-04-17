@@ -1,23 +1,17 @@
 use std::collections::HashMap;
 use alohomora::policy::AnyPolicy;
 use alohomora::{bbox::BBox, policy::NoPolicy, AlohomoraType};
-use alohomora::rocket::{OutputBBoxValue, ResponseBBoxJson};
+use alohomora::rocket::ResponseBBoxJson;
 use alohomora_derive::RequestBBoxJson;
-use async_zip::tokio::read;
 use chrono::NaiveDate;
-//use sea_orm::strum::Display;
 use entity::{application, candidate};
 use serde::{Deserialize, Serialize};
-use uuid::NoContext;
 use validator::Validate;
 
-use crate::{
-    error::ServiceError,
-};
+use crate::error::ServiceError;
 
 use super::{candidate_details::{EncryptedString, EncryptedCandidateDetails}, grade::GradeList, school::School};
 
-//#[derive(Debug, Clone, Serialize, Display)]
 #[derive(Debug, Clone, Serialize)]
 pub enum FieldOfStudy {
     G,
@@ -69,8 +63,6 @@ impl Into<i32> for FieldOfStudy {
 }
 
 /// Minimal candidate response containing database only not null fields
-//#[derive(Debug, Serialize, Deserialize)]
-//#[serde(rename_all = "camelCase")]
 #[derive(ResponseBBoxJson, AlohomoraType)]
 pub struct NewCandidateResponse {
     pub current_application: BBox<i32, AnyPolicy>,
@@ -82,7 +74,6 @@ pub struct NewCandidateResponse {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-//#[serde(rename_all = "camelCase")]
 pub struct CleanNewCandidateResponse {
     pub current_application: i32,
     pub applications: Vec<i32>,
@@ -94,9 +85,7 @@ pub struct CleanNewCandidateResponse {
 
 /// Create candidate (admin endpoint)
 /// Password change  (admin endpoint)
-//#[derive(Debug, Serialize, Deserialize)]
 #[derive(Debug, ResponseBBoxJson)]
-//#[serde(rename_all = "camelCase")]
 pub struct CreateCandidateResponse {
     pub application_id: BBox<i32, NoPolicy>,
     pub field_of_study: BBox<String, NoPolicy>,
@@ -106,7 +95,6 @@ pub struct CreateCandidateResponse {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-//#[serde(rename_all = "camelCase")]
 pub struct CleanCreateCandidateResponse {
     pub application_id: i32,
     pub field_of_study: String,
@@ -114,8 +102,8 @@ pub struct CleanCreateCandidateResponse {
     pub personal_id_number: String,
     pub password: String,
 }
-// used to be #[derive(Debug, Serialize, Deserialize, Validate, Clone, PartialEq, Eq)]
-// validation??
+
+#[allow(non_snake_case)]
 #[derive(Debug, Clone, PartialEq, ResponseBBoxJson, RequestBBoxJson)]
 pub struct CandidateDetails {
     pub name: BBox<String, NoPolicy>,
@@ -141,54 +129,34 @@ pub struct CandidateDetails {
 #[derive(Debug, Serialize, Deserialize, Validate, Clone, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct CleanCandidateDetails {
-    // #[validate(length(min = 1, max = 255))]
     pub name: String,
-    // #[validate(length(min = 1, max = 255))]
     pub surname: String,
     pub birth_surname: String,
-    // #[validate(length(min = 1, max = 255))]
     pub birthplace: String,
-    // NaiveDate validated natively
     pub birthdate: NaiveDate,
-    // #[validate(length(min = 1, max = 255))]
     pub address: String,
     pub letter_address: String,
-    // #[validate(length(min = 1, max = 31))]
     pub telephone: String,
-    // #[validate(length(min = 1, max = 255))]
     pub citizenship: String,
     #[validate(email)]
     pub email: String,
     pub sex: String,
-    // #[validate(length(min = 1, max = 255))]
     pub personal_id_number: String,
-    // #[validate(length(min = 1, max = 255))]
     pub school_name: String,
-    // #[validate(length(min = 1, max = 255))]
     pub health_insurance: String,
     pub grades: GradeList,
     pub first_school: School,
     pub second_school: School,
-    // #[validate(length(min = 1, max = 255))]
     pub test_language: String,
 }
 
 impl CandidateDetails {
     pub fn validate_self(&self) -> Result<(), ServiceError> {
-        // self.first_school.validate()?;
-        // self.second_school.validate()?;
-        // self.grades.validate_self()?;
-        //self.validate()
-        //    .map_err(ServiceError::ValidationError)
         Ok(())
     }
 }
 
-
-
-// used to be #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
 #[derive(Debug, Clone, PartialEq, alohomora_derive::ResponseBBoxJson, RequestBBoxJson)]
-//#[serde(rename_all = "camelCase")]
 pub struct ParentDetails {
     pub name: BBox<String, NoPolicy>,
     pub surname: BBox<String, NoPolicy>,
@@ -205,19 +173,14 @@ pub struct CleanParentDetails {
     pub email: String,
 }
 
-/// Candidate details (admin and candidate endpoints)
-//#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
-#[derive(Debug, Clone, ResponseBBoxJson, RequestBBoxJson)]//, alohomora_derive::ResponseBBoxJson)]//alohomora_derive::RequestBBoxJson
-//#[serde(rename_all = "camelCase")]
+#[derive(Debug, Clone, ResponseBBoxJson, RequestBBoxJson)]
 pub struct ApplicationDetails {
-    // Candidate
     pub candidate: CandidateDetails,
     pub parents: Vec<ParentDetails>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct CleanApplicationDetails {
-    // Candidate
     pub candidate: CleanCandidateDetails,
     pub parents: Vec<CleanParentDetails>,
 }
@@ -290,48 +253,27 @@ impl FieldsCombination {
     }
 }
 
-//#[derive(Debug, Serialize)]
 #[derive(AlohomoraType)]
 #[alohomora_out_type(to_derive = [Serialize])]
 pub struct CandidateRow {
-    //#[serde(rename = "Číslo uchazeče (přiděleno systémem)")]
     pub id: BBox<i32, NoPolicy>,
-    //#[serde(rename = "Ev. č. první přihlášky")]
     pub first_application: BBox<i32, NoPolicy>,
-    //#[serde(rename = "Ev. č. druhé přihlášky (pokud podával dvě)")]
     pub second_application: BBox<Option<i32>, NoPolicy>,
-    //#[serde(rename = "Rodné číslo")]
     pub personal_id_number: BBox<String, NoPolicy>,
-    //#[serde(rename = "Bude dělat JPZ na SSPŠ 13. 4.")]
     pub first_day_admissions: BBox<bool, NoPolicy>,
-    //#[serde(rename = "Bude dělat JPZ na SSPŠ 14. 4.")]
     pub second_day_admissions: BBox<bool, NoPolicy>,
-    //#[serde(rename = "Obor první přihlášky SSPŠ 13. 4.")]
     pub first_day_field: BBox<Option<FieldOfStudy>, NoPolicy>,
-    //#[serde(rename = "Obor druhé přihlášky SSPŠ 14. 4.")]
     pub second_day_field: BBox<Option<FieldOfStudy>, NoPolicy>,
-    //#[serde(rename = "Kombinace SSPŠ oborů")]
     pub fields_combination: BBox<FieldsCombination, NoPolicy>,
-    //#[serde(rename = "Název první školy (JPZ 13. 4.)")]
     pub first_school: BBox<String, NoPolicy>,
-    //#[serde(rename = "Obor první školy")]
     pub first_school_field: BBox<String, NoPolicy>,
-    //#[serde(rename = "Název druhé školy (JPZ 14. 4.)")]
     pub second_school: BBox<String, NoPolicy>,
-    //#[serde(rename = "Obor druhé školy")]
     pub second_school_field: BBox<String, NoPolicy>,
-    //#[serde(rename = "Obory vyplněné uchazečem odpovídají s přihláškami")]
     pub fields_match: BBox<bool, NoPolicy>,
-    //#[serde(rename = "Jméno (pokud vyplnil)")]
     pub name: BBox<String, NoPolicy>,
-    //#[serde(rename = "Příjmení (pokud vyplnil)")]
     pub surname: BBox<String, NoPolicy>,
-    //#[serde(rename = "Email uchazeče (pokud vyplnil)")]
     pub email: BBox<String, NoPolicy>,
-    //#[serde(rename = "Telefon uchazeče (pokud vyplnil)")]
     pub telephone: BBox<String, NoPolicy>,
-    //#[serde(rename = "Email zákonného zástupce (pokud vyplnil)")]
     pub parent_email: BBox<Option<String>, NoPolicy>,
-    //#[serde(rename = "Telefon zákonného zástupce (pokud vyplnil)")]
     pub parent_telephone: BBox<Option<String>, NoPolicy>,
 }

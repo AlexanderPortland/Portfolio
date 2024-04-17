@@ -48,8 +48,8 @@ pub async fn login(
     let session_token = session_token_key.0;
     let private_key = session_token_key.1;
 
-    cookies.add(BBoxCookie::new("id", session_token.clone()), context.clone());
-    cookies.add(BBoxCookie::new("key", private_key.clone()), context.clone());
+    let _ = cookies.add(BBoxCookie::new("id", session_token.clone()), context.clone());
+    let _ = cookies.add(BBoxCookie::new("key", private_key.clone()), context.clone());
 
     return Ok(());
 }

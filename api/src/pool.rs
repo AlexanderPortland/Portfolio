@@ -7,14 +7,10 @@ use alohomora::{orm::{BBoxDatabase, Database}, AlohomoraType};
 #[cfg(not(test))]
 use std::time::Duration;
 use entity::{admin_session, application};
-use sea_orm::DbConn;
-use alohomora::orm::Pool;
-//use alohomora::orm::Database;
 use rocket::figment::Figment;
 
 #[derive(Database, Debug)]
 #[database("sea_orm")]
-//#[alohomora_derive(Database)]
 pub struct Db(SeaOrmPool);
 
 #[derive(Debug, Clone)]
@@ -94,6 +90,7 @@ impl alohomora::orm::Pool for SeaOrmPool {
         if init {
             use entity::{admin, candidate, parent, session};
 
+            // make schema from all our entities
             let schema = Schema::new(DbBackend::MySql);
             let stmt: TableCreateStatement = schema.create_table_from_entity(candidate::Entity);
             let stmt2: TableCreateStatement = schema.create_table_from_entity(application::Entity);
@@ -101,17 +98,10 @@ impl alohomora::orm::Pool for SeaOrmPool {
             let stmt4: TableCreateStatement = schema.create_table_from_entity(admin::Entity);
             let stmt5: TableCreateStatement = schema.create_table_from_entity(admin_session::Entity);
             let stmt6: TableCreateStatement = schema.create_table_from_entity(parent::Entity);
-            // need to enter correct db
-            //let _ = db.execute(Statement::from_string(db.get_database_backend(), "CREATE DATABASE portfolio;".to_string())).await;
-            //let _ = db.execute(Statement::from_string(db.get_database_backend(), "USE portfolio;".to_string())).await;
-            // INSERT INTO admin VALUES (0, "alex", 13, 13, "hi", ‘2021-12-01 14:30:15’, ‘2021-12-01 14:30:15’);
-            // INSERT INTO admin VALUES (0, "alex", 13, 13, "hi", NOW(), NOW());
-            println!("helskdjklgajklsd");
-            println!("stmt is {:?}", stmt);
+            
+            // build db based on that schema
             let b = db.get_database_backend().build(&stmt);
-            println!("b is {:?}", b);
             let r = db.execute(b).await;
-            println!("res is {:?}", r);
             r.unwrap();
             db.execute(db.get_database_backend().build(&stmt2)).await.unwrap();
             db.execute(db.get_database_backend().build(&stmt3)).await.unwrap();
@@ -124,6 +114,7 @@ impl alohomora::orm::Pool for SeaOrmPool {
             // insert new admin account for our use
             // id: should be 1 but may change
             // password: hello
+
             let password_plain_text = "hello".to_string();
             let pwrd_hash = hash_password(password_plain_text.clone()).await.unwrap();
             println!("got password hash {}", pwrd_hash.clone());
@@ -144,11 +135,7 @@ impl alohomora::orm::Pool for SeaOrmPool {
                 )).await?;
             }
         }
-        
 
-        //create_admin(&db).await;
-
-        
         Ok(SeaOrmPool { conn: db })
     }
 

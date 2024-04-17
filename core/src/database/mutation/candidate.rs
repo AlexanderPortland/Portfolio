@@ -1,4 +1,4 @@
-use crate::{Mutation, models::candidate_details::{EncryptedCandidateDetails}};
+use crate::{Mutation, models::candidate_details::EncryptedCandidateDetails};
 
 use alohomora::{bbox::BBox, policy::NoPolicy};
 use ::entity::candidate;

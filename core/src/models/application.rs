@@ -1,8 +1,8 @@
-use alohomora::{bbox::BBox, pcr::PrivacyCriticalRegion, policy::NoPolicy, AlohomoraType};
+use alohomora::{bbox::BBox, policy::NoPolicy, AlohomoraType};
 use alohomora_derive::ResponseBBoxJson;
 use chrono::NaiveDateTime;
 //use sea_orm::sea_query::private;
-use serde::{Serialize, Deserialize};
+use serde::Serialize;
 use std::collections::HashMap;
 
 use crate::{database::query::application::ApplicationCandidateJoin, error::ServiceError};

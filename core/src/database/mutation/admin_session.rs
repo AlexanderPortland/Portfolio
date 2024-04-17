@@ -1,8 +1,6 @@
-use std::net::IpAddr;
-
 use alohomora::{bbox::BBox, policy::NoPolicy};
 use chrono::{Utc, Duration};
-use entity::{admin, admin_session};
+use entity::admin_session;
 use sea_orm::{DbConn, prelude::Uuid, DbErr, Set, ActiveModelTrait};
 
 use crate::Mutation;
