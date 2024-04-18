@@ -4,6 +4,8 @@ pub use sea_orm;
 
 pub mod database;
 pub mod crypto;
+
+pub mod crypto_helpers;
 pub mod services;
 pub mod error;
 pub mod utils;

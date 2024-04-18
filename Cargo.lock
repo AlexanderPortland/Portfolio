@@ -151,6 +151,7 @@ version = "0.1.0"
 dependencies = [
  "alohomora_derive",
  "alohomora_sandbox",
+ "chrono",
  "cookie",
  "dynfmt",
  "either",
@@ -3379,11 +3380,13 @@ dependencies = [
  "portfolio-core",
  "portfolio-entity",
  "portfolio-migration",
+ "portfolio-policies",
  "rocket",
  "sea-orm-migration",
  "sea-orm-rocket",
  "serde_json",
  "tokio",
+ "validator",
 ]
 
 [[package]]
@@ -3411,6 +3414,7 @@ dependencies = [
  "mysql_common 0.22.2",
  "once_cell",
  "portfolio-entity",
+ "portfolio-policies",
  "rand 0.8.5",
  "rocket",
  "sea-orm",
@@ -3433,6 +3437,7 @@ dependencies = [
  "alohomora_derive",
  "async-trait",
  "chrono",
+ "portfolio-policies",
  "sea-orm",
 ]
 
@@ -3444,9 +3449,22 @@ dependencies = [
  "alohomora_derive",
  "chrono",
  "portfolio-entity",
+ "portfolio-policies",
  "sea-orm-migration",
  "serde",
  "tokio",
+]
+
+[[package]]
+name = "portfolio-policies"
+version = "2.0.0"
+dependencies = [
+ "alohomora",
+ "alohomora_derive",
+ "async-trait",
+ "rocket",
+ "sea-orm-migration",
+ "sea-orm-rocket",
 ]
 
 [[package]]

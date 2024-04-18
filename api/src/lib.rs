@@ -7,12 +7,14 @@ use rocket::fairing::{self, AdHoc, Fairing, Info, Kind};
 
 use rocket::http::Header;
 use rocket::{Build, Request, Response, Rocket};
-use alohomora::rocket::get;
 use sea_orm_rocket::Database;
 
 use migration::MigratorTrait;
-//use sea_orm_rocket::Database;
 
+use pool::Db;
+
+pub use entity::candidate;
+pub use entity::candidate::Entity as Candidate;
 
 mod guards;
 mod pool;
@@ -20,11 +22,6 @@ mod requests;
 mod routes;
 mod logging;
 pub mod test;
-
-use pool::Db;
-
-pub use entity::candidate;
-pub use entity::candidate::Entity as Candidate;
 
 struct CORS;
 
@@ -72,7 +69,7 @@ fn all_options() {
     /* Intentionally left empty */
 }
 
-#[get("/hello")]
+#[alohomora::rocket::get("/hello")]
 async fn hello() -> &'static str {
     "Hello, world!"
 }
@@ -112,6 +109,7 @@ pub fn rocket() -> BBoxRocket<Build> {
         .attach(AdHoc::try_on_ignite("Migrations", run_migrations))
         //.mount("/", routes![hello, all_options])
         .mount("/", routes![hello])
+        /*
         .mount(
             "/candidate/",
             routes![
@@ -147,20 +145,22 @@ pub fn rocket() -> BBoxRocket<Build> {
                 routes::candidate::delete_portfolio,
             ],
         )
+        */
         .mount(
             "/admin/",
             routes![
                 routes::admin::login,
-                routes::admin::logout,
+                /*routes::admin::logout,
                 routes::admin::whoami,
                 routes::admin::hello,
                 routes::admin::create_candidate,
                 routes::admin::get_candidate,
-                routes::admin::reset_candidate_password,
+                routes::admin::reset_candidate_password,*/
                 // routes::admin::get_candidate_portfolio,
                 //routes::admin::delete_candidate,
             ],
         )
+        /*
         .mount(
             "/admin/list",
             routes![
@@ -168,7 +168,8 @@ pub fn rocket() -> BBoxRocket<Build> {
                 routes::admin::list_candidates_csv,
                 routes::admin::list_admissions_csv
             ]
-        )
+        }
+        */
         .register("/", catchers![])
 }
 

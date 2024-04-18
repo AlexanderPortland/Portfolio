@@ -3,18 +3,19 @@
 use sea_orm::entity::prelude::*;
 
 use crate::session_trait::UserSession;
-use alohomora::{bbox::BBox, policy::NoPolicy};
+use alohomora::bbox::BBox;
+use portfolio_policies::FakePolicy;
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel)]
 #[sea_orm(table_name = "admin_session")]
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
-    pub id: BBox<Uuid, NoPolicy>,
-    pub admin_id: BBox<i32, NoPolicy>,
-    pub ip_address: BBox<String, NoPolicy>,
-    pub created_at: BBox<DateTime, NoPolicy>,
-    pub expires_at: BBox<DateTime, NoPolicy>,
-    pub updated_at: BBox<DateTime, NoPolicy>,
+    pub id: BBox<Uuid, FakePolicy>,
+    pub admin_id: BBox<i32, FakePolicy>,
+    pub ip_address: BBox<String, FakePolicy>,
+    pub created_at: BBox<DateTime, FakePolicy>,
+    pub expires_at: BBox<DateTime, FakePolicy>,
+    pub updated_at: BBox<DateTime, FakePolicy>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
@@ -39,10 +40,10 @@ impl ActiveModelBehavior for ActiveModel {}
 
 #[async_trait::async_trait]
 impl UserSession for Model {
-    async fn id(&self) -> BBox<Uuid, NoPolicy> {
+    async fn id(&self) -> BBox<Uuid, FakePolicy> {
         self.id.clone()
     }
-    async fn expires_at(&self) -> BBox<chrono::NaiveDateTime, NoPolicy> {
+    async fn expires_at(&self) -> BBox<chrono::NaiveDateTime, FakePolicy> {
         self.expires_at.clone()
     }
 }

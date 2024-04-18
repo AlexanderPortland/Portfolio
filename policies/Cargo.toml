@@ -1,36 +1,12 @@
 [package]
-name = "portfolio-api"
+name = "portfolio-policies"
 version = "2.0.0"
 edition = "2021"
 publish = false
 
 [dependencies]
-# rocket = { version = "^0.5.0-rc.3", features = [
-#   "json",
-#   "secrets",
-# ] }
 rocket = { git = "https://github.com/KinanBab/Rocket.git", branch = "main" }
-
 async-trait = { version = "^0.1" }
-tokio = "^1.28"
-
-dotenv = "^0.15"
-
-validator = { version = "^0.16", features = ["derive"] }
-
-serde_json = { version = "^1.0" }
-
-chrono = "^0.4"
-
-# logging
-log = "^0.4"
-fern = "^0.6"
-
-portfolio-entity = { path = "../entity" }
-portfolio-migration = { path = "../migration" }
-portfolio-core = { path = "../core" }
-portfolio-policies = { path = "../policies" }
-
 alohomora = { path = "../../alohomora/alohomora" }
 alohomora_derive = { path = "../../alohomora/alohomora_derive" }
 
@@ -42,7 +18,3 @@ features = [ "sqlx-mysql", "sqlx-sqlite", "runtime-tokio-native-tls" ]
 [dependencies.sea-orm-rocket]
 git = "https://github.com/KinanBab/sea-orm.git"
 branch = "main"
-
-
-[dev-dependencies]
-once_cell = "^1.17"

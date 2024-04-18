@@ -1,4 +1,5 @@
 use std::cmp::min;
+use alohomora::pure::PrivacyPureRegion;
 
 use entity::{session_trait::UserSession};
 use sea_orm::{DbConn, ActiveModelTrait, ActiveModelBehavior};
@@ -14,11 +15,15 @@ impl SessionService {
     /// Check if session is valid
     pub async fn is_valid<T>(session: &T) -> Result<bool, ServiceError> where T: UserSession {
         let now = chrono::Utc::now().naive_utc();
-        if now >= session.expires_at().await.discard_box() {
-            Ok(false)
-        } else {
-            Ok(true)
-        }
+        let result = session.expires_at().await.into_ppr(PrivacyPureRegion::new(|expiry| {
+            if now >= expiry {
+                Err(())
+            } else {
+                Ok(())
+            }
+        }));
+
+        Ok(result.transpose().is_ok())
     }
 
     /// Delete list of sessions
@@ -37,10 +42,11 @@ impl SessionService {
 
 #[cfg(test)]
 mod tests {
-    use alohomora::{bbox::BBox, policy::NoPolicy};
+    use alohomora::bbox::BBox;
     use sea_orm::{
         prelude::Uuid,
     };
+    use portfolio_policies::FakePolicy;
 
     use crate::{
         crypto,
@@ -55,11 +61,11 @@ mod tests {
         let db = get_memory_sqlite_connection().await;
 
         let application = ApplicationService::create(
-            &BBox::new("".to_string(), NoPolicy::new()), 
+            &BBox::new("".to_string(), FakePolicy::new()),
             &db, 
-            BBox::new(103151, NoPolicy::new()), 
-            &BBox::new(SECRET.to_string(), NoPolicy::new()), 
-            BBox::new("".to_string(), NoPolicy::new())).await.unwrap().0;
+            BBox::new(103151, FakePolicy::new()),
+            &BBox::new(SECRET.to_string(), FakePolicy::new()),
+            BBox::new("".to_string(), FakePolicy::new())).await.unwrap().0;
 
         assert_eq!(application.id.to_owned().discard_box(), 103151);
         assert_ne!(application.password.to_owned().discard_box(), SECRET.to_string());
@@ -74,23 +80,23 @@ mod tests {
         let db = &get_memory_sqlite_connection().await;
 
         let application = ApplicationService::create(
-            &BBox::new("".to_string(), NoPolicy::new()), 
+            &BBox::new("".to_string(), FakePolicy::new()),
             &db, 
-            BBox::new(103151, NoPolicy::new()), 
-            &BBox::new(SECRET.to_string(), NoPolicy::new()), 
-            BBox::new("".to_string(), NoPolicy::new())).await.unwrap().0;
+            BBox::new(103151, FakePolicy::new()),
+            &BBox::new(SECRET.to_string(), FakePolicy::new()),
+            BBox::new("".to_string(), FakePolicy::new())).await.unwrap().0;
 
         // correct password
         let session = ApplicationService::new_session(
             db,
             &application,
-            BBox::new(SECRET.to_string(), NoPolicy::new()),
-            BBox::new("127.0.0.1".to_string(), NoPolicy::new()),
+            BBox::new(SECRET.to_string(), FakePolicy::new()),
+            BBox::new("127.0.0.1".to_string(), FakePolicy::new()),
         )
         .await
         .unwrap();
         assert!(
-            ApplicationService::auth(db, BBox::new(Uuid::parse_str(&session.discard_box()).unwrap(), NoPolicy::new()))
+            ApplicationService::auth(db, BBox::new(Uuid::parse_str(&session.discard_box()).unwrap(), FakePolicy::new()))
                 .await
                 .is_ok()
         );
@@ -101,18 +107,18 @@ mod tests {
         let db = &get_memory_sqlite_connection().await;
 
         let application = ApplicationService::create(
-            &BBox::new("".to_string(), NoPolicy::new()), 
+            &BBox::new("".to_string(), FakePolicy::new()),
             &db, 
-            BBox::new(103151, NoPolicy::new()), 
-            &BBox::new(SECRET.to_string(), NoPolicy::new()), 
-            BBox::new("".to_string(), NoPolicy::new())).await.unwrap().0;
+            BBox::new(103151, FakePolicy::new()),
+            &BBox::new(SECRET.to_string(), FakePolicy::new()),
+            BBox::new("".to_string(), FakePolicy::new())).await.unwrap().0;
 
         // incorrect password
         assert!(ApplicationService::new_session(
             db,
             &application,
-            BBox::new("Spatny_kod".to_string(), NoPolicy::new()),
-            BBox::new("127.0.0.1".to_string(), NoPolicy::new())
+            BBox::new("Spatny_kod".to_string(), FakePolicy::new()),
+            BBox::new("127.0.0.1".to_string(), FakePolicy::new())
         )
         .await
         .is_err());

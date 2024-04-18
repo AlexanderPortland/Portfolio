@@ -1,6 +1,4 @@
 use alohomora::bbox::BBox;
-use alohomora::policy::NoPolicy;
-use alohomora::pure::execute_pure;
 use alohomora::rocket::{BBoxRequest, BBoxRequestOutcome, FromBBoxRequest};
 use entity::application::Model as Application;
 use portfolio_core::models::auth::AuthenticableTrait;
@@ -11,11 +9,12 @@ use rocket::outcome::Outcome;
 
 
 use alohomora::pure::PrivacyPureRegion;
+use portfolio_policies::FakePolicy;
 
 
 use crate::pool::Db;
 
-pub struct ApplicationAuth(Application, BBox<String, NoPolicy>);
+pub struct ApplicationAuth(Application, BBox<String, FakePolicy>);
 
 impl Into<Application> for ApplicationAuth {
     fn into(self) -> Application {
@@ -24,7 +23,7 @@ impl Into<Application> for ApplicationAuth {
 }
 
 impl ApplicationAuth {
-    pub fn get_private_key(&self) -> BBox<String, NoPolicy> {
+    pub fn get_private_key(&self) -> BBox<String, FakePolicy> {
         self.1.clone()
     }
 }
@@ -36,7 +35,7 @@ impl<'a, 'r> FromBBoxRequest<'a, 'r> for ApplicationAuth {
     async fn from_bbox_request(
         req: BBoxRequest<'a, 'r>,
     ) -> BBoxRequestOutcome<ApplicationAuth, Self::BBoxError> {
-        let cookie_id = req.cookies().get::<NoPolicy>("id");
+        let cookie_id = req.cookies().get::<FakePolicy>("id");
         let cookie_private_key = req.cookies().get("key");
 
         let Some(cookie_id) = cookie_id else {

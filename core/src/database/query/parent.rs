@@ -29,7 +29,6 @@ impl Query {
 #[cfg(test)]
 mod tests {
     use alohomora::bbox::BBox;
-    use alohomora::policy::NoPolicy;
     use entity::{candidate, parent};
     use sea_orm::{ActiveModelTrait, Set};
 
@@ -43,19 +42,19 @@ mod tests {
         const CANDIDATE_ID: i32 = 103158;
 
         candidate::ActiveModel {
-            id: Set(BBox::new(CANDIDATE_ID, NoPolicy::new())),
-            personal_identification_number: Set(BBox::new("test".to_string(), NoPolicy::new())),
-            created_at: Set(BBox::new(chrono::offset::Local::now().naive_local(), NoPolicy::new())),
-            updated_at: Set(BBox::new(chrono::offset::Local::now().naive_local(), NoPolicy::new())),
+            id: Set(BBox::new(CANDIDATE_ID, FakePolicy::new())),
+            personal_identification_number: Set(BBox::new("test".to_string(), FakePolicy::new())),
+            created_at: Set(BBox::new(chrono::offset::Local::now().naive_local(), FakePolicy::new())),
+            updated_at: Set(BBox::new(chrono::offset::Local::now().naive_local(), FakePolicy::new())),
             ..Default::default()
         }
         .insert(&db)
         .await
         .unwrap();
         let parent = parent::ActiveModel {
-            candidate_id: Set(BBox::new(CANDIDATE_ID, NoPolicy::new())),
-            created_at: Set(BBox::new(chrono::offset::Local::now().naive_local(), NoPolicy::new())),
-            updated_at: Set(BBox::new(chrono::offset::Local::now().naive_local(), NoPolicy::new())),
+            candidate_id: Set(BBox::new(CANDIDATE_ID, FakePolicy::new())),
+            created_at: Set(BBox::new(chrono::offset::Local::now().naive_local(), FakePolicy::new())),
+            updated_at: Set(BBox::new(chrono::offset::Local::now().naive_local(), FakePolicy::new())),
             ..Default::default()
         }
         .insert(&db)

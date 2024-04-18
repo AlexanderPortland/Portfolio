@@ -1,6 +1,7 @@
-use alohomora::{bbox::BBox, policy::NoPolicy};
+use alohomora::bbox::BBox;
 use entity::{parent, candidate};
 use sea_orm::DbConn;
+use portfolio_policies::FakePolicy;
 
 use crate::{error::ServiceError, Mutation, models::{candidate_details::{EncryptedParentDetails}, candidate::ParentDetails}, Query};
 
@@ -9,7 +10,7 @@ pub struct ParentService;
 impl ParentService {
     pub async fn create(
         db: &DbConn,
-        application_id: BBox<i32, alohomora::policy::NoPolicy>,
+        application_id: BBox<i32, FakePolicy>,
     ) -> Result<parent::Model, ServiceError> {
         let parent = Mutation::create_parent(db, application_id)
             .await?;
@@ -21,15 +22,12 @@ impl ParentService {
         db: &DbConn,
         ref_candidate: &candidate::Model,
         parents_details: &Vec<ParentDetails>,
-        recipients: &Vec<BBox<String, NoPolicy>>, // put the bbox on the outside bc whole list will have
-                                                  // same policy
+        recipients: &Vec<BBox<String, FakePolicy>>,
     ) -> Result<Vec<parent::Model>, ServiceError> {
-        let recipients = recipients.iter().cloned().map(|r| r.discard_box()).collect();
-
         if parents_details.len() > 2 {
             return Err(ServiceError::ParentOverflow);
         }
-        
+
         let found_parents = Query::find_candidate_parents(db, ref_candidate).await?;
 
         let mut result = vec![];
@@ -38,7 +36,7 @@ impl ParentService {
                 Some(parent) => parent.to_owned(),
                 None => ParentService::create(db, ref_candidate.id.clone()).await?,
             };
-            let enc_details = EncryptedParentDetails::new(&parents_details[i], &recipients).await?;
+            let enc_details = EncryptedParentDetails::new(&parents_details[i], recipients).await?;
             let parent = Mutation::add_parent_details(db, found_parent, enc_details.clone()).await?;
             result.push(parent);
         }
@@ -56,44 +54,45 @@ impl ParentService {
 mod tests {
     use std::sync::Mutex;
 
-    use alohomora::{bbox::BBox, policy::NoPolicy};
+    use alohomora::bbox::BBox;
     use once_cell::sync::Lazy;
+    use portfolio_policies::FakePolicy;
 
     use crate::{utils::db::get_memory_sqlite_connection, models::{candidate::{ParentDetails, ApplicationDetails, CandidateDetails}, candidate_details::EncryptedApplicationDetails, grade::GradeList, school::School}, services::{candidate_service::{CandidateService, tests::put_user_data}, application_service::ApplicationService, parent_service::ParentService}, crypto};
 
     pub static APPLICATION_DETAILS_TWO_PARENTS: Lazy<Mutex<ApplicationDetails>> = Lazy::new(|| 
         Mutex::new(ApplicationDetails {
             candidate: CandidateDetails {
-                name: BBox::new("name".to_string(), NoPolicy::new()),
-                surname: BBox::new("surname".to_string(), NoPolicy::new()),
-                birthSurname: BBox::new("birth_surname".to_string(), NoPolicy::new()),
-                birthplace: BBox::new("birthplace".to_string(), NoPolicy::new()),
-                birthdate: BBox::new(chrono::NaiveDate::from_ymd_opt(2000, 1, 1).unwrap(), NoPolicy::new()),
-                address: BBox::new("address".to_string(), NoPolicy::new()),
-                letterAddress: BBox::new("letter_address".to_string(), NoPolicy::new()),
-                telephone: BBox::new("telephone".to_string(), NoPolicy::new()),
-                citizenship: BBox::new("citizenship".to_string(), NoPolicy::new()),
-                email: BBox::new("email".to_string(), NoPolicy::new()),
-                sex: BBox::new("sex".to_string(), NoPolicy::new()),
-                personalIdNumber: BBox::new("personal_id_number".to_string(), NoPolicy::new()),
-                schoolName: BBox::new("school_name".to_string(), NoPolicy::new()),
-                healthInsurance: BBox::new("health_insurance".to_string(), NoPolicy::new()),
-                grades: BBox::new(GradeList::from(vec![]), NoPolicy::new()),
-                firstSchool: BBox::new(School::from_opt_str(Some(BBox::new("{\"name\": \"SSPS\", \"field\": \"KB\"}".to_string(), NoPolicy::new()))).unwrap(), NoPolicy::new()),
-                secondSchool: BBox::new(School::from_opt_str(Some(BBox::new("{\"name\": \"SSPS\", \"field\": \"IT\"}".to_string(), NoPolicy::new()))).unwrap(), NoPolicy::new()),
-                testLanguage: BBox::new("test_language".to_string(), NoPolicy::new()),
+                name: BBox::new("name".to_string(), FakePolicy::new()),
+                surname: BBox::new("surname".to_string(), FakePolicy::new()),
+                birthSurname: BBox::new("birth_surname".to_string(), FakePolicy::new()),
+                birthplace: BBox::new("birthplace".to_string(), FakePolicy::new()),
+                birthdate: BBox::new(chrono::NaiveDate::from_ymd_opt(2000, 1, 1).unwrap(), FakePolicy::new()),
+                address: BBox::new("address".to_string(), FakePolicy::new()),
+                letterAddress: BBox::new("letter_address".to_string(), FakePolicy::new()),
+                telephone: BBox::new("telephone".to_string(), FakePolicy::new()),
+                citizenship: BBox::new("citizenship".to_string(), FakePolicy::new()),
+                email: BBox::new("email".to_string(), FakePolicy::new()),
+                sex: BBox::new("sex".to_string(), FakePolicy::new()),
+                personalIdNumber: BBox::new("personal_id_number".to_string(), FakePolicy::new()),
+                schoolName: BBox::new("school_name".to_string(), FakePolicy::new()),
+                healthInsurance: BBox::new("health_insurance".to_string(), FakePolicy::new()),
+                grades: BBox::new(GradeList::from(vec![]), FakePolicy::new()),
+                firstSchool: School::from_opt_str(Some(BBox::new("{\"name\": \"SSPS\", \"field\": \"KB\"}".to_string(), FakePolicy::new()))).unwrap(),
+                secondSchool: School::from_opt_str(Some(BBox::new("{\"name\": \"SSPS\", \"field\": \"IT\"}".to_string(), FakePolicy::new()))).unwrap(),
+                testLanguage: BBox::new("test_language".to_string(), FakePolicy::new()),
             },
             parents: vec![ParentDetails {
-                name: BBox::new("parent_name".to_string(), NoPolicy::new()),
-                surname: BBox::new("parent_surname".to_string(), NoPolicy::new()),
-                telephone: BBox::new("parent_telephone".to_string(), NoPolicy::new()),
-                email: BBox::new("parent_email".to_string(), NoPolicy::new()),
+                name: BBox::new("parent_name".to_string(), FakePolicy::new()),
+                surname: BBox::new("parent_surname".to_string(), FakePolicy::new()),
+                telephone: BBox::new("parent_telephone".to_string(), FakePolicy::new()),
+                email: BBox::new("parent_email".to_string(), FakePolicy::new()),
             },
             ParentDetails {
-                name: BBox::new("parent_name2".to_string(), NoPolicy::new()),
-                surname: BBox::new("parent_surname2".to_string(), NoPolicy::new()),
-                telephone: BBox::new("parent_telephone2".to_string(), NoPolicy::new()),
-                email: BBox::new("parent_email2".to_string(), NoPolicy::new()),
+                name: BBox::new("parent_name2".to_string(), FakePolicy::new()),
+                surname: BBox::new("parent_surname2".to_string(), FakePolicy::new()),
+                telephone: BBox::new("parent_telephone2".to_string(), FakePolicy::new()),
+                email: BBox::new("parent_email2".to_string(), FakePolicy::new()),
             }],
         })
     );
@@ -101,7 +100,7 @@ mod tests {
     #[tokio::test]
     async fn create_parent_test() {
         let db = get_memory_sqlite_connection().await;
-        let candidate = CandidateService::create(&db, BBox::new("".to_string(), NoPolicy::new())).await.unwrap();
+        let candidate = CandidateService::create(&db, BBox::new("".to_string(), FakePolicy::new())).await.unwrap();
         super::ParentService::create(&db, candidate.id.clone()).await.unwrap();
         super::ParentService::create(&db, candidate.id).await.unwrap();
     }
@@ -110,7 +109,6 @@ mod tests {
     async fn add_parent_details_test() {
         let db = get_memory_sqlite_connection().await;
         let plain_text_password = "test".to_string();
-        // let application = ApplicationService::create(&"".to_string(), NoPolicy::new()), &db, 103100, &plain_text_password, "".to_string(), NoPolicy::new())).await.unwrap();
         let (application, candidate, _) = put_user_data(&db).await;
 
         ParentService::create(&db, candidate.id.clone()).await.unwrap();
@@ -122,7 +120,7 @@ mod tests {
             .unwrap();
 
         let priv_key = BBox::new(
-            crypto::decrypt_password(application.private_key.clone().discard_box(), plain_text_password).await.unwrap(), NoPolicy::new());
+            crypto::decrypt_password(application.private_key.clone().discard_box(), plain_text_password).await.unwrap(), FakePolicy::new());
         let dec_details = EncryptedApplicationDetails::try_from((&candidate, &parents))
             .unwrap()
             .decrypt(priv_key)
@@ -138,7 +136,7 @@ mod tests {
         assert_eq!(dec_details.candidate.citizenship, form.candidate.citizenship);
         assert_eq!(dec_details.candidate.email, form.candidate.email);
         assert_eq!(dec_details.candidate.sex, form.candidate.sex);
-        assert_eq!(dec_details.candidate.personalIdNumber, BBox::new("0000001111".to_string(), NoPolicy::new()));
+        assert_eq!(dec_details.candidate.personalIdNumber, BBox::new("0000001111".to_string(), FakePolicy::new()));
         assert_eq!(dec_details.candidate.schoolName, form.candidate.schoolName);
         assert_eq!(dec_details.candidate.healthInsurance, form.candidate.healthInsurance);
         assert_eq!(dec_details.candidate.grades, form.candidate.grades);

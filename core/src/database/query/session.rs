@@ -1,24 +1,24 @@
 use crate::Query;
 
 use alohomora::bbox::BBox;
-use alohomora::policy::NoPolicy;
 use ::entity::prelude::AdminSession;
 use ::entity::{admin, admin_session, application};
 use ::entity::{session, session::Entity as Session};
 use sea_orm::prelude::Uuid;
 use sea_orm::*;
+use portfolio_policies::FakePolicy;
 
 impl Query {
     pub async fn find_session_by_uuid(
         db: &DbConn,
-        uuid: BBox<Uuid, NoPolicy>,
+        uuid: BBox<Uuid, FakePolicy>,
     ) -> Result<Option<session::Model>, DbErr> {
         Session::find_by_id(uuid).one(db).await
     }
 
     pub async fn find_admin_session_by_uuid(
         db: &DbConn,
-        uuid: BBox<Uuid, NoPolicy>,
+        uuid: BBox<Uuid, FakePolicy>,
     ) -> Result<Option<admin_session::Model>, DbErr> {
         AdminSession::find_by_id(uuid).one(db).await
     }
@@ -41,9 +41,9 @@ impl Query {
 #[cfg(test)]
 mod tests {
     use alohomora::bbox::BBox;
-    use alohomora::policy::NoPolicy;
     use entity::{session, admin, admin_session};
     use sea_orm::{prelude::Uuid, ActiveModelTrait, Set};
+    use portfolio_policies::FakePolicy;
 
     use crate::services::candidate_service::tests::put_user_data;
     use crate::utils::db::get_memory_sqlite_connection;
@@ -55,12 +55,12 @@ mod tests {
 
         let (application, _, _) = put_user_data(&db).await;
         let session = session::ActiveModel {
-            id: Set(BBox::new(Uuid::new_v4(), NoPolicy::new())),
+            id: Set(BBox::new(Uuid::new_v4(), FakePolicy {})),
             candidate_id: Set(application.id),
-            ip_address: Set(BBox::new("10.10.10.10".to_string(), NoPolicy::new())),
-            created_at: Set(BBox::new(chrono::offset::Local::now().naive_local(), NoPolicy::new())),
-            expires_at: Set(BBox::new(chrono::offset::Local::now().naive_local(), NoPolicy::new())),
-            updated_at: Set(BBox::new(chrono::offset::Local::now().naive_local(), NoPolicy::new()))
+            ip_address: Set(BBox::new("10.10.10.10".to_string(), FakePolicy::new())),
+            created_at: Set(BBox::new(chrono::offset::Local::now().naive_local(), FakePolicy::new())),
+            expires_at: Set(BBox::new(chrono::offset::Local::now().naive_local(), FakePolicy::new())),
+            updated_at: Set(BBox::new(chrono::offset::Local::now().naive_local(), FakePolicy::new()))
         }
         .insert(&db)
         .await
@@ -79,12 +79,12 @@ mod tests {
         let (application, _, _) = put_user_data(&db).await;
 
         session::ActiveModel {
-            id: Set(BBox::new(Uuid::new_v4(), NoPolicy::new())),
+            id: Set(BBox::new(Uuid::new_v4(), FakePolicy {})),
             candidate_id: Set(application.id.clone()),
-            ip_address: Set(BBox::new("10.10.10.10".to_string(), NoPolicy::new())),
-            created_at: Set(BBox::new(chrono::offset::Local::now().naive_local(), NoPolicy::new())),
-            expires_at: Set(BBox::new(chrono::offset::Local::now().naive_local(), NoPolicy::new())),
-            updated_at: Set(BBox::new(chrono::offset::Local::now().naive_local(), NoPolicy::new())),
+            ip_address: Set(BBox::new("10.10.10.10".to_string(), FakePolicy::new())),
+            created_at: Set(BBox::new(chrono::offset::Local::now().naive_local(), FakePolicy::new())),
+            expires_at: Set(BBox::new(chrono::offset::Local::now().naive_local(), FakePolicy::new())),
+            updated_at: Set(BBox::new(chrono::offset::Local::now().naive_local(), FakePolicy::new())),
             ..Default::default()
         }
             .insert(&db)
@@ -94,13 +94,13 @@ mod tests {
         const ADMIN_ID: i32 = 1;
 
         let admin = admin::ActiveModel {
-            id: Set(BBox::new(ADMIN_ID, NoPolicy::new())),
-            name: Set(BBox::new("admin".to_string(), NoPolicy::new())),
-            public_key: Set(BBox::new("test".to_string(), NoPolicy::new())),
-            private_key: Set(BBox::new("test".to_string(), NoPolicy::new())),
-            password: Set(BBox::new("test".to_string(), NoPolicy::new())),
-            created_at: Set(BBox::new(chrono::offset::Local::now().naive_local(), NoPolicy::new())),
-            updated_at: Set(BBox::new(chrono::offset::Local::now().naive_local(), NoPolicy::new())),
+            id: Set(BBox::new(ADMIN_ID, FakePolicy::new())),
+            name: Set(BBox::new("admin".to_string(), FakePolicy::new())),
+            public_key: Set(BBox::new("test".to_string(), FakePolicy::new())),
+            private_key: Set(BBox::new("test".to_string(), FakePolicy::new())),
+            password: Set(BBox::new("test".to_string(), FakePolicy::new())),
+            created_at: Set(BBox::new(chrono::offset::Local::now().naive_local(), FakePolicy::new())),
+            updated_at: Set(BBox::new(chrono::offset::Local::now().naive_local(), FakePolicy::new())),
             ..Default::default()
         }
             .insert(&db)
@@ -108,12 +108,12 @@ mod tests {
             .unwrap();
 
         admin_session::ActiveModel {
-            id: Set(BBox::new(Uuid::new_v4(), NoPolicy::new())),
+            id: Set(BBox::new(Uuid::new_v4(), FakePolicy {})),
             admin_id: Set(admin.id.clone()),
-            ip_address: Set(BBox::new("10.10.10.10".to_string(), NoPolicy::new())),
-            created_at: Set(BBox::new(chrono::offset::Local::now().naive_local(), NoPolicy::new())),
-            expires_at: Set(BBox::new(chrono::offset::Local::now().naive_local(), NoPolicy::new())),
-            updated_at: Set(BBox::new(chrono::offset::Local::now().naive_local(), NoPolicy::new())),
+            ip_address: Set(BBox::new("10.10.10.10".to_string(), FakePolicy::new())),
+            created_at: Set(BBox::new(chrono::offset::Local::now().naive_local(), FakePolicy::new())),
+            expires_at: Set(BBox::new(chrono::offset::Local::now().naive_local(), FakePolicy::new())),
+            updated_at: Set(BBox::new(chrono::offset::Local::now().naive_local(), FakePolicy::new())),
             ..Default::default()
         }
             .insert(&db)

@@ -5,6 +5,8 @@ use thiserror::Error;
 
 // TODO: Lepší hlášky
 pub enum ServiceError {
+    #[error("Failed Alohomora policy check")]
+    PolicyCheckFailed,
     #[error("Invalid application id")]
     InvalidApplicationId,
     #[error("Invalid credentials")]
@@ -129,6 +131,8 @@ impl ServiceError {
             ServiceError::CsvIntoInnerError => 500,
             ServiceError::FormatError => 500,
             ServiceError::InvalidFieldOfStudy => 500,
+            // Alohomora.
+            ServiceError::PolicyCheckFailed => 555,
         }
     }
 

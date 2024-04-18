@@ -1,22 +1,23 @@
-use alohomora::{bbox::BBox, policy::NoPolicy};
+use alohomora::bbox::BBox;
 use chrono::NaiveDateTime;
 use entity::{application, candidate};
 use sea_orm::{EntityTrait, DbErr, DbConn, ModelTrait, FromQueryResult, QuerySelect, JoinType, RelationTrait, QueryFilter, ColumnTrait, QueryOrder, PaginatorTrait};
+use portfolio_policies::FakePolicy;
 use crate::Query;
 
 const PAGE_SIZE: u64 = 20;
 
 #[derive(FromQueryResult, Clone)]
 pub struct ApplicationCandidateJoin {
-    pub application_id: BBox<i32, NoPolicy>,
-    pub personal_id_number: BBox<String, NoPolicy>,
-    pub candidate_id: BBox<i32, NoPolicy>,
-    pub name: Option<BBox<String, NoPolicy>>,
-    pub surname: Option<BBox<String, NoPolicy>>,
-    pub email: Option<BBox<String, NoPolicy>>,
-    pub telephone: Option<BBox<String, NoPolicy>>,
-    pub field_of_study: Option<BBox<String, NoPolicy>>,
-    pub created_at: BBox<NaiveDateTime, NoPolicy>,
+    pub application_id: BBox<i32, FakePolicy>,
+    pub personal_id_number: BBox<String, FakePolicy>,
+    pub candidate_id: BBox<i32, FakePolicy>,
+    pub name: Option<BBox<String, FakePolicy>>,
+    pub surname: Option<BBox<String, FakePolicy>>,
+    pub email: Option<BBox<String, FakePolicy>>,
+    pub telephone: Option<BBox<String, FakePolicy>>,
+    pub field_of_study: Option<BBox<String, FakePolicy>>,
+    pub created_at: BBox<NaiveDateTime, FakePolicy>,
 }
 
 fn get_ordering(sort: String) -> (application::Column, sea_orm::Order)
@@ -43,7 +44,7 @@ fn get_ordering(sort: String) -> (application::Column, sea_orm::Order)
 impl Query {
     pub async fn find_application_by_id(
         db: &DbConn,
-        application_id: BBox<i32, NoPolicy>,
+        application_id: BBox<i32, FakePolicy>,
     ) -> Result<Option<application::Model>, DbErr> {
         application::Entity::find_by_id(application_id)
             .one(db)
@@ -62,17 +63,16 @@ impl Query {
 
     pub async fn list_applications(
         db: &DbConn,
-        field_of_study: Option<BBox<String, NoPolicy>>,
-        // TODO(babman): highly likely that page and sort do not need to be BBoxes.
-        page: Option<BBox<u64, NoPolicy>>,
-        sort: Option<BBox<String, NoPolicy>>,
+        field_of_study: Option<String>,
+        page: Option<u64>,
+        sort: Option<String>,
     ) -> Result<Vec<ApplicationCandidateJoin>, DbErr> {
         let select = application::Entity::find();
 
         // Are we sorting?
         let (column, order) = match sort {
             None => (application::Column::Id, sea_orm::Order::Asc),
-            Some(sort) => get_ordering(sort.discard_box()),
+            Some(sort) => get_ordering(sort),
         };
 
         // Are we filtering out by field_of_study?
@@ -99,7 +99,7 @@ impl Query {
             None => query.all(db).await,
             Some(page) => query
                 .paginate(db, PAGE_SIZE)
-                .fetch_page(page.discard_box())
+                .fetch_page(page)
                 .await,
         }
     }
@@ -115,7 +115,7 @@ impl Query {
 
     pub async fn find_applications_by_candidate_id(
         db: &DbConn,
-        candidate_id: BBox<i32, NoPolicy>,
+        candidate_id: BBox<i32, FakePolicy>,
     ) -> Result<Vec<application::Model>, DbErr> {
         let applications = application::Entity::find()
             .filter(application::Column::CandidateId.eq(candidate_id))

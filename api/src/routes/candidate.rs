@@ -1,17 +1,22 @@
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 
 use alohomora::rocket::{ContextResponse, JsonResponse};
-use alohomora::{bbox::BBox, context::Context, orm::Connection, policy::NoPolicy, pure::{execute_pure, PrivacyPureRegion}, rocket::{get, post, route, BBoxCookie, BBoxCookieJar, BBoxJson}};
+use alohomora::{bbox::BBox, context::Context, orm::Connection, pure::{execute_pure, PrivacyPureRegion}, rocket::{get, post, route, BBoxCookie, BBoxCookieJar, BBoxJson}};
+use alohomora_derive::{RequestBBoxJson, ResponseBBoxJson};
+use chrono::NaiveDate;
 use entity::application;
 use portfolio_core::policies::context::ContextDataType;
 use portfolio_core::utils::response::MyResult;
 use portfolio_core::Query;
 use portfolio_core::error::ServiceError;
 use portfolio_core::models::auth::AuthenticableTrait;
-use portfolio_core::models::candidate::{ApplicationDetails, NewCandidateResponse};
+use portfolio_core::models::candidate::{ApplicationDetails, CandidateDetails, NewCandidateResponse, ParentDetails};
+use portfolio_core::models::grade::GradeList;
+use portfolio_core::models::school::School;
 use portfolio_core::sea_orm::prelude::Uuid;
 use portfolio_core::services::application_service::ApplicationService;
 use portfolio_core::services::portfolio_service::PortfolioService;
+use portfolio_policies::FakePolicy;
 use requests::LoginRequest;
 use crate::guards::data::letter::Letter;
 use crate::guards::data::portfolio::Portfolio;
@@ -23,18 +28,21 @@ use super::to_custom_error;
 pub async fn login(
     conn: Connection<'_, Db>,
     login_form: BBoxJson<LoginRequest>,
-    // ip_addr: SocketAddr, // TODO uncomment in production
+    ip_addr: BBox<SocketAddr, FakePolicy>,
     cookies: BBoxCookieJar<'_, '_>,
     context: Context<ContextDataType>
 ) -> MyResult<(), (rocket::http::Status, String)> {
-    let ip_addr: SocketAddr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 0);
+    let ip_addr = ip_addr.into_ppr(PrivacyPureRegion::new(|ip: SocketAddr| {
+        ip.to_string()
+    }));
+
     let db = conn.into_inner();
 
     let res = ApplicationService::login(
         db,
         login_form.applicationId.clone(),
         login_form.password.clone(),
-        BBox::new(ip_addr.ip().to_string(), NoPolicy::new()),
+        ip_addr,
     ).await.map_err(to_custom_error);
 
     let (session_token, private_key) = match res {
@@ -57,7 +65,7 @@ pub async fn logout(
 ) -> MyResult<(), (rocket::http::Status, String)> {
     let db = conn.into_inner();
 
-    let cookie: BBoxCookie<'static, NoPolicy> = cookies
+    let cookie: BBoxCookie<'static, FakePolicy> = cookies
         .get("id").unwrap(); // unwrap would be safe here because of the auth guard
         //.ok_or(Custom(Status::Unauthorized,"No session cookie".to_string(),))?;
 
@@ -70,8 +78,8 @@ pub async fn logout(
         .await
         .map_err(to_custom_error)?;
 
-    cookies.remove(cookies.get::<NoPolicy>("id").unwrap());
-    cookies.remove(cookies.get::<NoPolicy>("key").unwrap());
+    cookies.remove(cookies.get::<FakePolicy>("id").unwrap());
+    cookies.remove(cookies.get::<FakePolicy>("key").unwrap());
 
     MyResult::Ok(())
 }
@@ -103,16 +111,102 @@ pub async fn whoami(conn: Connection<'_, Db>,
 }
 
 // TODO: use put instead of post???
+#[allow(non_snake_case)]
+#[derive(Debug, Clone, PartialEq, RequestBBoxJson)]
+pub struct RequestCandidateDetails {
+    pub name: BBox<String, FakePolicy>,
+    pub surname: BBox<String, FakePolicy>,
+    pub birthSurname: BBox<String, FakePolicy>,
+    pub birthplace: BBox<String, FakePolicy>,
+    pub birthdate: BBox<NaiveDate, FakePolicy>,
+    pub address: BBox<String, FakePolicy>,
+    pub letterAddress: BBox<String, FakePolicy>,
+    pub telephone: BBox<String, FakePolicy>,
+    pub citizenship: BBox<String, FakePolicy>,
+    pub email: BBox<String, FakePolicy>,
+    pub sex: BBox<String, FakePolicy>,
+    pub personalIdNumber: BBox<String, FakePolicy>,
+    pub schoolName: BBox<String, FakePolicy>,
+    pub healthInsurance: BBox<String, FakePolicy>,
+    pub grades: BBox<GradeList, FakePolicy>,
+    pub firstSchool: BBox<School, FakePolicy>,
+    pub secondSchool: BBox<School, FakePolicy>,
+    pub testLanguage: BBox<String, FakePolicy>,
+}
+impl RequestCandidateDetails {
+    pub fn validate_self(&self) -> Result<(), ServiceError> {
+        Ok(())
+    }
+}
+impl RequestCandidateDetails {
+    pub fn to_any(self) -> CandidateDetails {
+        CandidateDetails {
+            name: self.name.into_any_policy(),
+            surname: self.surname.into_any_policy(),
+            birthSurname: self.birthSurname.into_any_policy(),
+            birthplace: self.birthplace.into_any_policy(),
+            birthdate: self.birthdate.into_any_policy(),
+            address: self.address.into_any_policy(),
+            letterAddress: self.letterAddress.into_any_policy(),
+            telephone: self.telephone.into_any_policy(),
+            citizenship: self.citizenship.into_any_policy(),
+            email: self.email.into_any_policy(),
+            sex: self.sex.into_any_policy(),
+            personalIdNumber: self.personalIdNumber.into_any_policy(),
+            schoolName: self.schoolName.into_any_policy(),
+            healthInsurance: self.healthInsurance.into_any_policy(),
+            grades: self.grades.into_any_policy(),
+            firstSchool: self.firstSchool.into_any_policy(),
+            secondSchool: self.secondSchool.into_any_policy(),
+            testLanguage: self.testLanguage.into_any_policy(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, RequestBBoxJson)]
+pub struct RequestParentDetails {
+    pub name: BBox<String, FakePolicy>,
+    pub surname: BBox<String, FakePolicy>,
+    pub telephone: BBox<String, FakePolicy>,
+    pub email: BBox<String, FakePolicy>,
+}
+impl RequestParentDetails {
+    pub fn to_any(self) -> ParentDetails {
+        ParentDetails {
+            name: self.name.into_any_policy(),
+            surname: self.surname.into_any_policy(),
+            telephone: self.telephone.into_any_policy(),
+            email: self.email.into_any_policy(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, RequestBBoxJson)]
+pub struct RequestApplicationDetails {
+    pub candidate: RequestCandidateDetails,
+    pub parents: Vec<RequestParentDetails>,
+}
+impl RequestApplicationDetails {
+    pub fn to_any(self) -> ApplicationDetails {
+        ApplicationDetails {
+            candidate: self.candidate.to_any(),
+            parents: self.parents.into_iter().map(|b| b.to_any()).collect(),
+        }
+    }
+}
+
 #[post("/details", data = "<details>")]
 pub async fn post_details(
     conn: Connection<'_, Db>,
-    details: BBoxJson<ApplicationDetails>,
+    details: BBoxJson<RequestApplicationDetails>,
     session: ApplicationAuth,
     context: Context<ContextDataType>
 ) -> MyResult<JsonResponse<ApplicationDetails, ContextDataType>, (rocket::http::Status, String)> {
     let db = conn.into_inner();
     let form = details.into_inner();
     form.candidate.validate_self().map_err(to_custom_error)?;
+    let form = form.to_any();
+
     let application: application::Model = session.into();
     let candidate = ApplicationService::find_related_candidate(&db, &application).await.map_err(to_custom_error)?; // TODO
 
@@ -146,21 +240,25 @@ pub async fn get_details(
 #[post("/cover_letter", data = "<letter>")]
 pub async fn upload_cover_letter(
     session: ApplicationAuth,
-    letter: Letter<NoPolicy>,
+    letter: Letter<FakePolicy>,
+    context: Context<ContextDataType>,
 ) -> MyResult<(), (rocket::http::Status, String)> {
     let application: entity::application::Model = session.into();
 
-    PortfolioService::add_cover_letter_to_cache(application.candidate_id.discard_box(), Into::<BBox<Vec<u8>, NoPolicy>>::into(letter).discard_box())
+    PortfolioService::add_cover_letter_to_cache(context, application.candidate_id, letter.into())
         .await
         .map_err(to_custom_error)?;
     MyResult::Ok(())
 }
 
 #[route(DELETE, "/cover_letter")]
-pub async fn delete_cover_letter(session: ApplicationAuth) -> MyResult<(), (rocket::http::Status, String)> {
+pub async fn delete_cover_letter(
+    session: ApplicationAuth,
+    context: Context<ContextDataType>,
+) -> MyResult<(), (rocket::http::Status, String)> {
     let application: entity::application::Model = session.into();
 
-    PortfolioService::delete_cover_letter_from_cache(application.candidate_id.discard_box())
+    PortfolioService::delete_cover_letter_from_cache(context, application.candidate_id)
         .await
         .map_err(to_custom_error)?;
 
@@ -170,11 +268,12 @@ pub async fn delete_cover_letter(session: ApplicationAuth) -> MyResult<(), (rock
 #[post("/portfolio_letter", data = "<letter>")]
 pub async fn upload_portfolio_letter(
     session: ApplicationAuth,
-    letter: Letter<NoPolicy>,
+    letter: Letter<FakePolicy>,
+    context: Context<ContextDataType>,
 ) -> MyResult<(), (rocket::http::Status, String)> {
     let application: entity::application::Model = session.into();
 
-    PortfolioService::add_portfolio_letter_to_cache(application.candidate_id.discard_box(), Into::<BBox<Vec<u8>, NoPolicy>>::into(letter).discard_box())
+    PortfolioService::add_portfolio_letter_to_cache(context, application.candidate_id, letter.into())
         .await
         .map_err(to_custom_error)?;
 
@@ -182,10 +281,13 @@ pub async fn upload_portfolio_letter(
 }
 
 #[route(DELETE, "/portfolio_letter")]
-pub async fn delete_portfolio_letter(session: ApplicationAuth) -> Result<(), (rocket::http::Status, String)> {
+pub async fn delete_portfolio_letter(
+    session: ApplicationAuth,
+    context: Context<ContextDataType>,
+) -> Result<(), (rocket::http::Status, String)> {
     let candidate: entity::application::Model = session.into();
 
-    PortfolioService::delete_portfolio_letter_from_cache(candidate.candidate_id.discard_box())
+    PortfolioService::delete_portfolio_letter_from_cache(context, candidate.id)
         .await
         .map_err(to_custom_error)?;
 
@@ -195,11 +297,12 @@ pub async fn delete_portfolio_letter(session: ApplicationAuth) -> Result<(), (ro
 #[post("/portfolio_zip", data = "<portfolio>")]
 pub async fn upload_portfolio_zip(
     session: ApplicationAuth,
-    portfolio: Portfolio<NoPolicy>,
+    portfolio: Portfolio<FakePolicy>,
+    context: Context<ContextDataType>,
 ) -> Result<(), (rocket::http::Status, String)> {
     let application: entity::application::Model = session.into();
 
-    PortfolioService::add_portfolio_zip_to_cache(application.candidate_id.discard_box(), Into::<BBox<Vec<u8>, NoPolicy>>::into(portfolio).discard_box())
+    PortfolioService::add_portfolio_zip_to_cache(context, application.candidate_id, portfolio.into())
         .await
         .map_err(to_custom_error)?;
 
@@ -207,10 +310,13 @@ pub async fn upload_portfolio_zip(
 }
 
 #[route(DELETE, "/portfolio_zip")]
-pub async fn delete_portfolio_zip(session: ApplicationAuth) -> Result<(), (rocket::http::Status, String)> {
+pub async fn delete_portfolio_zip(
+    session: ApplicationAuth,
+    context: Context<ContextDataType>,
+) -> Result<(), (rocket::http::Status, String)> {
     let application: entity::application::Model = session.into();
 
-    PortfolioService::delete_portfolio_zip_from_cache(application.candidate_id.discard_box())
+    PortfolioService::delete_portfolio_zip_from_cache(context, application.candidate_id)
         .await
         .map_err(to_custom_error)?;
 
@@ -221,21 +327,15 @@ pub async fn delete_portfolio_zip(session: ApplicationAuth) -> Result<(), (rocke
 pub async fn submission_progress(
     session: ApplicationAuth,
     context: Context<ContextDataType>
-) -> MyResult<ContextResponse<String, NoPolicy, ContextDataType>, (rocket::http::Status, String)> {
+) -> MyResult<String, (rocket::http::Status, String)> {
     let application: entity::application::Model = session.into();
 
-    let submission_progress = execute_pure(application.candidate_id, 
-        PrivacyPureRegion::new(|id| {
-            PortfolioService::get_submission_progress(id)
-                .map(|x| {
-                    let s = serde_json::to_string(&x).unwrap();
-                    s
-                }).map_err(to_custom_error)
-        })
-    ).unwrap().specialize_policy().unwrap();
-    
-    match submission_progress.transpose() {
-        Ok(o) => MyResult::Ok(ContextResponse(o, context)),
+    let progress = PortfolioService::get_submission_progress(application.candidate_id)
+        .map(|x| serde_json::to_string(&x).unwrap())
+        .map_err(to_custom_error);
+        
+    match progress {
+        Ok(progress) => MyResult::Ok(progress),
         Err(e) => MyResult::Err(e),
     }
 }
@@ -257,7 +357,7 @@ pub async fn submit_portfolio(
         // Delete on critical error
         if e.code() == 500 {
             // Cleanup
-            PortfolioService::delete_portfolio(application.id.discard_box())
+            PortfolioService::delete_portfolio(application.id)
                 .await
                 .unwrap();
         }
@@ -273,7 +373,7 @@ pub async fn delete_portfolio(
 ) -> MyResult<(), (rocket::http::Status, String)> {
     let application: entity::application::Model = session.into();
 
-    PortfolioService::delete_portfolio(application.candidate_id.discard_box())
+    PortfolioService::delete_portfolio(application.candidate_id)
         .await
         .map_err(to_custom_error)?;
 
@@ -281,11 +381,14 @@ pub async fn delete_portfolio(
 }
 
 #[get("/download")]
-pub async fn download_portfolio(session: ApplicationAuth) -> Result<Vec<u8>, (rocket::http::Status, String)> {
+pub async fn download_portfolio(
+    session: ApplicationAuth,
+    context: Context<ContextDataType>,
+) -> Result<Vec<u8>, (rocket::http::Status, String)> {
     let private_key = session.get_private_key();
     let application: entity::application::Model = session.into();
 
-    let file = PortfolioService::get_portfolio(application.candidate_id.discard_box(), private_key.discard_box())
+    let file = PortfolioService::get_portfolio(context, application.candidate_id, private_key)
         .await
         .map_err(to_custom_error);
 
@@ -294,16 +397,58 @@ pub async fn download_portfolio(session: ApplicationAuth) -> Result<Vec<u8>, (ro
 
 #[cfg(test)]
 mod tests {
-    use portfolio_core::{crypto, models::candidate::{CleanApplicationDetails, CleanNewCandidateResponse}, sea_orm::prelude::Uuid};
+    use chrono::NaiveDate;
+    use portfolio_core::{crypto, sea_orm::prelude::Uuid};
     use rocket::{
         http::{Cookie, Status},
         local::blocking::Client,
     };
+    use rocket::serde::{Deserialize, Serialize};
+    use portfolio_core::models::grade::GradeList;
+    use portfolio_core::models::school::School;
+    use validator::Validate;
 
     use crate::{
         routes::admin::tests::admin_login,
         test::tests::{test_client, APPLICATION_ID, CANDIDATE_PASSWORD, PERSONAL_ID_NUMBER},
     };
+
+    #[derive(Debug, Serialize, Deserialize, Validate, Clone, PartialEq, Eq)]
+    #[serde(rename_all = "camelCase")]
+    pub struct CleanCandidateDetails {
+        pub name: String,
+        pub surname: String,
+        pub birth_surname: String,
+        pub birthplace: String,
+        pub birthdate: NaiveDate,
+        pub address: String,
+        pub letter_address: String,
+        pub telephone: String,
+        pub citizenship: String,
+        #[validate(email)]
+        pub email: String,
+        pub sex: String,
+        pub personal_id_number: String,
+        pub school_name: String,
+        pub health_insurance: String,
+        pub grades: GradeList,
+        pub first_school: School,
+        pub second_school: School,
+        pub test_language: String,
+    }
+    #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+    #[serde(rename_all = "camelCase")]
+    pub struct CleanParentDetails {
+        pub name: String,
+        pub surname: String,
+        pub telephone: String,
+        pub email: String,
+    }
+    #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+    pub struct CleanApplicationDetails {
+        pub candidate: CleanCandidateDetails,
+        pub parents: Vec<CleanParentDetails>,
+    }
 
     fn candidate_login(client: &Client) -> (Cookie, Cookie) {
         let response = client
