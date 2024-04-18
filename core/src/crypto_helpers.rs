@@ -10,7 +10,6 @@ pub async fn my_hash_password<P: Policy>(password_plain_text: BBox<String, P>) -
     todo!()
 }
 
-
 pub async fn my_encrypt_password<P2: Policy, P3: Policy>(
     password_plain_text: String,
     key: BBox<String, P2>
@@ -42,13 +41,6 @@ pub async fn my_verify_password<P1: Policy, P2: Policy>(
     password_plaint_text: BBox<String, P1>,
     hash: BBox<String, P2>,
 ) -> Result<bool, ServiceError> {
-    todo!()
-}
-
-pub async fn my_decrypt_file_with_private_key_as_buffer<P: Policy, PATH: AsRef<Path>>(
-    cipher_file_path: PATH,
-    key: BBox<String, P>,
-) -> Result<Vec<u8>, ServiceError> {
     todo!()
 }
 
