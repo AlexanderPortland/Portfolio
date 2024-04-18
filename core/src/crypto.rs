@@ -472,8 +472,8 @@ mod tests {
     fn test_create_identity() {
         let identity = super::create_identity();
 
-        assert!(identity.0.discard_box().contains("age"));
-        assert!(identity.1.discard_box().contains("AGE-SECRET-KEY-"));
+        assert!(identity.0.contains("age"));
+        assert!(identity.1.contains("AGE-SECRET-KEY-"));
     }
 
     #[tokio::test]
@@ -629,7 +629,7 @@ mod tests {
         .unwrap();
 
         let decrypted_buffer =
-            super::decrypt_file_with_private_key_as_buffer(encrypted_file.file_path(), PRIVATE_KEY)
+            super::decrypt_file_with_private_key_as_buffer(encrypted_file.file_path(), PRIVATE_KEY.to_string())
                 .await
                 .unwrap();
 

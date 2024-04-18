@@ -30,6 +30,7 @@ impl Query {
 mod tests {
     use alohomora::bbox::BBox;
     use entity::{candidate, parent};
+    use portfolio_policies::FakePolicy;
     use sea_orm::{ActiveModelTrait, Set};
 
     use crate::Query;

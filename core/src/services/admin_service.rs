@@ -122,7 +122,7 @@ pub mod admin_tests {
         let (pubkey, priv_key) = crypto::create_identity();
 
         // TODO: is this the right parameter order for password encryption
-        let enc_priv_key = crypto::encrypt_password(priv_key.discard_box(), password).await.unwrap();
+        let enc_priv_key = crypto::encrypt_password(priv_key, password).await.unwrap();
         let enc_priv_key = BBox::new(enc_priv_key, FakePolicy::new());
 
         let admin = admin::ActiveModel {

@@ -18,6 +18,7 @@ dotenv = "^0.15"
 
 validator = { version = "^0.16", features = ["derive"] }
 
+serde = { version = "^1.0", features = ["derive"] }
 serde_json = { version = "^1.0" }
 
 chrono = "^0.4"

@@ -3384,6 +3384,7 @@ dependencies = [
  "rocket",
  "sea-orm-migration",
  "sea-orm-rocket",
+ "serde",
  "serde_json",
  "tokio",
  "validator",
@@ -3410,8 +3411,6 @@ dependencies = [
  "futures",
  "infer",
  "log",
- "mysql",
- "mysql_common 0.22.2",
  "once_cell",
  "portfolio-entity",
  "portfolio-policies",
@@ -3462,9 +3461,14 @@ dependencies = [
  "alohomora",
  "alohomora_derive",
  "async-trait",
+ "mysql",
+ "mysql_common 0.22.2",
  "rocket",
+ "sea-orm",
  "sea-orm-migration",
  "sea-orm-rocket",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

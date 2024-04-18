@@ -1,7 +1,8 @@
 #[cfg(test)]
 pub mod tests {
     use crate::rocket;
-    use alohomora::{bbox::BBox, policy::NoPolicy, testing::BBoxClient};
+    use alohomora::{bbox::BBox, testing::BBoxClient};
+    use portfolio_policies::FakePolicy;
     use entity::admin;
     use once_cell::sync::OnceCell;
     use portfolio_core::{
@@ -21,7 +22,7 @@ pub mod tests {
 
     pub async fn run_test_migrations(db: &DbConn) {
         let (pubkey, priv_key) = crypto::create_identity();
-        let priv_key = crypto::encrypt_password(priv_key.discard_box(), ADMIN_PASSWORD.to_string())
+        let priv_key = crypto::encrypt_password(priv_key, ADMIN_PASSWORD.to_string())
             .await
             .unwrap();
         let password_hash = crypto::hash_password(ADMIN_PASSWORD.to_string())
@@ -29,24 +30,24 @@ pub mod tests {
             .unwrap();
 
         admin::ActiveModel {
-            id: Set(BBox::new(ADMIN_ID, NoPolicy::new())),
-            name: Set(BBox::new("admin pepa".to_string(), NoPolicy::new())),
-            public_key: Set(pubkey),
-            private_key: Set(BBox::new(priv_key, NoPolicy::new())),
-            password: Set(BBox::new(password_hash, NoPolicy::new())),
-            created_at: Set(BBox::new(chrono::Utc::now().naive_utc(), NoPolicy::new())),
-            updated_at: Set(BBox::new(chrono::Utc::now().naive_utc(), NoPolicy::new())),
+            id: Set(BBox::new(ADMIN_ID, FakePolicy::new())),
+            name: Set(BBox::new("admin pepa".to_string(), FakePolicy::new())),
+            public_key: Set(BBox::new(pubkey, FakePolicy::new())),
+            private_key: Set(BBox::new(priv_key, FakePolicy::new())),
+            password: Set(BBox::new(password_hash, FakePolicy::new())),
+            created_at: Set(BBox::new(chrono::Utc::now().naive_utc(), FakePolicy::new())),
+            updated_at: Set(BBox::new(chrono::Utc::now().naive_utc(), FakePolicy::new())),
         }
         .insert(db)
         .await
         .unwrap();
 
         ApplicationService::create(
-            &BBox::new("".to_string(), NoPolicy::new()),
+            &BBox::new("".to_string(), FakePolicy::new()),
             db,
-            BBox::new(APPLICATION_ID, NoPolicy::new()),
-            &BBox::new(CANDIDATE_PASSWORD.to_string(), NoPolicy::new()),
-            BBox::new(PERSONAL_ID_NUMBER.to_string(), NoPolicy::new()))
+            BBox::new(APPLICATION_ID, FakePolicy::new()),
+            &BBox::new(CANDIDATE_PASSWORD.to_string(), FakePolicy::new()),
+            BBox::new(PERSONAL_ID_NUMBER.to_string(), FakePolicy::new()))
             .await.unwrap();
     }
 

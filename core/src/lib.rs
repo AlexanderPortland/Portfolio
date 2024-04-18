@@ -10,8 +10,6 @@ pub mod services;
 pub mod error;
 pub mod utils;
 pub mod models;
-pub mod policies;
-//pub mod pool;
 
 pub use database::mutation::*;
 pub use database::query::*;

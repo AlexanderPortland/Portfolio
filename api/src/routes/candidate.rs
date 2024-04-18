@@ -5,7 +5,7 @@ use alohomora::{bbox::BBox, context::Context, orm::Connection, pure::{execute_pu
 use alohomora_derive::{RequestBBoxJson, ResponseBBoxJson};
 use chrono::NaiveDate;
 use entity::application;
-use portfolio_core::policies::context::ContextDataType;
+use portfolio_policies::context::ContextDataType;
 use portfolio_core::utils::response::MyResult;
 use portfolio_core::Query;
 use portfolio_core::error::ServiceError;
@@ -398,7 +398,7 @@ pub async fn download_portfolio(
 #[cfg(test)]
 mod tests {
     use chrono::NaiveDate;
-    use portfolio_core::{crypto, sea_orm::prelude::Uuid};
+    use portfolio_core::{crypto, models::candidate::CleanNewCandidateResponse, sea_orm::prelude::Uuid};
     use rocket::{
         http::{Cookie, Status},
         local::blocking::Client,
@@ -556,7 +556,7 @@ mod tests {
 
         let id = Cookie::new("id", Uuid::new_v4().to_string());
         let (private_key, _) = crypto::create_identity();
-        let key = Cookie::new("key", private_key.discard_box());
+        let key = Cookie::new("key", private_key);
 
         let response = client
             .post("/candidate/details")
