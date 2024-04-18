@@ -3,11 +3,12 @@ use chrono::{Duration, NaiveDateTime};
 use entity::{candidate, parent, application, session};
 use sea_orm::{DbConn, prelude::Uuid, IntoActiveModel};
 use alohomora::bbox::BBox;
+use alohomora::policy::AnyPolicy;
 use alohomora::pure::{execute_pure, PrivacyPureRegion};
 use entity::session_trait::UserSession;
 use portfolio_policies::FakePolicy;
 
-use crate::{error::ServiceError, Query, utils::db::get_recipients, models::candidate_details::EncryptedApplicationDetails, models::{candidate::{ApplicationDetails, CreateCandidateResponse}, candidate_details::{EncryptedString, EncryptedCandidateDetails}, auth::AuthenticableTrait, application::ApplicationResponse}, Mutation, crypto::{hash_password, self}};
+use crate::{error::ServiceError, Query, utils::db::get_recipients, models::candidate_details::EncryptedApplicationDetails, models::{candidate::{ApplicationDetails, CreateCandidateResponse}, candidate_details::{EncryptedString, EncryptedCandidateDetails}, auth::AuthenticableTrait, application::ApplicationResponse}, Mutation, crypto};
 use crate::crypto_helpers::{my_decrypt_password, my_encrypt_password, my_hash_password, my_verify_password};
 
 use super::{parent_service::ParentService, candidate_service::CandidateService, session_service::SessionService, portfolio_service::{PortfolioService, SubmissionProgress}};
@@ -375,13 +376,13 @@ impl ApplicationService {
 
         Ok(
             CreateCandidateResponse {
-                application_id: id,
-                field_of_study: application.field_of_study,
+                application_id: id.into_any_policy(),
+                field_of_study: application.field_of_study.into_any_policy(),
                 applications: applications.iter()
-                    .map(|a| a.id.clone())
+                    .map(|a| a.id.clone().into_any_policy())
                     .collect(),
                 personal_id_number,
-                password: BBox::new(new_password_plain, FakePolicy::new()),
+                password: BBox::new(new_password_plain, AnyPolicy::new(FakePolicy::new())),
             }
         )
     }

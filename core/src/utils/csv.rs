@@ -39,7 +39,7 @@ impl TryFrom<(BBox<i32, FakePolicy>, ApplicationDetails)> for ApplicationRow {
         let second_school_field = c.secondSchool.clone().into_ppr(PrivacyPureRegion::new(|s: School| s.field().to_string()));
 
         Ok(Self {
-            application,
+            application: application.into_any_policy(),
             name: Some(c.name),
             surname: Some(c.surname),
             birth_surname: Some(c.birthSurname),
@@ -103,12 +103,12 @@ impl CsvExporter for ApplicationCsv {
                         .map(|d| (application.id.clone(), d))?,
                 )
                     .unwrap_or(ApplicationRow {
-                        application: application.id,
+                        application: application.id.into_any_policy(),
                         ..Default::default()
                     }),
 
                 Err(_) => ApplicationRow {
-                    application: application.id,
+                    application: application.id.into_any_policy(),
                     ..Default::default()
                 },
             };
@@ -183,9 +183,9 @@ impl CsvExporter for CandidateCsv {
             let second_school_field = c.secondSchool.clone().into_ppr(PrivacyPureRegion::new(|s: School| s.field().to_string()));
 
             let row = CandidateRow {
-                id,
-                first_application: related_applications.first().ok_or(ServiceError::CandidateNotFound)?.clone(),
-                second_application: related_applications.get(1).map(|id| id.clone()),
+                id: id.into_any_policy(),
+                first_application: related_applications.first().ok_or(ServiceError::CandidateNotFound)?.clone().into_any_policy(),
+                second_application: related_applications.get(1).map(|id| id.clone().into_any_policy()),
                 first_school: first_school_name,
                 first_school_field,
                 second_school: second_school_name,
@@ -194,15 +194,15 @@ impl CsvExporter for CandidateCsv {
                 second_day_admissions: second_field.clone().into_ppr(PrivacyPureRegion::new(|f: Option<FieldOfStudy>| f.is_some())),
                 first_day_field: first_field.transpose(),
                 second_day_field: second_field.transpose(),
-                fields_combination,
+                fields_combination: fields_combination.into_any_policy(),
                 personal_id_number: c.personalIdNumber,
-                fields_match,
+                fields_match: fields_match.into_any_policy(),
                 name: c.name.to_owned(),
                 surname: c.surname.to_owned(),
                 email: c.email.to_owned(),
                 telephone: c.telephone.to_owned(),
-                parent_email: parents.first().map(|parent| parent.email.clone()).unwrap_or(None),
-                parent_telephone: parents.first().map(|parent| parent.telephone.clone()).unwrap_or(None),
+                parent_email: parents.first().map(|parent| parent.email.clone().map(|b| b.into_any_policy())).unwrap_or(None),
+                parent_telephone: parents.first().map(|parent| parent.telephone.clone().map(|b| b.into_any_policy())).unwrap_or(None),
             };
 
             unbox(row, context.clone(), PrivacyCriticalRegion::new(|row, _| {

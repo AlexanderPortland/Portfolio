@@ -2,13 +2,17 @@ use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 
 use alohomora::rocket::{ContextResponse, JsonResponse};
 use alohomora::{bbox::BBox, context::Context, orm::Connection, pure::{execute_pure, PrivacyPureRegion}, rocket::{get, post, route, BBoxCookie, BBoxCookieJar, BBoxJson}};
+use alohomora_derive::{RequestBBoxJson, ResponseBBoxJson};
+use chrono::NaiveDate;
 use entity::application;
 use portfolio_core::policies::context::ContextDataType;
 use portfolio_core::utils::response::MyResult;
 use portfolio_core::Query;
 use portfolio_core::error::ServiceError;
 use portfolio_core::models::auth::AuthenticableTrait;
-use portfolio_core::models::candidate::{ApplicationDetails, NewCandidateResponse};
+use portfolio_core::models::candidate::{ApplicationDetails, CandidateDetails, NewCandidateResponse, ParentDetails};
+use portfolio_core::models::grade::GradeList;
+use portfolio_core::models::school::School;
 use portfolio_core::sea_orm::prelude::Uuid;
 use portfolio_core::services::application_service::ApplicationService;
 use portfolio_core::services::portfolio_service::PortfolioService;
@@ -107,16 +111,102 @@ pub async fn whoami(conn: Connection<'_, Db>,
 }
 
 // TODO: use put instead of post???
+#[allow(non_snake_case)]
+#[derive(Debug, Clone, PartialEq, RequestBBoxJson)]
+pub struct RequestCandidateDetails {
+    pub name: BBox<String, FakePolicy>,
+    pub surname: BBox<String, FakePolicy>,
+    pub birthSurname: BBox<String, FakePolicy>,
+    pub birthplace: BBox<String, FakePolicy>,
+    pub birthdate: BBox<NaiveDate, FakePolicy>,
+    pub address: BBox<String, FakePolicy>,
+    pub letterAddress: BBox<String, FakePolicy>,
+    pub telephone: BBox<String, FakePolicy>,
+    pub citizenship: BBox<String, FakePolicy>,
+    pub email: BBox<String, FakePolicy>,
+    pub sex: BBox<String, FakePolicy>,
+    pub personalIdNumber: BBox<String, FakePolicy>,
+    pub schoolName: BBox<String, FakePolicy>,
+    pub healthInsurance: BBox<String, FakePolicy>,
+    pub grades: BBox<GradeList, FakePolicy>,
+    pub firstSchool: BBox<School, FakePolicy>,
+    pub secondSchool: BBox<School, FakePolicy>,
+    pub testLanguage: BBox<String, FakePolicy>,
+}
+impl RequestCandidateDetails {
+    pub fn validate_self(&self) -> Result<(), ServiceError> {
+        Ok(())
+    }
+}
+impl RequestCandidateDetails {
+    pub fn to_any(self) -> CandidateDetails {
+        CandidateDetails {
+            name: self.name.into_any_policy(),
+            surname: self.surname.into_any_policy(),
+            birthSurname: self.birthSurname.into_any_policy(),
+            birthplace: self.birthplace.into_any_policy(),
+            birthdate: self.birthdate.into_any_policy(),
+            address: self.address.into_any_policy(),
+            letterAddress: self.letterAddress.into_any_policy(),
+            telephone: self.telephone.into_any_policy(),
+            citizenship: self.citizenship.into_any_policy(),
+            email: self.email.into_any_policy(),
+            sex: self.sex.into_any_policy(),
+            personalIdNumber: self.personalIdNumber.into_any_policy(),
+            schoolName: self.schoolName.into_any_policy(),
+            healthInsurance: self.healthInsurance.into_any_policy(),
+            grades: self.grades.into_any_policy(),
+            firstSchool: self.firstSchool.into_any_policy(),
+            secondSchool: self.secondSchool.into_any_policy(),
+            testLanguage: self.testLanguage.into_any_policy(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, RequestBBoxJson)]
+pub struct RequestParentDetails {
+    pub name: BBox<String, FakePolicy>,
+    pub surname: BBox<String, FakePolicy>,
+    pub telephone: BBox<String, FakePolicy>,
+    pub email: BBox<String, FakePolicy>,
+}
+impl RequestParentDetails {
+    pub fn to_any(self) -> ParentDetails {
+        ParentDetails {
+            name: self.name.into_any_policy(),
+            surname: self.surname.into_any_policy(),
+            telephone: self.telephone.into_any_policy(),
+            email: self.email.into_any_policy(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, RequestBBoxJson)]
+pub struct RequestApplicationDetails {
+    pub candidate: RequestCandidateDetails,
+    pub parents: Vec<RequestParentDetails>,
+}
+impl RequestApplicationDetails {
+    pub fn to_any(self) -> ApplicationDetails {
+        ApplicationDetails {
+            candidate: self.candidate.to_any(),
+            parents: self.parents.into_iter().map(|b| b.to_any()).collect(),
+        }
+    }
+}
+
 #[post("/details", data = "<details>")]
 pub async fn post_details(
     conn: Connection<'_, Db>,
-    details: BBoxJson<ApplicationDetails>,
+    details: BBoxJson<RequestApplicationDetails>,
     session: ApplicationAuth,
     context: Context<ContextDataType>
 ) -> MyResult<JsonResponse<ApplicationDetails, ContextDataType>, (rocket::http::Status, String)> {
     let db = conn.into_inner();
     let form = details.into_inner();
     form.candidate.validate_self().map_err(to_custom_error)?;
+    let form = form.to_any();
+
     let application: application::Model = session.into();
     let candidate = ApplicationService::find_related_candidate(&db, &application).await.map_err(to_custom_error)?; // TODO
 
@@ -307,16 +397,58 @@ pub async fn download_portfolio(
 
 #[cfg(test)]
 mod tests {
-    use portfolio_core::{crypto, models::candidate::{CleanApplicationDetails, CleanNewCandidateResponse}, sea_orm::prelude::Uuid};
+    use chrono::NaiveDate;
+    use portfolio_core::{crypto, sea_orm::prelude::Uuid};
     use rocket::{
         http::{Cookie, Status},
         local::blocking::Client,
     };
+    use rocket::serde::{Deserialize, Serialize};
+    use portfolio_core::models::grade::GradeList;
+    use portfolio_core::models::school::School;
+    use validator::Validate;
 
     use crate::{
         routes::admin::tests::admin_login,
         test::tests::{test_client, APPLICATION_ID, CANDIDATE_PASSWORD, PERSONAL_ID_NUMBER},
     };
+
+    #[derive(Debug, Serialize, Deserialize, Validate, Clone, PartialEq, Eq)]
+    #[serde(rename_all = "camelCase")]
+    pub struct CleanCandidateDetails {
+        pub name: String,
+        pub surname: String,
+        pub birth_surname: String,
+        pub birthplace: String,
+        pub birthdate: NaiveDate,
+        pub address: String,
+        pub letter_address: String,
+        pub telephone: String,
+        pub citizenship: String,
+        #[validate(email)]
+        pub email: String,
+        pub sex: String,
+        pub personal_id_number: String,
+        pub school_name: String,
+        pub health_insurance: String,
+        pub grades: GradeList,
+        pub first_school: School,
+        pub second_school: School,
+        pub test_language: String,
+    }
+    #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+    #[serde(rename_all = "camelCase")]
+    pub struct CleanParentDetails {
+        pub name: String,
+        pub surname: String,
+        pub telephone: String,
+        pub email: String,
+    }
+    #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+    pub struct CleanApplicationDetails {
+        pub candidate: CleanCandidateDetails,
+        pub parents: Vec<CleanParentDetails>,
+    }
 
     fn candidate_login(client: &Client) -> (Cookie, Cookie) {
         let response = client

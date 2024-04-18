@@ -56,7 +56,7 @@ impl Mutation {
         candidate.grades_json = Set(enc_candidate.grades_json.clone().map(|e| e.into()));
         candidate.first_school = Set(enc_candidate.first_school.clone().map(|e| e.into()));
         candidate.second_school = Set(enc_candidate.second_school.clone().map(|e| e.into()));
-        candidate.test_language = Set(enc_candidate.test_language.clone());
+        candidate.test_language = Set(enc_candidate.test_language.clone().map(|b| b.specialize_policy().unwrap()));
         candidate.encrypted_by_id = Set(Option::from(encrypted_by_id));
         candidate.updated_at = Set(BBox::new(chrono::offset::Local::now().naive_local(), Default::default()));
 

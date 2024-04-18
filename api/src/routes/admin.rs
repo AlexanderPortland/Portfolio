@@ -133,13 +133,13 @@ pub async fn create_candidate(
 
     println!("did the thing");
     let cand = CreateCandidateResponse {
-        application_id: application.id,
-        field_of_study: application.field_of_study,
+        application_id: application.id.into_any_policy(),
+        field_of_study: application.field_of_study.into_any_policy(),
         applications: applications.iter()
-            .map(|a| a.id.to_owned())
+            .map(|a| a.id.to_owned().into_any_policy())
             .collect(),
-        personal_id_number,
-        password: plain_text_password,
+        personal_id_number: personal_id_number.into_any_policy(),
+        password: plain_text_password.into_any_policy(),
     };
 
     MyResult::Ok(JsonResponse::from((cand, context)))

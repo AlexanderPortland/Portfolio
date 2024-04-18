@@ -3385,6 +3385,7 @@ dependencies = [
  "sea-orm-rocket",
  "serde_json",
  "tokio",
+ "validator",
 ]
 
 [[package]]
