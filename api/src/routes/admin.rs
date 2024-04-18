@@ -9,7 +9,7 @@ use rocket::http::Status;
 
 use portfolio_core::policies::context::ContextDataType;
 use alohomora::{bbox::BBox, context::Context, orm::Connection, pure::{execute_pure, PrivacyPureRegion}, rocket::{BBoxCookie, BBoxCookieJar, BBoxJson, ContextResponse, get, JsonResponse, post, route}};
-use alohomora::policy::NoPolicy;
+use alohomora::policy::{AnyPolicy, NoPolicy};
 
 use portfolio_core::utils::csv::{ApplicationCsv, CandidateCsv, CsvExporter};
 use portfolio_core::utils::response::MyResult;
@@ -180,15 +180,15 @@ pub async fn list_candidates_csv(
     conn: Connection<'_, Db>,
     session: AdminAuth,
     context: Context<ContextDataType>
-) -> MyResult<Vec<u8>, (rocket::http::Status, String)> {
+) -> MyResult<ContextResponse<Vec<u8>, AnyPolicy, ContextDataType>, (rocket::http::Status, String)> {
     let db = conn.into_inner();
     let private_key = session.get_private_key();
 
-    let candidates = ApplicationCsv::export(context, db, private_key)
+    let candidates = ApplicationCsv::export(db, private_key)
         .await
         .map_err(to_custom_error)?;
 
-    MyResult::Ok(candidates)
+    MyResult::Ok(ContextResponse::from((candidates, context)))
 }
 
 #[get("/admissions_csv")]
@@ -196,15 +196,15 @@ pub async fn list_admissions_csv(
     conn: Connection<'_, Db>,
     session: AdminAuth,
     context: Context<ContextDataType>
-) -> MyResult<Vec<u8>, (rocket::http::Status, String)> {
+) -> MyResult<ContextResponse<Vec<u8>, AnyPolicy, ContextDataType>, (rocket::http::Status, String)> {
     let db = conn.into_inner();
     let private_key = session.get_private_key();
 
-    let candidates = CandidateCsv::export(context, db, private_key)
+    let candidates = CandidateCsv::export(db, private_key)
         .await
         .map_err(to_custom_error)?;
 
-    MyResult::Ok(candidates)
+    MyResult::Ok(ContextResponse::from((candidates, context)))
 }
 
 #[get("/candidate/<id>")]

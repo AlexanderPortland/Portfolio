@@ -1,22 +1,23 @@
+use alohomora::AlohomoraType;
 use crate::{
     error::ServiceError,
     models::candidate_details::EncryptedApplicationDetails,
     models::{application::ApplicationRow, candidate::ApplicationDetails},
     Query, services::application_service::ApplicationService,
 };
-use alohomora::{bbox::BBox, context::{Context}, pcr::PrivacyCriticalRegion};
+use alohomora::bbox::BBox;
 use alohomora::fold::fold;
+use alohomora::policy::AnyPolicy;
 use alohomora::pure::{execute_pure, PrivacyPureRegion};
-use alohomora::unbox::unbox;
 use sea_orm::DbConn;
 use async_trait::async_trait;
 use chrono::NaiveDate;
+use serde::Serialize;
 use portfolio_policies::FakePolicy;
 use crate::models::candidate::{CandidateRow, FieldOfStudy, FieldsCombination};
 use crate::models::candidate_details::EncryptedCandidateDetails;
 use crate::models::grade::GradeList;
 use crate::models::school::School;
-use crate::policies::context::ContextDataType;
 
 impl TryFrom<(BBox<i32, FakePolicy>, ApplicationDetails)> for ApplicationRow {
     type Error = ServiceError;
@@ -78,19 +79,30 @@ impl TryFrom<(BBox<i32, FakePolicy>, ApplicationDetails)> for ApplicationRow {
     }
 }
 
+// This should be a Sandboxed region.
+pub fn serialize_in_sandbox<T: AlohomoraType>(rows: Vec<T>) -> Result<BBox<Vec<u8>, AnyPolicy>, ServiceError> where T::Out: Serialize {
+    execute_pure(rows, PrivacyPureRegion::new(|rows| {
+        let mut wtr = csv::Writer::from_writer(vec![]);
+        for row in rows {
+            wtr.serialize(row).unwrap();
+        }
+        wtr.into_inner().map_err(|_| ServiceError::CsvIntoInnerError)
+    })).unwrap().transpose()
+}
+
 #[async_trait]
 pub trait CsvExporter {
-    async fn export(context: Context<ContextDataType>, db: &DbConn, private_key: BBox<String, FakePolicy>) -> Result<Vec<u8>, ServiceError>;
+    async fn export(db: &DbConn, private_key: BBox<String, FakePolicy>) -> Result<BBox<Vec<u8>, AnyPolicy>, ServiceError>;
 }
 
 pub struct ApplicationCsv;
 
 #[async_trait]
 impl CsvExporter for ApplicationCsv {
-    async fn export(context: Context<ContextDataType>, db: &DbConn, private_key: BBox<String, FakePolicy>) -> Result<Vec<u8>, ServiceError> {
-        let mut wtr = csv::Writer::from_writer(vec![]);
-
+    async fn export(db: &DbConn, private_key: BBox<String, FakePolicy>) -> Result<BBox<Vec<u8>, AnyPolicy>, ServiceError> {
         let applications = Query::list_applications_compact(&db).await?;
+
+        let mut rows = Vec::new();
         for application in applications {
             let candidate = ApplicationService::find_related_candidate(db, &application).await?;
             let parents = Query::find_candidate_parents(db, &candidate).await?;
@@ -113,11 +125,9 @@ impl CsvExporter for ApplicationCsv {
                 },
             };
 
-            unbox(row, context.clone(), PrivacyCriticalRegion::new(|row, _| {
-                wtr.serialize(row).unwrap();
-            }), ()).unwrap();
+            rows.push(row);
         }
-        wtr.into_inner().map_err(|_| ServiceError::CsvIntoInnerError)
+        serialize_in_sandbox(rows)
     }
 }
 
@@ -125,13 +135,12 @@ pub struct CandidateCsv;
 
 #[async_trait]
 impl CsvExporter for CandidateCsv {
-    async fn export(context: Context<ContextDataType>, db: &DbConn, private_key: BBox<String, FakePolicy>) -> Result<Vec<u8>, ServiceError> {
-        let mut wtr = csv::Writer::from_writer(vec![]);
-
+    async fn export(db: &DbConn, private_key: BBox<String, FakePolicy>) -> Result<BBox<Vec<u8>, AnyPolicy>, ServiceError> {
         let candidates = Query::list_candidates_full(&db).await?;
         let applications = Query::list_applications_compact(&db).await?;
         let parents = Query::list_all_parents(&db).await?;
 
+        let mut rows = Vec::new();
         for model in candidates {
             let (id, c) = (
                 model.id.clone(),
@@ -205,11 +214,12 @@ impl CsvExporter for CandidateCsv {
                 parent_telephone: parents.first().map(|parent| parent.telephone.clone().map(|b| b.into_any_policy())).unwrap_or(None),
             };
 
-            unbox(row, context.clone(), PrivacyCriticalRegion::new(|row, _| {
-                wtr.serialize(row).unwrap();
-            }), ()).unwrap();
+            rows.push(row);
         }
-        wtr.into_inner().map_err(|_| ServiceError::CsvIntoInnerError)
+
+
+        // This should be a Sandboxed region.
+        serialize_in_sandbox(rows)
     }
 }
 
