@@ -17,13 +17,6 @@ pub struct Model {
     pub updated_at: BBox<DateTime, NoPolicy>,
 }
 
-// make another BBoxModel struct and way to transform between for now 
-// until we can implement it ourself
-// no policy everywhere
-// start from the database and then see where that gets errors and work out from there
-// transformation functions in the Query::___ fn so only the body of that will change
-// and then use .discard_box to get rid of boxes and still return a Json
-
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
 pub enum Relation {
     #[sea_orm(has_many = "super::admin_session::Entity")]

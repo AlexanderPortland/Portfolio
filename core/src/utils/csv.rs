@@ -4,7 +4,7 @@ use crate::{
     models::{application::ApplicationRow, candidate::ApplicationDetails},
     Query, services::application_service::ApplicationService,
 };
-use alohomora::{bbox::BBox, context::{Context}, pcr::PrivacyCriticalRegion, policy::NoPolicy};
+use alohomora::{bbox::BBox, context::Context, pcr::PrivacyCriticalRegion, policy::NoPolicy};
 use sea_orm::DbConn;
 use async_trait::async_trait;
 use crate::models::candidate::{CandidateRow, FieldOfStudy, FieldsCombination};
@@ -99,7 +99,7 @@ impl CsvExporter for ApplicationCsv {
             // wtr.serialize(row)?;
 
             let out = alohomora::fold::fold(row).unwrap();
-            out.unbox(context.clone(), PrivacyCriticalRegion::new(|y, _| {
+            let _ = out.unbox(context.clone(), PrivacyCriticalRegion::new(|y, _| {
                 wtr.serialize(y).unwrap();
             }), ());
         }
@@ -179,7 +179,7 @@ impl CsvExporter for CandidateCsv {
             // wtr.serialize(row)?;
             
             let out = alohomora::fold::fold(row).unwrap();
-            out.unbox(context.clone(), PrivacyCriticalRegion::new(|y, _| {
+            let _ = out.unbox(context.clone(), PrivacyCriticalRegion::new(|y, _| {
                 wtr.serialize(y).unwrap();
             }), ());
         }

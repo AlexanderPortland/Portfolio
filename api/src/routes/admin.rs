@@ -148,10 +148,6 @@ pub async fn create_candidate(
     MyResult::Ok(JsonResponse::from((cand, context)))
 }
 
-
-
-
-
 #[allow(unused_variables)]
 #[get("/candidates?<field>&<page>&<sort>")]
 pub async fn list_candidates(
