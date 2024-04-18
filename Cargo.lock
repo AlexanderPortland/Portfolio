@@ -2056,7 +2056,7 @@ dependencies = [
  "httpdate",
  "itoa",
  "pin-project-lite",
- "socket2 0.4.10",
+ "socket2 0.5.6",
  "tokio",
  "tower-service",
  "tracing",
@@ -3410,12 +3410,15 @@ dependencies = [
  "futures",
  "infer",
  "log",
+ "mysql",
+ "mysql_common 0.22.2",
  "once_cell",
  "portfolio-entity",
  "portfolio-policies",
  "rand 0.8.5",
  "rocket",
  "sea-orm",
+ "sea-orm-rocket",
  "secrecy",
  "serde",
  "serde_json",
@@ -5394,8 +5397,8 @@ version = "1.6.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "97fee6b57c6a41524a810daee9286c02d7752c4253064d0b05472833a438f675"
 dependencies = [
- "cfg-if 0.1.10",
- "rand 0.7.3",
+ "cfg-if 1.0.0",
+ "rand 0.8.5",
  "static_assertions",
 ]
 

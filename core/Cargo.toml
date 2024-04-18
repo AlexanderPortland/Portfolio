@@ -8,7 +8,6 @@ publish = false
 chrono = "^0.4"
 
 portfolio-entity = { path = "../entity" }
-portfolio-policies = { path = "../policies" }
 
 # serde
 serde = { version = "^1.0", features = ["derive"] }
@@ -56,6 +55,10 @@ alohomora_derive = { path = "../../alohomora/alohomora_derive" }
 
 rocket = { git = "https://github.com/KinanBab/Rocket.git", branch = "main" }
 
+# mysql
+mysql = "21.0.2"
+mysql_common = "0.22"
+
 [dependencies.sea-orm]
 git = "https://github.com/KinanBab/sea-orm.git"
 branch = "main"
@@ -66,6 +69,10 @@ features = [ "sqlx-mysql", "sqlx-sqlite", "runtime-tokio-native-tls", "macros" ]
 #     "sqlx-postgres",
 #     "sqlx-mysql",
 # ]
+
+[dependencies.sea-orm-rocket]
+git = "https://github.com/KinanBab/sea-orm.git"
+branch = "main"
 
 [dev-dependencies]
 tokio = { version = "^1.28", features = ["macros"] }

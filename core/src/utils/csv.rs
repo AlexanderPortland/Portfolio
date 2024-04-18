@@ -5,10 +5,7 @@ use crate::{
     models::{application::ApplicationRow, candidate::ApplicationDetails},
     Query, services::application_service::ApplicationService,
 };
-use alohomora::bbox::BBox;
-use alohomora::fold::fold;
-use alohomora::policy::AnyPolicy;
-use alohomora::pure::{execute_pure, PrivacyPureRegion};
+use alohomora::{context::Context, pcr::PrivacyCriticalRegion, policy::NoPolicy};
 use sea_orm::DbConn;
 use async_trait::async_trait;
 use chrono::NaiveDate;
@@ -124,7 +121,6 @@ impl CsvExporter for ApplicationCsv {
                     ..Default::default()
                 },
             };
-
             rows.push(row);
         }
         serialize_in_sandbox(rows)
@@ -213,7 +209,6 @@ impl CsvExporter for CandidateCsv {
                 parent_email: parents.first().map(|parent| parent.email.clone().map(|b| b.into_any_policy())).unwrap_or(None),
                 parent_telephone: parents.first().map(|parent| parent.telephone.clone().map(|b| b.into_any_policy())).unwrap_or(None),
             };
-
             rows.push(row);
         }
 

@@ -63,6 +63,7 @@ impl Fairing for CORS {
     }
 }
 
+#[allow(dead_code)]
 #[options("/<_..>")]
 fn all_options() {
     /* Intentionally left empty */
