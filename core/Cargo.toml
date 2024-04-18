@@ -52,12 +52,9 @@ fern = "^0.6"
 # alohomora
 alohomora = { path = "../../alohomora/alohomora" }
 alohomora_derive = { path = "../../alohomora/alohomora_derive" }
+portfolio-policies = { path = "../policies" }
 
 rocket = { git = "https://github.com/KinanBab/Rocket.git", branch = "main" }
-
-# mysql
-mysql = "21.0.2"
-mysql_common = "0.22"
 
 [dependencies.sea-orm]
 git = "https://github.com/KinanBab/sea-orm.git"

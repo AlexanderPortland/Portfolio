@@ -1,5 +1,4 @@
 use std::sync::Arc;
-
 use alohomora::{bbox::BBox, db::BBoxConn, policy::NoPolicy, AlohomoraType};
 use std::sync::Mutex;
 use ::rocket::http::Status;

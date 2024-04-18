@@ -5,6 +5,9 @@ use rocket::http::Cookie;
 use rocket::Request;
 use sea_orm_migration::sea_orm::QueryResult;
 
+pub mod candidate;
+pub mod context;
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct FakePolicy {}
 

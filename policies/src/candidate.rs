@@ -1,15 +1,9 @@
 use alohomora::{orm::ORMPolicy, policy::{AnyPolicy, Policy, PolicyAnd}, AlohomoraType};
-use entity::candidate;
 use rocket::data;
 use serde::Serialize;
-//use mysql::prelude::Queryable;
-//use mysql::conn::queryable::Queryable;
 use mysql::prelude::Queryable;
-//use mysql::{prelude::Queryable, Conn};
-// use mysql::prelude::Queryable;
-//use mysql::conn::queryable::Queryable;
 
-use crate::policies::context::ContextDataType;
+use crate::context::ContextDataType;
 
 
 #[derive(Clone, Serialize, Debug)]
@@ -110,6 +104,12 @@ impl ORMPolicy for CandidateDataPolicy {
 
         CandidateDataPolicy { 
             candidate_id,
+        }
+    }
+
+    fn empty() -> Self where Self: Sized {
+        CandidateDataPolicy{
+            candidate_id: None,
         }
     }
 }
