@@ -1,46 +1,52 @@
-use alohomora::{bbox::BBox, policy::NoPolicy};
+use std::fmt::Debug;
+use alohomora::bbox::BBox;
+use alohomora::orm::ORMPolicy;
+use alohomora::policy::Policy;
+use alohomora::pure::{execute_pure, PrivacyPureRegion};
 use chrono::NaiveDate;
 
 use entity::{candidate, parent};
 use futures::future;
+use portfolio_policies::FakePolicy;
 
 use crate::{crypto, models::candidate::ApplicationDetails, error::ServiceError, utils::date::parse_naive_date_from_opt_str};
+use crate::crypto_helpers::{my_decrypt_password_with_private_key, my_encrypt_password_with_recipients};
 
 use super::{candidate::{CandidateDetails, ParentDetails}, grade::GradeList, school::School};
 
 pub const NAIVE_DATE_FMT: &str = "%Y-%m-%d";
 
 #[derive(Debug, Clone)]
-pub struct EncryptedString(String);
+pub struct EncryptedString<P: ORMPolicy + Debug + Clone>(BBox<String, P>);
 
 #[derive(Debug, Clone)]
 pub struct EncryptedCandidateDetails {
-    pub name: Option<BBox<EncryptedString, NoPolicy>>,
-    pub surname: Option<BBox<EncryptedString, NoPolicy>>,
-    pub birth_surname: Option<BBox<EncryptedString, NoPolicy>>,
-    pub birthplace: Option<BBox<EncryptedString, NoPolicy>>,
-    pub birthdate: Option<BBox<EncryptedString, NoPolicy>>,
-    pub address: Option<BBox<EncryptedString, NoPolicy>>,
-    pub letter_address: Option<BBox<EncryptedString, NoPolicy>>,
-    pub telephone: Option<BBox<EncryptedString, NoPolicy>>,
-    pub citizenship: Option<BBox<EncryptedString, NoPolicy>>,
-    pub email: Option<BBox<EncryptedString, NoPolicy>>,
-    pub sex: Option<BBox<EncryptedString, NoPolicy>>,
-    pub personal_id_number: Option<BBox<EncryptedString, NoPolicy>>,
-    pub school_name: Option<BBox<EncryptedString, NoPolicy>>,
-    pub health_insurance: Option<BBox<EncryptedString, NoPolicy>>,
-    pub grades_json: Option<BBox<EncryptedString, NoPolicy>>,
-    pub first_school: Option<BBox<EncryptedString, NoPolicy>>,
-    pub second_school: Option<BBox<EncryptedString, NoPolicy>>,
-    pub test_language: Option<BBox<String, NoPolicy>>,
+    pub name: Option<EncryptedString<FakePolicy>>,
+    pub surname: Option<EncryptedString<FakePolicy>>,
+    pub birth_surname: Option<EncryptedString<FakePolicy>>,
+    pub birthplace: Option<EncryptedString<FakePolicy>>,
+    pub birthdate: Option<EncryptedString<FakePolicy>>,
+    pub address: Option<EncryptedString<FakePolicy>>,
+    pub letter_address: Option<EncryptedString<FakePolicy>>,
+    pub telephone: Option<EncryptedString<FakePolicy>>,
+    pub citizenship: Option<EncryptedString<FakePolicy>>,
+    pub email: Option<EncryptedString<FakePolicy>>,
+    pub sex: Option<EncryptedString<FakePolicy>>,
+    pub personal_id_number: Option<EncryptedString<FakePolicy>>,
+    pub school_name: Option<EncryptedString<FakePolicy>>,
+    pub health_insurance: Option<EncryptedString<FakePolicy>>,
+    pub grades_json: Option<EncryptedString<FakePolicy>>,
+    pub first_school: Option<EncryptedString<FakePolicy>>,
+    pub second_school: Option<EncryptedString<FakePolicy>>,
+    pub test_language: Option<BBox<String, FakePolicy>>,
 }
 
 #[derive(Debug, Clone)]
 pub struct EncryptedParentDetails {
-    pub name: Option<BBox<EncryptedString, NoPolicy>>,
-    pub surname: Option<BBox<EncryptedString, NoPolicy>>,
-    pub telephone: Option<BBox<EncryptedString, NoPolicy>>,
-    pub email: Option<BBox<EncryptedString, NoPolicy>>,
+    pub name: Option<EncryptedString<FakePolicy>>,
+    pub surname: Option<EncryptedString<FakePolicy>>,
+    pub telephone: Option<EncryptedString<FakePolicy>>,
+    pub email: Option<EncryptedString<FakePolicy>>,
 }
 #[derive(Debug, Clone)]
 pub struct EncryptedApplicationDetails {
@@ -48,79 +54,88 @@ pub struct EncryptedApplicationDetails {
     pub parents: Vec<EncryptedParentDetails>,
 }
 
-impl EncryptedString {
-    pub async fn new(s: &str, recipients: &Vec<BBox<String, NoPolicy>>) -> Result<Self, ServiceError> {
-        let recipients = recipients.iter()
-            .map(|s| s.as_ref().discard_box().as_str())
-            .collect();
-        let encrypted_string = crypto::encrypt_password_with_recipients(&s, &recipients).await?;
+impl<P: ORMPolicy + Debug + Clone> EncryptedString<P> {
+    pub async fn new(
+        password_plain_text: BBox<String, P>,
+        recipients: &Vec<BBox<String, P>>,
+    ) -> Result<Self, ServiceError> {
+        let encrypted_string = my_encrypt_password_with_recipients(password_plain_text, recipients).await?;
         Ok(Self(encrypted_string))
     }
 
-    pub async fn new_option(s: &BBox<String, NoPolicy>, recipients: &Vec<String>) -> Result<Option<BBox<Self, NoPolicy>>, ServiceError> {
-        match s.clone().discard_box().is_empty() {
-            true => Ok(None),
-            false => {
-                let recipients = recipients.iter().map(|s| &**s).collect();
-                let encrypted_s = crypto::encrypt_password_with_recipients(&s.clone().discard_box(), &recipients).await?;
-                Ok(Some(BBox::new(Self(encrypted_s), NoPolicy::new())))
-            },
-        }
-    }
+    pub async fn new_option(
+        password_plain_text: &BBox<String, P>,
+        recipients: &Vec<BBox<String, P>>,
+    ) -> Result<Option<Self>, ServiceError> {
+        let password_plain_text = password_plain_text.clone().into_ppr(
+            PrivacyPureRegion::new(|password: String|
+                if password.is_empty() {
+                    None
+                } else {
+                    Some(password)
+                }
+            )
+        );
 
-    pub async fn decrypt(&self, private_key: &String) -> Result<String, ServiceError> {
-        crypto::decrypt_password_with_private_key(&self.0, private_key).await
-    }
-
-    pub async fn decrypt_option(
-        s: &Option<BBox<EncryptedString, NoPolicy>>,
-        private_key: &BBox<String, NoPolicy>,
-    ) -> Result<Option<BBox<String, NoPolicy>>, ServiceError> {
-        match s.as_ref() {
-            Some(s) => {
-                let a = s.clone().discard_box().decrypt(&private_key.clone().discard_box()).await?;
-
-                Ok(Some(BBox::new(a, NoPolicy::new())))
-            },
+        match password_plain_text.transpose() {
             None => Ok(None),
+            Some(password_plain_text) => {
+                let encrypted_string = my_encrypt_password_with_recipients(password_plain_text, recipients).await?;
+                Ok(Some(Self(encrypted_string)))
+            }
         }
     }
 
-    pub fn to_string(self) -> String {
-        self.0
+    pub async fn decrypt<P2: Policy + Clone>(
+        self,
+        private_key: &BBox<String, P2>
+    ) -> Result<BBox<String, P>, ServiceError> {
+        my_decrypt_password_with_private_key(self.0, private_key.clone()).await
+    }
+
+    pub async fn decrypt_option<P2: Policy + Clone>(
+        self_: &Option<Self>,
+        private_key: &BBox<String, P2>,
+    ) -> Result<Option<BBox<String, P>>, ServiceError> {
+        match self_ {
+            None => Ok(None),
+            Some(self_) => Ok(Some(self_.clone().decrypt(private_key).await?)),
+        }
     }
 }
 
-impl Into<String> for EncryptedString {
-    fn into(self) -> String {
-        self.0
-    }
-}
-
-impl TryFrom<&Option<String>> for EncryptedString {
+impl<P: ORMPolicy + Debug + Clone> TryFrom<&Option<BBox<String, P>>> for EncryptedString<P> {
     type Error = ServiceError;
 
-    fn try_from(s: &Option<String>) -> Result<Self, Self::Error> {
+    fn try_from(s: &Option<BBox<String, P>>) -> Result<Self, Self::Error> {
         match s {
-            Some(s) => Ok(Self(s.to_owned())),
+            Some(s) => Ok(Self(s.clone())),
             None => Err(ServiceError::CandidateDetailsNotSet),
         }
     }
 }
 
-impl From<String> for EncryptedString {
-    fn from(s: String) -> Self {
+impl<P: ORMPolicy + Debug + Clone>  From<BBox<String, P>> for EncryptedString<P> {
+    fn from(s: BBox<String, P>) -> Self {
         Self(s)
     }
 }
 
-impl TryFrom<Option<NaiveDate>> for EncryptedString {
+impl<P: ORMPolicy + Debug + Clone> Into<BBox<String, P>> for EncryptedString<P> {
+    fn into(self) -> BBox<String, P> {
+        self.0
+    }
+}
+
+impl<P: ORMPolicy + Debug + Clone> TryFrom<Option<BBox<NaiveDate, P>>> for EncryptedString<P> {
     type Error = ServiceError;
 
-    fn try_from(d: Option<NaiveDate>) -> Result<Self, Self::Error> {
+    fn try_from(d: Option<BBox<NaiveDate, P>>) -> Result<Self, Self::Error> {
         match d {
-            Some(d) => Ok(Self(d.to_string())),
             None => Err(ServiceError::CandidateDetailsNotSet),
+            Some(d) => Ok(Self(
+                d.into_ppr(PrivacyPureRegion::new(|d: NaiveDate| d.to_string()))
+            )),
         }
     }
 }
@@ -128,14 +143,12 @@ impl TryFrom<Option<NaiveDate>> for EncryptedString {
 impl EncryptedCandidateDetails {
     pub async fn new(
         form: &CandidateDetails,
-        recipients: &Vec<String>,
+        recipients: &Vec<BBox<String, FakePolicy>>,
     ) -> Result<EncryptedCandidateDetails, ServiceError> {
-        let birthdate_str = BBox::new(form.birthdate.clone().discard_box().format(NAIVE_DATE_FMT).to_string(),
-            NoPolicy::new());
-        let grades_str = BBox::new(form.grades.clone().discard_box().to_string(), NoPolicy::new());
-        let (first_school_str, second_school_str) = 
-            (BBox::new(form.firstSchool.clone().discard_box().to_string(), NoPolicy::new()), 
-            BBox::new(form.secondSchool.clone().discard_box().to_string(), NoPolicy::new()));
+        let birthdate_str = form.birthdate.clone().into_ppr(PrivacyPureRegion::new(|b: NaiveDate| b.format(NAIVE_DATE_FMT).to_string()));
+        let grades_str = form.grades.clone().into_ppr(PrivacyPureRegion::new(|g: GradeList| g.to_string()));
+        let first_school_str = form.firstSchool.clone().into_ppr(PrivacyPureRegion::new(|g: School| g.to_string()));
+        let second_school_str = form.secondSchool.clone().into_ppr(PrivacyPureRegion::new(|g: School| g.to_string()));
         let d = tokio::try_join!(
             EncryptedString::new_option(&form.name, recipients),
             EncryptedString::new_option(&form.surname, recipients),
@@ -180,46 +193,46 @@ impl EncryptedCandidateDetails {
         )
     }
 
-    pub async fn decrypt(&self, priv_key: &BBox<String, NoPolicy>) -> Result<CandidateDetails, ServiceError> {
+    pub async fn decrypt(&self, private_key: &BBox<String, FakePolicy>) -> Result<CandidateDetails, ServiceError> {
         let d = tokio::try_join!(
-            EncryptedString::decrypt_option(&self.name, priv_key),              // 0
-            EncryptedString::decrypt_option(&self.surname, priv_key),           // 1
-            EncryptedString::decrypt_option(&self.birth_surname, priv_key),     // 2
-            EncryptedString::decrypt_option(&self.birthplace, priv_key),        // 3
-            EncryptedString::decrypt_option(&self.birthdate, priv_key),         // 4
-            EncryptedString::decrypt_option(&self.address, priv_key),           // 5
-            EncryptedString::decrypt_option(&self.letter_address, priv_key),    // 6
-            EncryptedString::decrypt_option(&self.telephone, priv_key),         // 7
-            EncryptedString::decrypt_option(&self.citizenship, priv_key),       // 8
-            EncryptedString::decrypt_option(&self.email, priv_key),             // 9
-            EncryptedString::decrypt_option(&self.sex, priv_key),               // 10
-            EncryptedString::decrypt_option(&self.personal_id_number, priv_key),// 11
-            EncryptedString::decrypt_option(&self.school_name, priv_key),       // 12
-            EncryptedString::decrypt_option(&self.health_insurance, priv_key),  // 13
-            EncryptedString::decrypt_option(&self.grades_json, priv_key),       // 14
-            EncryptedString::decrypt_option(&self.first_school, priv_key),      // 15
-            EncryptedString::decrypt_option(&self.second_school, priv_key),     // 16
+            EncryptedString::decrypt_option(&self.name, private_key),              // 0
+            EncryptedString::decrypt_option(&self.surname, private_key),           // 1
+            EncryptedString::decrypt_option(&self.birth_surname, private_key),     // 2
+            EncryptedString::decrypt_option(&self.birthplace, private_key),        // 3
+            EncryptedString::decrypt_option(&self.birthdate, private_key),         // 4
+            EncryptedString::decrypt_option(&self.address, private_key),           // 5
+            EncryptedString::decrypt_option(&self.letter_address, private_key),    // 6
+            EncryptedString::decrypt_option(&self.telephone, private_key),         // 7
+            EncryptedString::decrypt_option(&self.citizenship, private_key),       // 8
+            EncryptedString::decrypt_option(&self.email, private_key),             // 9
+            EncryptedString::decrypt_option(&self.sex, private_key),               // 10
+            EncryptedString::decrypt_option(&self.personal_id_number, private_key),// 11
+            EncryptedString::decrypt_option(&self.school_name, private_key),       // 12
+            EncryptedString::decrypt_option(&self.health_insurance, private_key),  // 13
+            EncryptedString::decrypt_option(&self.grades_json, private_key),       // 14
+            EncryptedString::decrypt_option(&self.first_school, private_key),      // 15
+            EncryptedString::decrypt_option(&self.second_school, private_key),     // 16
         )?;
 
         Ok(CandidateDetails {
-                name: d.0.unwrap_or(BBox::new("".to_string(), NoPolicy::new())),
-                surname: d.1.unwrap_or(BBox::new("".to_string(), NoPolicy::new())),
-                birthSurname: d.2.unwrap_or(BBox::new("".to_string(), NoPolicy::new())),
-                birthplace: d.3.unwrap_or(BBox::new("".to_string(), NoPolicy::new())),
+                name: d.0.unwrap_or_default(),
+                surname: d.1.unwrap_or_default(),
+                birthSurname: d.2.unwrap_or_default(),
+                birthplace: d.3.unwrap_or_default(),
                 birthdate: parse_naive_date_from_opt_str(d.4, NAIVE_DATE_FMT)?,
-                address: d.5.unwrap_or(BBox::new("".to_string(), NoPolicy::new())),
-                letterAddress: d.6.unwrap_or(BBox::new("".to_string(), NoPolicy::new())),
-                telephone: d.7.unwrap_or(BBox::new("".to_string(), NoPolicy::new())),
-                citizenship: d.8.unwrap_or(BBox::new("".to_string(), NoPolicy::new())),
-                email: d.9.unwrap_or(BBox::new("".to_string(), NoPolicy::new())),
-                sex: d.10.unwrap_or(BBox::new("".to_string(), NoPolicy::new())),
-                personalIdNumber: d.11.unwrap_or(BBox::new("".to_string(), NoPolicy::new())),
-                schoolName: d.12.unwrap_or(BBox::new("".to_string(), NoPolicy::new())),
-                healthInsurance: d.13.unwrap_or(BBox::new("".to_string(), NoPolicy::new())),
-                grades: BBox::new(GradeList::from_opt_str(d.14).unwrap_or(GradeList::from(vec![])), NoPolicy::new()),
-                firstSchool: BBox::new(School::from_opt_str(d.15).unwrap_or_default(), NoPolicy::new()),
-                secondSchool: BBox::new(School::from_opt_str(d.16).unwrap_or_default(), NoPolicy::new()),
-                testLanguage: self.test_language.clone().unwrap_or(BBox::new(String::from(""), NoPolicy::new())),
+                address: d.5.unwrap_or_default(),
+                letterAddress: d.6.unwrap_or_default(),
+                telephone: d.7.unwrap_or_default(),
+                citizenship: d.8.unwrap_or_default(),
+                email: d.9.unwrap_or_default(),
+                sex: d.10.unwrap_or_default(),
+                personalIdNumber: d.11.unwrap_or_default(),
+                schoolName: d.12.unwrap_or_default(),
+                healthInsurance: d.13.unwrap_or_default(),
+                grades: GradeList::from_opt_str(d.14).unwrap_or_default(),
+                firstSchool: School::from_opt_str(d.15).unwrap_or_default(),
+                secondSchool: School::from_opt_str(d.16).unwrap_or_default(),
+                testLanguage: self.test_language.clone().unwrap_or_default(),
             }
         )
     }
@@ -246,44 +259,25 @@ impl From<&candidate::Model> for EncryptedCandidateDetails {
         candidate: &candidate::Model,
     ) -> Self {
         EncryptedCandidateDetails {
-            name: try_encrypt_bbox_str(&candidate.name),
-            surname: try_encrypt_bbox_str(&candidate.surname),
-            birth_surname: try_encrypt_bbox_str(&candidate.birth_surname),
-            birthplace: try_encrypt_bbox_str(&candidate.birthplace),
-            birthdate: try_encrypt_bbox_str(&candidate.birthdate),
-            address: try_encrypt_bbox_str(&candidate.address),
-            letter_address: try_encrypt_bbox_str(&candidate.letter_address),
-            telephone: try_encrypt_bbox_str(&candidate.telephone),
-            citizenship: try_encrypt_bbox_str(&candidate.citizenship),
-            email: try_encrypt_bbox_str(&candidate.email),
-            sex: try_encrypt_bbox_str(&candidate.sex),
-            personal_id_number: encrypt_bbox_str(candidate.personal_identification_number.to_owned()),
-            school_name: try_encrypt_bbox_str(&candidate.school_name),
-            health_insurance: try_encrypt_bbox_str(&candidate.health_insurance),
-            grades_json: try_encrypt_bbox_str(&candidate.grades_json),
-            first_school: try_encrypt_bbox_str(&candidate.first_school),
-            second_school: try_encrypt_bbox_str(&candidate.second_school),
+            name: EncryptedString::try_from(&candidate.name).ok(),
+            surname: EncryptedString::try_from(&candidate.surname).ok(),
+            birth_surname: EncryptedString::try_from(&candidate.birth_surname).ok(),
+            birthplace: EncryptedString::try_from(&candidate.birthplace).ok(),
+            birthdate: EncryptedString::try_from(&candidate.birthdate).ok(),
+            address: EncryptedString::try_from(&candidate.address).ok(),
+            letter_address: EncryptedString::try_from(&candidate.letter_address).ok(),
+            telephone: EncryptedString::try_from(&candidate.telephone).ok(),
+            citizenship: EncryptedString::try_from(&candidate.citizenship).ok(),
+            email: EncryptedString::try_from(&candidate.email).ok(),
+            sex: EncryptedString::try_from(&candidate.sex).ok(),
+            personal_id_number: Some(EncryptedString::from(candidate.personal_identification_number.to_owned())),
+            school_name: EncryptedString::try_from(&candidate.school_name).ok(),
+            health_insurance: EncryptedString::try_from(&candidate.health_insurance).ok(),
+            grades_json: EncryptedString::try_from(&candidate.grades_json).ok(),
+            first_school: EncryptedString::try_from(&candidate.first_school).ok(),
+            second_school: EncryptedString::try_from(&candidate.second_school).ok(),
             test_language: candidate.test_language.to_owned(),
         }
-    }
-}
-
-pub fn try_encrypt_bbox_str(b: &Option<BBox<String, NoPolicy>>) -> Option<BBox<EncryptedString, NoPolicy>> {
-    match b.as_ref() {
-        None => None,
-        Some(s) => {
-            let o = EncryptedString::try_from(s.clone().discard_box()).ok()?;
-            Some(BBox::new(o, NoPolicy::new()))
-        },
-    }
-}
-
-pub fn encrypt_bbox_str(b: BBox<String, NoPolicy>) -> Option<BBox<EncryptedString, NoPolicy>> {
-    match b.discard_box() {
-        s => {
-            let s = EncryptedString::from(s);
-            Some(BBox::new(s, NoPolicy::new()))
-        },
     }
 }
 
@@ -292,7 +286,7 @@ pub fn encrypt_bbox_str(b: BBox<String, NoPolicy>) -> Option<BBox<EncryptedStrin
 impl EncryptedParentDetails {
     pub async fn new(
         form: &ParentDetails,
-        recipients: &Vec<String>,
+        recipients: &Vec<BBox<String, FakePolicy>>,
     ) -> Result<EncryptedParentDetails, ServiceError> {
         let d = tokio::try_join!(
             EncryptedString::new_option(&form.name, recipients),
@@ -311,19 +305,19 @@ impl EncryptedParentDetails {
         )
     }
 
-    pub async fn decrypt(&self, priv_key: &BBox<String, NoPolicy>) -> Result<ParentDetails, ServiceError> {
+    pub async fn decrypt<P: Policy + Clone>(&self, private_key: &BBox<String, P>) -> Result<ParentDetails, ServiceError> {
         let d = tokio::try_join!(
-            EncryptedString::decrypt_option(&self.name, &priv_key),
-            EncryptedString::decrypt_option(&self.surname, &priv_key),
-            EncryptedString::decrypt_option(&self.telephone, &priv_key),
-            EncryptedString::decrypt_option(&self.email, &priv_key),
+            EncryptedString::decrypt_option(&self.name, &private_key),
+            EncryptedString::decrypt_option(&self.surname, &private_key),
+            EncryptedString::decrypt_option(&self.telephone, &private_key),
+            EncryptedString::decrypt_option(&self.email, &private_key),
         )?;
 
         Ok(ParentDetails {
-                name: d.0.unwrap_or(BBox::new("".to_string(), NoPolicy::new())),
-                surname: d.1.unwrap_or(BBox::new("".to_string(), NoPolicy::new())),
-                telephone: d.2.unwrap_or(BBox::new("".to_string(), NoPolicy::new())),
-                email: d.3.unwrap_or(BBox::new("".to_string(), NoPolicy::new())),
+                name: d.0.unwrap_or_default(),
+                surname: d.1.unwrap_or_default(),
+                telephone: d.2.unwrap_or_default(),
+                email: d.3.unwrap_or_default(),
             }
         )
     }
@@ -340,10 +334,10 @@ impl From<&parent::Model> for EncryptedParentDetails {
         parent: &parent::Model,
     ) -> Self {
         EncryptedParentDetails { 
-            name: try_encrypt_bbox_str(&parent.name),
-            surname: try_encrypt_bbox_str(&parent.surname),
-            telephone: try_encrypt_bbox_str(&parent.telephone),
-            email: try_encrypt_bbox_str(&parent.email),
+            name: EncryptedString::try_from(&parent.name).ok(),
+            surname: EncryptedString::try_from(&parent.surname).ok(),
+            telephone: EncryptedString::try_from(&parent.telephone).ok(),
+            email: EncryptedString::try_from(&parent.email).ok(),
         }
     }
 }
@@ -351,7 +345,7 @@ impl From<&parent::Model> for EncryptedParentDetails {
 impl EncryptedApplicationDetails {
     pub async fn new(
         form: &ApplicationDetails,
-        recipients: &Vec<String>,
+        recipients: &Vec<BBox<String, FakePolicy>>,
     ) -> Result<EncryptedApplicationDetails, ServiceError> {
         let candidate =  EncryptedCandidateDetails::new(&form.candidate, &recipients).await?;
         let enc_parents = future::try_join_all(
@@ -366,13 +360,13 @@ impl EncryptedApplicationDetails {
         )
     }
 
-    pub async fn decrypt(self, priv_key: BBox<String, NoPolicy>) -> Result<ApplicationDetails, ServiceError> {
-        let decrypted_candidate = self.candidate.decrypt(&priv_key).await?;
+    pub async fn decrypt(self, private_key: BBox<String, FakePolicy>) -> Result<ApplicationDetails, ServiceError> {
+        let decrypted_candidate = self.candidate.decrypt(&private_key).await?;
 
         let decrypted_parents = future::try_join_all(
             self.parents
                 .iter()
-                .map(|d| d.decrypt(&priv_key))
+                .map(|d| d.decrypt(&private_key))
         ).await?;
 
         Ok(ApplicationDetails {
@@ -406,7 +400,7 @@ impl From<(&candidate::Model, &Vec<parent::Model>)> for EncryptedApplicationDeta
 pub mod tests {
     use std::sync::Mutex;
 
-    use alohomora::{bbox::BBox, policy::NoPolicy};
+    use alohomora::{bbox::BBox, policy::FakePolicy};
     use chrono::Local;
     use entity::admin;
     use once_cell::sync::Lazy;
@@ -422,63 +416,63 @@ pub mod tests {
     pub static APPLICATION_DETAILS: Lazy<Mutex<ApplicationDetails>> = Lazy::new(|| 
         Mutex::new(ApplicationDetails {
             candidate: CandidateDetails {
-                name: BBox::new("name".to_string(), NoPolicy::new()),
-                surname: BBox::new("surname".to_string(), NoPolicy::new()),
-                birthSurname: BBox::new("birth_surname".to_string(), NoPolicy::new()),
-                birthplace: BBox::new("birthplace".to_string(), NoPolicy::new()),
-                birthdate: BBox::new(chrono::NaiveDate::from_ymd_opt(2000, 1, 1).unwrap(), NoPolicy::new()),
-                address: BBox::new("address".to_string(), NoPolicy::new()),
-                letterAddress: BBox::new("letter_address".to_string(), NoPolicy::new()),
-                telephone: BBox::new("telephone".to_string(), NoPolicy::new()),
-                citizenship: BBox::new("citizenship".to_string(), NoPolicy::new()),
-                email: BBox::new("email".to_string(), NoPolicy::new()),
-                sex: BBox::new("sex".to_string(), NoPolicy::new()),
-                personalIdNumber: BBox::new("personal_id_number".to_string(), NoPolicy::new()),
-                schoolName: BBox::new("school_name".to_string(), NoPolicy::new()),
-                healthInsurance: BBox::new("health_insurance".to_string(), NoPolicy::new()),
-                grades: BBox::new(GradeList::from(vec![]), NoPolicy::new()),
-                firstSchool: BBox::new(School::from_opt_str(Some(BBox::new("{\"name\": \"SSPS\", \"field\": \"KB\"}".to_string(), NoPolicy::new()))).unwrap(), NoPolicy::new()),
-                secondSchool: BBox::new(School::from_opt_str(Some(BBox::new("{\"name\": \"SSPS\", \"field\": \"IT\"}".to_string(), NoPolicy::new()))).unwrap(), NoPolicy::new()),
-                testLanguage: BBox::new("test_language".to_string(), NoPolicy::new()),
+                name: BBox::new("name".to_string(), FakePolicy::new()),
+                surname: BBox::new("surname".to_string(), FakePolicy::new()),
+                birthSurname: BBox::new("birth_surname".to_string(), FakePolicy::new()),
+                birthplace: BBox::new("birthplace".to_string(), FakePolicy::new()),
+                birthdate: BBox::new(chrono::NaiveDate::from_ymd_opt(2000, 1, 1).unwrap(), FakePolicy::new()),
+                address: BBox::new("address".to_string(), FakePolicy::new()),
+                letterAddress: BBox::new("letter_address".to_string(), FakePolicy::new()),
+                telephone: BBox::new("telephone".to_string(), FakePolicy::new()),
+                citizenship: BBox::new("citizenship".to_string(), FakePolicy::new()),
+                email: BBox::new("email".to_string(), FakePolicy::new()),
+                sex: BBox::new("sex".to_string(), FakePolicy::new()),
+                personalIdNumber: BBox::new("personal_id_number".to_string(), FakePolicy::new()),
+                schoolName: BBox::new("school_name".to_string(), FakePolicy::new()),
+                healthInsurance: BBox::new("health_insurance".to_string(), FakePolicy::new()),
+                grades: BBox::new(GradeList::from(vec![]), FakePolicy::new()),
+                firstSchool: BBox::new(School::from_opt_str(Some(BBox::new("{\"name\": \"SSPS\", \"field\": \"KB\"}".to_string(), FakePolicy::new()))).unwrap(), FakePolicy::new()),
+                secondSchool: BBox::new(School::from_opt_str(Some(BBox::new("{\"name\": \"SSPS\", \"field\": \"IT\"}".to_string(), FakePolicy::new()))).unwrap(), FakePolicy::new()),
+                testLanguage: BBox::new("test_language".to_string(), FakePolicy::new()),
             },
             parents: vec![ParentDetails {
-                name: BBox::new("parent_name".to_string(), NoPolicy::new()),
-                surname: BBox::new("parent_surname".to_string(), NoPolicy::new()),
-                telephone: BBox::new("parent_telephone".to_string(), NoPolicy::new()),
-                email: BBox::new("parent_email".to_string(), NoPolicy::new())
+                name: BBox::new("parent_name".to_string(), FakePolicy::new()),
+                surname: BBox::new("parent_surname".to_string(), FakePolicy::new()),
+                telephone: BBox::new("parent_telephone".to_string(), FakePolicy::new()),
+                email: BBox::new("parent_email".to_string(), FakePolicy::new())
             }]
         })
     );
 
     pub fn assert_all_application_details(details: &ApplicationDetails) {
-        assert_eq!(details.candidate.name, BBox::new("name".to_string(), NoPolicy::new()));
-        assert_eq!(details.candidate.surname, BBox::new("surname".to_string(), NoPolicy::new()));
-        assert_eq!(details.candidate.birthplace, BBox::new("birthplace".to_string(), NoPolicy::new()));
-        assert_eq!(details.candidate.birthdate, BBox::new(chrono::NaiveDate::from_ymd_opt(2000, 1, 1).unwrap(), NoPolicy::new()));
-        assert_eq!(details.candidate.address, BBox::new("address".to_string(), NoPolicy::new()));
-        assert_eq!(details.candidate.telephone, BBox::new("telephone".to_string(), NoPolicy::new()));
-        assert_eq!(details.candidate.citizenship, BBox::new("citizenship".to_string(), NoPolicy::new()));
-        assert_eq!(details.candidate.email, BBox::new("email".to_string(), NoPolicy::new()));
-        assert_eq!(details.candidate.sex, BBox::new("sex".to_string(), NoPolicy::new()));
+        assert_eq!(details.candidate.name, BBox::new("name".to_string(), FakePolicy::new()));
+        assert_eq!(details.candidate.surname, BBox::new("surname".to_string(), FakePolicy::new()));
+        assert_eq!(details.candidate.birthplace, BBox::new("birthplace".to_string(), FakePolicy::new()));
+        assert_eq!(details.candidate.birthdate, BBox::new(chrono::NaiveDate::from_ymd_opt(2000, 1, 1).unwrap(), FakePolicy::new()));
+        assert_eq!(details.candidate.address, BBox::new("address".to_string(), FakePolicy::new()));
+        assert_eq!(details.candidate.telephone, BBox::new("telephone".to_string(), FakePolicy::new()));
+        assert_eq!(details.candidate.citizenship, BBox::new("citizenship".to_string(), FakePolicy::new()));
+        assert_eq!(details.candidate.email, BBox::new("email".to_string(), FakePolicy::new()));
+        assert_eq!(details.candidate.sex, BBox::new("sex".to_string(), FakePolicy::new()));
         for parent in &details.parents {
-            assert_eq!(parent.name, BBox::new("parent_name".to_string(), NoPolicy::new()));
-            assert_eq!(parent.surname, BBox::new("parent_surname".to_string(), NoPolicy::new()));
-            assert_eq!(parent.telephone, BBox::new("parent_telephone".to_string(), NoPolicy::new()));
-            assert_eq!(parent.email, BBox::new("parent_email".to_string(), NoPolicy::new()));
+            assert_eq!(parent.name, BBox::new("parent_name".to_string(), FakePolicy::new()));
+            assert_eq!(parent.surname, BBox::new("parent_surname".to_string(), FakePolicy::new()));
+            assert_eq!(parent.telephone, BBox::new("parent_telephone".to_string(), FakePolicy::new()));
+            assert_eq!(parent.email, BBox::new("parent_email".to_string(), FakePolicy::new()));
         }
     }
 
     async fn insert_test_admin(db: &DbConn) -> admin::Model {
         admin::ActiveModel {
-            id: Set(BBox::new(1, NoPolicy::new())),
-            name: Set(BBox::new("Admin".to_owned(), NoPolicy::new())),
-            public_key: Set(BBox::new("age1u889gp407hsz309wn09kxx9anl6uns30m27lfwnctfyq9tq4qpus8tzmq5".to_owned(), NoPolicy::new())),
+            id: Set(BBox::new(1, FakePolicy::new())),
+            name: Set(BBox::new("Admin".to_owned(), FakePolicy::new())),
+            public_key: Set(BBox::new("age1u889gp407hsz309wn09kxx9anl6uns30m27lfwnctfyq9tq4qpus8tzmq5".to_owned(), FakePolicy::new())),
             // AGE-SECRET-KEY-14QG24502DMUUQDT2SPMX2YXPSES0X8UD6NT0PCTDAT6RH8V5Q3GQGSRXPS
-            private_key: Set(BBox::new("5KCEGk0ueWVGnu5Xo3rmpLoilcVZ2ZWmwIcdZEJ8rrBNW7jwzZU/XTcTXtk/xyy/zjF8s+YnuVpOklQvX3EC/Sn+ZwyPY3jokM2RNwnZZlnqdehOEV1SMm/Y".to_owned(), NoPolicy::new())),
+            private_key: Set(BBox::new("5KCEGk0ueWVGnu5Xo3rmpLoilcVZ2ZWmwIcdZEJ8rrBNW7jwzZU/XTcTXtk/xyy/zjF8s+YnuVpOklQvX3EC/Sn+ZwyPY3jokM2RNwnZZlnqdehOEV1SMm/Y".to_owned(), FakePolicy::new())),
             // test
-            password: Set(BBox::new("$argon2i$v=19$m=6000,t=3,p=10$WE9xCQmmWdBK82R4SEjoqA$TZSc6PuLd4aWK2x2WAb+Lm9sLySqjK3KLbNyqyQmzPQ".to_owned(), NoPolicy::new())),
-            created_at: Set(BBox::new(Local::now().naive_local(), NoPolicy::new())),
-            updated_at: Set(BBox::new(Local::now().naive_local(), NoPolicy::new())),
+            password: Set(BBox::new("$argon2i$v=19$m=6000,t=3,p=10$WE9xCQmmWdBK82R4SEjoqA$TZSc6PuLd4aWK2x2WAb+Lm9sLySqjK3KLbNyqyQmzPQ".to_owned(), FakePolicy::new())),
+            created_at: Set(BBox::new(Local::now().naive_local(), FakePolicy::new())),
+            updated_at: Set(BBox::new(Local::now().naive_local(), FakePolicy::new())),
             ..Default::default()
         }
             .insert(db)
@@ -525,7 +519,7 @@ pub mod tests {
         .unwrap();
 
         let application_details = encrypted_details
-            .decrypt(BBox::new(PRIVATE_KEY.to_string(), NoPolicy::new()))
+            .decrypt(BBox::new(PRIVATE_KEY.to_string(), FakePolicy::new()))
             .await
             .unwrap();
 
@@ -542,7 +536,7 @@ pub mod tests {
         let encrypted_details = EncryptedApplicationDetails::try_from((&candidate, &parents)).unwrap();
 
         let application_details = encrypted_details
-            .decrypt(BBox::new(PRIVATE_KEY.to_string(), NoPolicy::new())) // decrypt with admin's private key
+            .decrypt(BBox::new(PRIVATE_KEY.to_string(), FakePolicy::new())) // decrypt with admin's private key
             .await
             .unwrap();
 
@@ -553,7 +547,7 @@ pub mod tests {
     async fn test_encrypted_string_new() {
         let encrypted = EncryptedString::new(
             "test",
-            &vec![BBox::new(PUBLIC_KEY.to_string(), NoPolicy {})]
+            &vec![BBox::new(PUBLIC_KEY.to_string(), FakePolicy {})]
         ).await.unwrap();
 
         assert_eq!(
@@ -568,7 +562,7 @@ pub mod tests {
     async fn test_encrypted_string_decrypt() {
         let encrypted = EncryptedString::new(
             "test",
-            &vec![BBox::new(PUBLIC_KEY.to_string(), NoPolicy {})]
+            &vec![BBox::new(PUBLIC_KEY.to_string(), FakePolicy {})]
         ).await.unwrap();
 
         assert_eq!(

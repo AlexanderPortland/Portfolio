@@ -8,11 +8,12 @@ use rocket::http::Status;
 
 
 use portfolio_core::policies::context::ContextDataType;
-use alohomora::{bbox::BBox, context::Context, orm::Connection, policy::NoPolicy, pure::{execute_pure, PrivacyPureRegion}, rocket::{BBoxCookie, BBoxCookieJar, BBoxJson, ContextResponse, get, JsonResponse, post, route}};
-
+use alohomora::{bbox::BBox, context::Context, orm::Connection, pure::{execute_pure, PrivacyPureRegion}, rocket::{BBoxCookie, BBoxCookieJar, BBoxJson, ContextResponse, get, JsonResponse, post, route}};
+use alohomora::policy::NoPolicy;
 
 use portfolio_core::utils::csv::{ApplicationCsv, CandidateCsv, CsvExporter};
 use portfolio_core::utils::response::MyResult;
+use portfolio_policies::FakePolicy;
 
 use crate::{guards::request::auth::AdminAuth, pool::Db, requests};
 
@@ -22,17 +23,20 @@ use super::to_custom_error;
 pub async fn login(
     conn: Connection<'_, Db>,
     login_form: BBoxJson<AdminLoginRequest>,
-    // ip_addr: SocketAddr, // TODO uncomment in production
+    ip_addr: BBox<SocketAddr, FakePolicy>,
     cookies: BBoxCookieJar<'_, '_>,
     context: Context<ContextDataType>
 ) -> Result<(), (rocket::http::Status, String)> {
-    let ip_addr: SocketAddr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 0);
+    let ip_addr = ip_addr.into_ppr(PrivacyPureRegion::new(|ip: SocketAddr| {
+        ip.to_string()
+    }));
+
     let db = conn.into_inner();
     let session_token_key = AdminService::login(
         db,
         login_form.adminId.clone(),
         login_form.password.clone(),
-        BBox::new(ip_addr.ip().to_string(), NoPolicy::new()),
+        ip_addr,
     )
     .await;
 
@@ -62,27 +66,22 @@ pub async fn logout(conn: Connection<'_, Db>,
 ) -> Result<(), (rocket::http::Status, String)> {
     let db = conn.into_inner();
 
-    let cookie: Option<BBoxCookie<'static, NoPolicy>> = cookies.get("id");
-     // unwrap would be safe here because of the auth guard
-    let cookie_unwrapped: BBoxCookie<'static, NoPolicy> = cookie.ok_or((Status::Unauthorized, "No session cookie".to_string()))?;
-    // let session_id = cookie.value().into_ppr(PrivacyPureRegion::new(|c|{ 
-    //         Uuid::try_parse(c).unwrap()
-    //     }));
+    let cookie: Option<BBoxCookie<'static, FakePolicy>> = cookies.get("id");
+    let cookie_unwrapped: BBoxCookie<'static, FakePolicy> =
+        cookie.ok_or((Status::Unauthorized, "No session cookie".to_string()))?;
     let cookie_value = cookie_unwrapped.value().to_owned();
-    let session_id = execute_pure(cookie_value, PrivacyPureRegion::new(|c: String|{ 
+    let session_id = cookie_value.into_ppr(PrivacyPureRegion::new(|c: String|{
         Uuid::try_parse(c.as_str()).unwrap()
-    })).unwrap().specialize_policy().unwrap();
-    
-    // let session_id = Uuid::try_parse(cookie.value()) // unwrap would be safe here because of the auth guard
-    //     .map_err(|e| Custom(Status::BadRequest, e.to_string()))?;
+    }));
+
     let session = Query::find_admin_session_by_uuid(db, session_id).await.unwrap().unwrap();
     
     let _res = AdminService::logout(db, session)
         .await
         .map_err(to_custom_error)?;
 
-    cookies.remove(cookies.get::<NoPolicy>("id").unwrap());
-    cookies.remove(cookies.get::<NoPolicy>("key").unwrap());
+    cookies.remove(cookies.get::<FakePolicy>("id").unwrap());
+    cookies.remove(cookies.get::<FakePolicy>("key").unwrap());
 
     Ok(())
 }
@@ -90,18 +89,20 @@ pub async fn logout(conn: Connection<'_, Db>,
 
 #[get("/whoami")]
 //pub async fn whoami(session: AdminAuth, context: Context<ContextDataType>) -> Result<String, (rocket::http::Status, String)> {
-pub async fn whoami(session: AdminAuth, context: Context<ContextDataType>) -> MyResult<ContextResponse<String, NoPolicy, ContextDataType>, (rocket::http::Status, String)> {
+pub async fn whoami(
+    session: AdminAuth,
+    context: Context<ContextDataType>
+) -> MyResult<ContextResponse<String, FakePolicy, ContextDataType>, (rocket::http::Status, String)> {
     let admin: entity::admin::Model = session.into();
 
-    let a: BBox<String, NoPolicy> = execute_pure(admin.id, PrivacyPureRegion::new(
-        |n: i32|{n.to_string()}
-    )).unwrap().specialize_policy().unwrap();
+    let a = admin.id.into_ppr(PrivacyPureRegion::new(|n: i32| {
+        n.to_string()
+    }));
     MyResult::Ok(ContextResponse(a, context))
 }
 
 #[get("/hello")]
 pub async fn hello(_session: AdminAuth, _context: Context<ContextDataType>) -> Result<String, (rocket::http::Status, String)> {
-                                                                            //       ^^ should this be a bbox string
     Ok("Hello admin".to_string())
 }
 
@@ -115,11 +116,7 @@ pub async fn create_candidate(
     let db = conn.into_inner();
     let form = request.into_inner();
     let private_key = session.get_private_key();
-
-    println!("im in admin rn");
-
-    let plain_text_password = BBox::new(random_12_char_string(), NoPolicy::new());
-    //println!("trying to did the thing");
+    let plain_text_password = BBox::new(random_12_char_string(), FakePolicy {});
 
     let (application, applications, personal_id_number) = match ApplicationService::create(
         &private_key,
@@ -148,15 +145,12 @@ pub async fn create_candidate(
     MyResult::Ok(JsonResponse::from((cand, context)))
 }
 
-
-
-
-
 #[allow(unused_variables)]
 #[get("/candidates?<field>&<page>&<sort>")]
 pub async fn list_candidates(
     conn: Connection<'_, Db>,
     session: AdminAuth,
+    // These are intentionally NoPolicy. It's pagination information.
     field: Option<BBox<String, NoPolicy>>,
     page: Option<BBox<u64, NoPolicy>>,
     sort: Option<BBox<String, NoPolicy>>, // how to do this part
@@ -164,17 +158,15 @@ pub async fn list_candidates(
 ) -> MyResult<JsonResponse<Vec<ApplicationResponse>, ContextDataType>, (rocket::http::Status, String)> {
     let db = conn.into_inner();
     let private_key = session.get_private_key();
-    
-    if let Some(field) = field.clone() {
-        let field = field.discard_box();
-        if !(field == "KB".to_string() || field == "IT".to_string() || field == "G") {
+
+    let field = field.map(|b| b.discard_box());
+    let page = page.map(|b| b.discard_box());
+    let sort = sort.map(|b| b.discard_box());
+    if let Some(field) = field.as_ref() {
+        if !(field == "KB" || field == "IT" || field == "G") {
             return MyResult::Err((Status::BadRequest, "Invalid field of study".to_string()));
         }
     }
-
-    //let field_bbox = alohomora::fold::fold(field).unwrap().specialize_policy().unwrap();
-    //let page_bbox = alohomora::fold::fold(page).unwrap().specialize_policy().unwrap();
-    //let sort_bbox = alohomora::fold::fold(sort).unwrap().specialize_policy().unwrap();
 
     let candidates = ApplicationService::list_applications(&private_key, db, field, page, sort)
         .await.map_err(to_custom_error)?;
@@ -188,17 +180,15 @@ pub async fn list_candidates_csv(
     conn: Connection<'_, Db>,
     session: AdminAuth,
     context: Context<ContextDataType>
-) -> MyResult<ContextResponse<Vec<u8>, NoPolicy, ContextDataType>, (rocket::http::Status, String)> {
+) -> MyResult<Vec<u8>, (rocket::http::Status, String)> {
     let db = conn.into_inner();
     let private_key = session.get_private_key();
 
-    let candidates = ApplicationCsv::export(context.clone(), db, private_key)
+    let candidates = ApplicationCsv::export(context, db, private_key)
         .await
         .map_err(to_custom_error)?;
 
-    MyResult::Ok(
-        ContextResponse(candidates, context)
-    )
+    MyResult::Ok(candidates)
 }
 
 #[get("/admissions_csv")]
@@ -206,23 +196,22 @@ pub async fn list_admissions_csv(
     conn: Connection<'_, Db>,
     session: AdminAuth,
     context: Context<ContextDataType>
-) -> MyResult<ContextResponse<Vec<u8>, NoPolicy, ContextDataType>, (rocket::http::Status, String)> {
+) -> MyResult<Vec<u8>, (rocket::http::Status, String)> {
     let db = conn.into_inner();
     let private_key = session.get_private_key();
-    //let context = todo!();
 
-    let candidates = CandidateCsv::export(context.clone(), db, private_key)
+    let candidates = CandidateCsv::export(context, db, private_key)
         .await
         .map_err(to_custom_error)?;
 
-    MyResult::Ok(ContextResponse(candidates, context))
+    MyResult::Ok(candidates)
 }
 
 #[get("/candidate/<id>")]
 pub async fn get_candidate(
     conn: Connection<'_, Db>,
     session: AdminAuth,
-    id: BBox<i32, NoPolicy>,
+    id: BBox<i32, FakePolicy>,
     context: Context<ContextDataType>
 ) -> MyResult<JsonResponse<ApplicationDetails, ContextDataType>, (rocket::http::Status, String)> {
     let db = conn.into_inner();
@@ -250,7 +239,7 @@ pub async fn get_candidate(
 pub async fn delete_candidate(
     conn: Connection<'_, Db>,
     _session: AdminAuth,
-    id: BBox<i32, NoPolicy>,
+    id: BBox<i32, FakePolicy>,
 ) -> Result<(), (rocket::http::Status, String)> {
     let db = conn.into_inner();
 
@@ -270,10 +259,9 @@ pub async fn delete_candidate(
 pub async fn reset_candidate_password(
     conn: Connection<'_, Db>,
     session: AdminAuth,
-    id: BBox<i32, NoPolicy>,
+    id: BBox<i32, FakePolicy>,
     context: Context<ContextDataType>
 ) -> MyResult<JsonResponse<CreateCandidateResponse, ContextDataType>, (rocket::http::Status, String)> {
-    // TODO
     let db = conn.into_inner();
     let private_key = session.get_private_key();
 
@@ -290,9 +278,9 @@ pub async fn reset_candidate_password(
 pub async fn get_candidate_portfolio(
     conn: Connection<'_, Db>,
     session: AdminAuth, 
-    id: BBox<i32, NoPolicy>,
+    id: BBox<i32, FakePolicy>,
     context: Context<ContextDataType>
-) -> MyResult<ContextResponse<Vec<u8>, NoPolicy, ContextDataType>, (rocket::http::Status, String)> {
+) -> MyResult<Vec<u8>, (rocket::http::Status, String)> {
     let db = conn.into_inner();
     let private_key = session.get_private_key();
 
@@ -301,12 +289,11 @@ pub async fn get_candidate_portfolio(
         .map_err(|e| to_custom_error(ServiceError::DbError(e)))?
         .ok_or(to_custom_error(ServiceError::CandidateNotFound))?;
 
-    let portfolio = PortfolioService::get_portfolio(application.candidate_id.discard_box(), private_key.discard_box())
+    let portfolio = PortfolioService::get_portfolio(context, application.candidate_id, private_key)
         .await
         .map_err(to_custom_error)?;
-    let portfolio = BBox::new(portfolio, NoPolicy::new());
 
-    MyResult::Ok(ContextResponse(portfolio, context))
+    MyResult::Ok(portfolio)
 }
 
 #[cfg(test)]

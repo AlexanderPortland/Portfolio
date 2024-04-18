@@ -1,14 +1,14 @@
 use alohomora::bbox::BBox;
-use alohomora::policy::NoPolicy;
 
 use entity::{admin_session, application};
 use sea_orm::{DbConn, Statement};
+use portfolio_policies::FakePolicy;
 
 use crate::Query;
 use crate::error::ServiceError;
 
-pub async fn get_recipients(db: &DbConn, candidate_pubkey: BBox<String, NoPolicy>)
-    -> Result<Vec<BBox<String, NoPolicy>>, ServiceError>
+pub async fn get_recipients(db: &DbConn, candidate_pubkey: BBox<String, FakePolicy>)
+    -> Result<Vec<BBox<String, FakePolicy>>, ServiceError>
 {
     let mut admin_public_keys = Query::get_all_admin_public_keys_together(db).await?;
     admin_public_keys.push(candidate_pubkey);

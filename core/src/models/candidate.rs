@@ -1,12 +1,15 @@
 use std::collections::HashMap;
 use alohomora::policy::AnyPolicy;
-use alohomora::{bbox::BBox, policy::NoPolicy, AlohomoraType};
+use alohomora::{bbox::BBox, AlohomoraType};
+use alohomora::pure::PrivacyPureRegion;
 use alohomora::rocket::ResponseBBoxJson;
 use alohomora_derive::RequestBBoxJson;
 use chrono::NaiveDate;
+use alohomora::policy::Policy;
 use entity::{application, candidate};
 use serde::{Deserialize, Serialize};
 use validator::Validate;
+use portfolio_policies::FakePolicy;
 
 use crate::error::ServiceError;
 
@@ -66,11 +69,11 @@ impl Into<i32> for FieldOfStudy {
 #[derive(ResponseBBoxJson, AlohomoraType)]
 pub struct NewCandidateResponse {
     pub current_application: BBox<i32, AnyPolicy>,
-    pub applications: Vec<BBox<i32, NoPolicy>>,
-    pub personal_id_number: BBox<String, NoPolicy>,
-    pub details_filled: BBox<bool, NoPolicy>,
-    pub encrypted_by: Option<BBox<i32, NoPolicy>>,
-    pub field_of_study: BBox<String, NoPolicy>,
+    pub applications: Vec<BBox<i32, FakePolicy>>,
+    pub personal_id_number: BBox<String, FakePolicy>,
+    pub details_filled: BBox<bool, FakePolicy>,
+    pub encrypted_by: Option<BBox<i32, FakePolicy>>,
+    pub field_of_study: BBox<String, FakePolicy>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -87,11 +90,11 @@ pub struct CleanNewCandidateResponse {
 /// Password change  (admin endpoint)
 #[derive(Debug, ResponseBBoxJson)]
 pub struct CreateCandidateResponse {
-    pub application_id: BBox<i32, NoPolicy>,
-    pub field_of_study: BBox<String, NoPolicy>,
-    pub applications: Vec<BBox<i32, NoPolicy>>,
-    pub personal_id_number: BBox<String, NoPolicy>,
-    pub password: BBox<String, NoPolicy>,
+    pub application_id: BBox<i32, FakePolicy>,
+    pub field_of_study: BBox<String, FakePolicy>,
+    pub applications: Vec<BBox<i32, FakePolicy>>,
+    pub personal_id_number: BBox<String, FakePolicy>,
+    pub password: BBox<String, FakePolicy>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -106,24 +109,24 @@ pub struct CleanCreateCandidateResponse {
 #[allow(non_snake_case)]
 #[derive(Debug, Clone, PartialEq, ResponseBBoxJson, RequestBBoxJson)]
 pub struct CandidateDetails {
-    pub name: BBox<String, NoPolicy>,
-    pub surname: BBox<String, NoPolicy>,
-    pub birthSurname: BBox<String, NoPolicy>,
-    pub birthplace: BBox<String, NoPolicy>,
-    pub birthdate: BBox<NaiveDate, NoPolicy>,
-    pub address: BBox<String, NoPolicy>,
-    pub letterAddress: BBox<String, NoPolicy>,
-    pub telephone: BBox<String, NoPolicy>,
-    pub citizenship: BBox<String, NoPolicy>,
-    pub email: BBox<String, NoPolicy>,
-    pub sex: BBox<String, NoPolicy>,
-    pub personalIdNumber: BBox<String, NoPolicy>,
-    pub schoolName: BBox<String, NoPolicy>,
-    pub healthInsurance: BBox<String, NoPolicy>,
-    pub grades: BBox<GradeList, NoPolicy>,
-    pub firstSchool: BBox<School, NoPolicy>,
-    pub secondSchool: BBox<School, NoPolicy>,
-    pub testLanguage: BBox<String, NoPolicy>,
+    pub name: BBox<String, FakePolicy>,
+    pub surname: BBox<String, FakePolicy>,
+    pub birthSurname: BBox<String, FakePolicy>,
+    pub birthplace: BBox<String, FakePolicy>,
+    pub birthdate: BBox<NaiveDate, FakePolicy>,
+    pub address: BBox<String, FakePolicy>,
+    pub letterAddress: BBox<String, FakePolicy>,
+    pub telephone: BBox<String, FakePolicy>,
+    pub citizenship: BBox<String, FakePolicy>,
+    pub email: BBox<String, FakePolicy>,
+    pub sex: BBox<String, FakePolicy>,
+    pub personalIdNumber: BBox<String, FakePolicy>,
+    pub schoolName: BBox<String, FakePolicy>,
+    pub healthInsurance: BBox<String, FakePolicy>,
+    pub grades: BBox<GradeList, FakePolicy>,
+    pub firstSchool: BBox<School, FakePolicy>,
+    pub secondSchool: BBox<School, FakePolicy>,
+    pub testLanguage: BBox<String, FakePolicy>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Validate, Clone, PartialEq, Eq)]
@@ -158,10 +161,10 @@ impl CandidateDetails {
 
 #[derive(Debug, Clone, PartialEq, alohomora_derive::ResponseBBoxJson, RequestBBoxJson)]
 pub struct ParentDetails {
-    pub name: BBox<String, NoPolicy>,
-    pub surname: BBox<String, NoPolicy>,
-    pub telephone: BBox<String, NoPolicy>,
-    pub email: BBox<String, NoPolicy>,
+    pub name: BBox<String, FakePolicy>,
+    pub surname: BBox<String, FakePolicy>,
+    pub telephone: BBox<String, FakePolicy>,
+    pub email: BBox<String, FakePolicy>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
@@ -186,24 +189,29 @@ pub struct CleanApplicationDetails {
 }
 
 impl NewCandidateResponse {
-    pub async fn from_encrypted(
-        current_application: BBox<i32, NoPolicy>,
+    pub async fn from_encrypted<P: Policy + Clone>(
+        current_application: BBox<i32, FakePolicy>,
         applications: Vec<application::Model>,
-        private_key: &BBox<String, NoPolicy>,
+        private_key: &BBox<String, P>,
         c: candidate::Model,
     ) -> Result<Self, ServiceError> {
-        let field_of_study = BBox::new(FieldOfStudy::from(current_application.clone().discard_box()).into(), NoPolicy::new());
-        let id_number = BBox::new(EncryptedString::from(c.personal_identification_number.to_owned().discard_box())
-            .decrypt(&private_key.clone().discard_box())
-            .await?, NoPolicy::new());
-        let applications = applications.iter().map(|a| a.id.clone()).collect::<Vec<BBox<i32, NoPolicy>>>();
+        let field_of_study = current_application.clone().into_ppr(
+            PrivacyPureRegion::new(|id: i32| {
+                FieldOfStudy::from(id).into()
+            })
+        );
+        let id_number = EncryptedString::from(c.personal_identification_number.clone())
+            .decrypt(private_key)
+            .await?;
+
+        let applications = applications.iter().map(|a| a.id.clone()).collect::<Vec<_>>();
         let encrypted_details = EncryptedCandidateDetails::from(&c);
 
         Ok(Self {
             current_application: current_application.into_any_policy(),
             applications,
             personal_id_number: id_number,
-            details_filled: BBox::new(encrypted_details.is_filled(), NoPolicy::new()),
+            details_filled: BBox::new(encrypted_details.is_filled(), FakePolicy::new()),
             encrypted_by: c.encrypted_by_id,
             field_of_study,
         })
@@ -256,24 +264,24 @@ impl FieldsCombination {
 #[derive(AlohomoraType)]
 #[alohomora_out_type(to_derive = [Serialize])]
 pub struct CandidateRow {
-    pub id: BBox<i32, NoPolicy>,
-    pub first_application: BBox<i32, NoPolicy>,
-    pub second_application: BBox<Option<i32>, NoPolicy>,
-    pub personal_id_number: BBox<String, NoPolicy>,
-    pub first_day_admissions: BBox<bool, NoPolicy>,
-    pub second_day_admissions: BBox<bool, NoPolicy>,
-    pub first_day_field: BBox<Option<FieldOfStudy>, NoPolicy>,
-    pub second_day_field: BBox<Option<FieldOfStudy>, NoPolicy>,
-    pub fields_combination: BBox<FieldsCombination, NoPolicy>,
-    pub first_school: BBox<String, NoPolicy>,
-    pub first_school_field: BBox<String, NoPolicy>,
-    pub second_school: BBox<String, NoPolicy>,
-    pub second_school_field: BBox<String, NoPolicy>,
-    pub fields_match: BBox<bool, NoPolicy>,
-    pub name: BBox<String, NoPolicy>,
-    pub surname: BBox<String, NoPolicy>,
-    pub email: BBox<String, NoPolicy>,
-    pub telephone: BBox<String, NoPolicy>,
-    pub parent_email: BBox<Option<String>, NoPolicy>,
-    pub parent_telephone: BBox<Option<String>, NoPolicy>,
+    pub id: BBox<i32, FakePolicy>,
+    pub first_application: BBox<i32, FakePolicy>,
+    pub second_application: Option<BBox<i32, FakePolicy>>,
+    pub personal_id_number: BBox<String, FakePolicy>,
+    pub first_day_admissions: BBox<bool, FakePolicy>,
+    pub second_day_admissions: BBox<bool, FakePolicy>,
+    pub first_day_field: Option<BBox<FieldOfStudy, FakePolicy>>,
+    pub second_day_field: Option<BBox<FieldOfStudy, FakePolicy>>,
+    pub fields_combination: BBox<FieldsCombination, FakePolicy>,
+    pub first_school: BBox<String, FakePolicy>,
+    pub first_school_field: BBox<String, FakePolicy>,
+    pub second_school: BBox<String, FakePolicy>,
+    pub second_school_field: BBox<String, FakePolicy>,
+    pub fields_match: BBox<bool, FakePolicy>,
+    pub name: BBox<String, FakePolicy>,
+    pub surname: BBox<String, FakePolicy>,
+    pub email: BBox<String, FakePolicy>,
+    pub telephone: BBox<String, FakePolicy>,
+    pub parent_email: Option<BBox<String, FakePolicy>>,
+    pub parent_telephone: Option<BBox<String, FakePolicy>>,
 }

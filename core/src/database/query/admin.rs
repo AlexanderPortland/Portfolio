@@ -1,16 +1,17 @@
 use crate::Query;
 
 use ::entity::admin::{self, Model, Entity as Admin};
-use alohomora::{bbox::BBox, policy::NoPolicy};
+use alohomora::bbox::BBox;
 use sea_orm::*;
+use portfolio_policies::FakePolicy;
 
 impl Query {
-    pub async fn find_admin_by_id(db: &DbConn, id: BBox<i32, NoPolicy>) -> Result<Option<admin::Model>, DbErr> {
+    pub async fn find_admin_by_id(db: &DbConn, id: BBox<i32, FakePolicy>) -> Result<Option<admin::Model>, DbErr> {
         let r = Admin::find_by_id(id).one(db).await;
         r
     }
 
-    pub async fn get_all_admin_public_keys(db: &DbConn) -> Result<Vec<BBox<String, NoPolicy>>, DbErr> {
+    pub async fn get_all_admin_public_keys(db: &DbConn) -> Result<Vec<BBox<String, FakePolicy>>, DbErr> {
         let admins = Admin::find().all(db).await?;
 
         // convert them all to models
@@ -24,7 +25,7 @@ impl Query {
         Ok(public_keys)
     }
 
-    pub async fn get_all_admin_public_keys_together(db: &DbConn) -> Result<Vec<BBox<String, NoPolicy>>, DbErr> {
+    pub async fn get_all_admin_public_keys_together(db: &DbConn) -> Result<Vec<BBox<String, FakePolicy>>, DbErr> {
         let admins = Admin::find().all(db).await?;
 
         // convert them all to models
@@ -42,9 +43,9 @@ impl Query {
 #[cfg(test)]
 mod tests {
     use alohomora::bbox::BBox;
-    use alohomora::policy::NoPolicy;
     use entity::admin;
     use sea_orm::{ActiveModelTrait, Set};
+    use portfolio_policies::FakePolicy;
 
     use crate::utils::db::get_memory_sqlite_connection;
     use crate::Query;
@@ -53,13 +54,13 @@ mod tests {
     async fn test_find_admin_by_id() {
         let db = get_memory_sqlite_connection().await;
         let admin = admin::ActiveModel {
-            id: Set(BBox::new(1, NoPolicy::new())),
-            name: Set(BBox::new("admin_1".to_string(), NoPolicy::new())),
-            public_key: Set(BBox::new("valid_public_key_1".to_string(), NoPolicy::new())),
-            private_key: Set(BBox::new("test".to_string(), NoPolicy::new())),
-            password: Set(BBox::new("test".to_string(), NoPolicy::new())),
-            created_at: Set(BBox::new(chrono::offset::Local::now().naive_local(), NoPolicy::new())),
-            updated_at: Set(BBox::new(chrono::offset::Local::now().naive_local(), NoPolicy::new())),
+            id: Set(BBox::new(1, FakePolicy::new())),
+            name: Set(BBox::new("admin_1".to_string(), FakePolicy::new())),
+            public_key: Set(BBox::new("valid_public_key_1".to_string(), FakePolicy::new())),
+            private_key: Set(BBox::new("test".to_string(), FakePolicy::new())),
+            password: Set(BBox::new("test".to_string(), FakePolicy::new())),
+            created_at: Set(BBox::new(chrono::offset::Local::now().naive_local(), FakePolicy::new())),
+            updated_at: Set(BBox::new(chrono::offset::Local::now().naive_local(), FakePolicy::new())),
             ..Default::default()
         }
         .insert(&db)
@@ -75,13 +76,13 @@ mod tests {
         let db = get_memory_sqlite_connection().await;
         for index in 1..5 {
             admin::ActiveModel {
-                id: Set(BBox::new(index, NoPolicy::new())),
-                name: Set(BBox::new(format!("admin_{}", index), NoPolicy::new())),
-                public_key: Set(BBox::new(format!("valid_public_key_{}", index), NoPolicy::new())),
-                private_key: Set(BBox::new("test".to_string(), NoPolicy::new())),
-                password: Set(BBox::new("test".to_string(), NoPolicy::new())),
-                created_at: Set(BBox::new(chrono::offset::Local::now().naive_local(), NoPolicy::new())),
-                updated_at: Set(BBox::new(chrono::offset::Local::now().naive_local(), NoPolicy::new())),
+                id: Set(BBox::new(index, FakePolicy::new())),
+                name: Set(BBox::new(format!("admin_{}", index), FakePolicy::new())),
+                public_key: Set(BBox::new(format!("valid_public_key_{}", index), FakePolicy::new())),
+                private_key: Set(BBox::new("test".to_string(), FakePolicy::new())),
+                password: Set(BBox::new("test".to_string(), FakePolicy::new())),
+                created_at: Set(BBox::new(chrono::offset::Local::now().naive_local(), FakePolicy::new())),
+                updated_at: Set(BBox::new(chrono::offset::Local::now().naive_local(), FakePolicy::new())),
                 ..Default::default()
             }
             .insert(&db)

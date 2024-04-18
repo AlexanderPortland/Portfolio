@@ -1,7 +1,5 @@
 use aes_gcm_siv::aead::Aead;
 use aes_gcm_siv::KeyInit;
-use alohomora::bbox::BBox;
-use alohomora::policy::NoPolicy;
 use argon2::{
     Argon2, PasswordHasher as ArgonPasswordHasher, PasswordVerifier as ArgonPasswordVerifier,
 };
@@ -192,13 +190,13 @@ pub async fn decrypt_password_age(
     Ok(String::from_utf8(decrypt_buffer)?)
 }
 
-pub fn create_identity() -> (BBox<String, NoPolicy>, BBox<String, NoPolicy>) {
+pub fn create_identity() -> (String, String) {
     let identity = age::x25519::Identity::generate();
 
     // Public Key & Private Key
     (
-        BBox::new(identity.to_public().to_string(), NoPolicy::new()),
-        BBox::new(identity.to_string().expose_secret().to_string(), NoPolicy::new()),
+        identity.to_public().to_string(),
+        identity.to_string().expose_secret().to_string(),
     )
 }
 
@@ -343,13 +341,13 @@ pub async fn decrypt_file_with_private_key<P: AsRef<Path>>(
 
 pub async fn decrypt_file_with_private_key_as_buffer<P: AsRef<Path>>(
     cipher_file_path: P,
-    key: &str,
+    key: String,
 ) -> Result<Vec<u8>, ServiceError> {
     let cipher_file = tokio::fs::File::open(cipher_file_path).await?;
 
     let mut plain_file = Vec::new();
 
-    age_decrypt_with_private_key(cipher_file, &mut plain_file, key).await?;
+    age_decrypt_with_private_key(cipher_file, &mut plain_file, &key).await?;
 
     Ok(plain_file)
 }

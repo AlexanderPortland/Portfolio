@@ -1,15 +1,16 @@
 use crate::{Mutation, models::candidate_details::{EncryptedParentDetails}};
 
-use alohomora::{bbox::BBox, policy::NoPolicy};
+use alohomora::bbox::BBox;
 use ::entity::parent::{self, Model};
 use sea_orm::*;
+use portfolio_policies::FakePolicy;
 
 impl Mutation {
-    pub async fn create_parent(db: &DbConn, application_id: BBox<i32, NoPolicy>) -> Result<Model, DbErr> {
+    pub async fn create_parent(db: &DbConn, application_id: BBox<i32, FakePolicy>) -> Result<Model, DbErr> {
         parent::ActiveModel {
             candidate_id: Set(application_id),
-            created_at: Set(BBox::new(chrono::offset::Local::now().naive_local(), NoPolicy::new())),
-            updated_at: Set(BBox::new(chrono::offset::Local::now().naive_local(), NoPolicy::new())),
+            created_at: Set(BBox::new(chrono::offset::Local::now().naive_local(), Default::default())),
+            updated_at: Set(BBox::new(chrono::offset::Local::now().naive_local(), Default::default())),
             ..Default::default()
         }
         .insert(db)
@@ -28,11 +29,11 @@ impl Mutation {
         enc_parent: EncryptedParentDetails,
     ) -> Result<Model, sea_orm::DbErr> {
         let mut parent: parent::ActiveModel = parent.into();
-        parent.name = Set(enc_parent.name.map(|e| e.into_bbox()));
-        parent.surname = Set(enc_parent.surname.map(|e| e.into_bbox()));
-        parent.telephone = Set(enc_parent.telephone.map(|e| e.into_bbox()));
-        parent.email = Set(enc_parent.email.map(|e| e.into_bbox()));
-        parent.updated_at = Set(BBox::new(chrono::offset::Local::now().naive_local(), NoPolicy::new()));
+        parent.name = Set(enc_parent.name.map(|e| e.into()));
+        parent.surname = Set(enc_parent.surname.map(|e| e.into()));
+        parent.telephone = Set(enc_parent.telephone.map(|e| e.into()));
+        parent.email = Set(enc_parent.email.map(|e| e.into()));
+        parent.updated_at = Set(BBox::new(chrono::offset::Local::now().naive_local(), Default::default()));
         parent.update(db).await
     }
 }
@@ -40,7 +41,7 @@ impl Mutation {
 #[cfg(test)]
 mod tests {
     use alohomora::bbox::BBox;
-    use alohomora::policy::NoPolicy;
+    use portfolio_policies::FakePolicy;
 
     use crate::models::candidate_details::EncryptedApplicationDetails;
     use crate::models::candidate_details::tests::APPLICATION_DETAILS;
@@ -53,7 +54,7 @@ mod tests {
 
         let candidate = Mutation::create_candidate(
             &db,
-            BBox::new("candidate".to_string(), NoPolicy::new()),
+            BBox::new("candidate".to_string(), FakePolicy::new()),
         )
         .await
         .unwrap();
@@ -70,7 +71,7 @@ mod tests {
 
         let candidate = Mutation::create_candidate(
             &db,
-            BBox::new("".to_string(), NoPolicy::new()),
+            BBox::new("".to_string(), FakePolicy::new()),
         )
         .await
         .unwrap();
@@ -79,7 +80,7 @@ mod tests {
 
         let encrypted_details: EncryptedApplicationDetails = EncryptedApplicationDetails::new(
             &APPLICATION_DETAILS.lock().unwrap().clone(),
-            &vec!["age1u889gp407hsz309wn09kxx9anl6uns30m27lfwnctfyq9tq4qpus8tzmq5".to_string()],
+            &vec![BBox::new("age1u889gp407hsz309wn09kxx9anl6uns30m27lfwnctfyq9tq4qpus8tzmq5".to_string(), FakePolicy::new())],
         )
         .await
         .unwrap();

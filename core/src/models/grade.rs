@@ -1,4 +1,6 @@
-use alohomora::{bbox::BBox, policy::NoPolicy};
+use alohomora::{bbox::BBox};
+use alohomora::policy::Policy;
+use alohomora::pure::PrivacyPureRegion;
 use alohomora::rocket::{OutputBBoxValue, ResponseBBoxJson};
 use serde::{Serialize, Deserialize};
 use validator::Validate;
@@ -71,10 +73,13 @@ impl GradeList {
             .map(|_| ())
     }
 
-    pub fn from_opt_str(grades: Option<BBox<String, NoPolicy>>) -> Option<Self> {
-        grades.map(
-            |grades| serde_json::from_str(&grades.discard_box()).unwrap() // TODO: handle error
-        )
+    pub fn from_opt_str<P: Policy>(grades: Option<BBox<String, P>>) -> Option<BBox<Self, P>> {
+        match grades {
+            None => None,
+            Some(grades) => Some(grades.into_ppr(PrivacyPureRegion::new(|grades: String| {
+                serde_json::from_str(&grades).unwrap()
+            }))),
+        }
     }
 
     pub fn group_by_semester(&self) -> Result<(GradeList, GradeList, GradeList, GradeList), ServiceError> {

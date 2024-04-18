@@ -1,7 +1,7 @@
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 
 use alohomora::rocket::{ContextResponse, JsonResponse};
-use alohomora::{bbox::BBox, context::Context, orm::Connection, policy::NoPolicy, pure::{execute_pure, PrivacyPureRegion}, rocket::{get, post, route, BBoxCookie, BBoxCookieJar, BBoxJson}};
+use alohomora::{bbox::BBox, context::Context, orm::Connection, pure::{execute_pure, PrivacyPureRegion}, rocket::{get, post, route, BBoxCookie, BBoxCookieJar, BBoxJson}};
 use entity::application;
 use portfolio_core::policies::context::ContextDataType;
 use portfolio_core::utils::response::MyResult;
@@ -12,6 +12,7 @@ use portfolio_core::models::candidate::{ApplicationDetails, NewCandidateResponse
 use portfolio_core::sea_orm::prelude::Uuid;
 use portfolio_core::services::application_service::ApplicationService;
 use portfolio_core::services::portfolio_service::PortfolioService;
+use portfolio_policies::FakePolicy;
 use requests::LoginRequest;
 use crate::guards::data::letter::Letter;
 use crate::guards::data::portfolio::Portfolio;
@@ -23,18 +24,21 @@ use super::to_custom_error;
 pub async fn login(
     conn: Connection<'_, Db>,
     login_form: BBoxJson<LoginRequest>,
-    // ip_addr: SocketAddr, // TODO uncomment in production
+    ip_addr: BBox<SocketAddr, FakePolicy>,
     cookies: BBoxCookieJar<'_, '_>,
     context: Context<ContextDataType>
 ) -> MyResult<(), (rocket::http::Status, String)> {
-    let ip_addr: SocketAddr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 0);
+    let ip_addr = ip_addr.into_ppr(PrivacyPureRegion::new(|ip: SocketAddr| {
+        ip.to_string()
+    }));
+
     let db = conn.into_inner();
 
     let res = ApplicationService::login(
         db,
         login_form.applicationId.clone(),
         login_form.password.clone(),
-        BBox::new(ip_addr.ip().to_string(), NoPolicy::new()),
+        ip_addr,
     ).await.map_err(to_custom_error);
 
     let (session_token, private_key) = match res {
@@ -57,7 +61,7 @@ pub async fn logout(
 ) -> MyResult<(), (rocket::http::Status, String)> {
     let db = conn.into_inner();
 
-    let cookie: BBoxCookie<'static, NoPolicy> = cookies
+    let cookie: BBoxCookie<'static, FakePolicy> = cookies
         .get("id").unwrap(); // unwrap would be safe here because of the auth guard
         //.ok_or(Custom(Status::Unauthorized,"No session cookie".to_string(),))?;
 
@@ -70,8 +74,8 @@ pub async fn logout(
         .await
         .map_err(to_custom_error)?;
 
-    cookies.remove(cookies.get::<NoPolicy>("id").unwrap());
-    cookies.remove(cookies.get::<NoPolicy>("key").unwrap());
+    cookies.remove(cookies.get::<FakePolicy>("id").unwrap());
+    cookies.remove(cookies.get::<FakePolicy>("key").unwrap());
 
     MyResult::Ok(())
 }
@@ -146,21 +150,25 @@ pub async fn get_details(
 #[post("/cover_letter", data = "<letter>")]
 pub async fn upload_cover_letter(
     session: ApplicationAuth,
-    letter: Letter<NoPolicy>,
+    letter: Letter<FakePolicy>,
+    context: Context<ContextDataType>,
 ) -> MyResult<(), (rocket::http::Status, String)> {
     let application: entity::application::Model = session.into();
 
-    PortfolioService::add_cover_letter_to_cache(application.candidate_id.discard_box(), Into::<BBox<Vec<u8>, NoPolicy>>::into(letter).discard_box())
+    PortfolioService::add_cover_letter_to_cache(context, application.candidate_id, letter.into())
         .await
         .map_err(to_custom_error)?;
     MyResult::Ok(())
 }
 
 #[route(DELETE, "/cover_letter")]
-pub async fn delete_cover_letter(session: ApplicationAuth) -> MyResult<(), (rocket::http::Status, String)> {
+pub async fn delete_cover_letter(
+    session: ApplicationAuth,
+    context: Context<ContextDataType>,
+) -> MyResult<(), (rocket::http::Status, String)> {
     let application: entity::application::Model = session.into();
 
-    PortfolioService::delete_cover_letter_from_cache(application.candidate_id.discard_box())
+    PortfolioService::delete_cover_letter_from_cache(context, application.candidate_id)
         .await
         .map_err(to_custom_error)?;
 
@@ -170,11 +178,12 @@ pub async fn delete_cover_letter(session: ApplicationAuth) -> MyResult<(), (rock
 #[post("/portfolio_letter", data = "<letter>")]
 pub async fn upload_portfolio_letter(
     session: ApplicationAuth,
-    letter: Letter<NoPolicy>,
+    letter: Letter<FakePolicy>,
+    context: Context<ContextDataType>,
 ) -> MyResult<(), (rocket::http::Status, String)> {
     let application: entity::application::Model = session.into();
 
-    PortfolioService::add_portfolio_letter_to_cache(application.candidate_id.discard_box(), Into::<BBox<Vec<u8>, NoPolicy>>::into(letter).discard_box())
+    PortfolioService::add_portfolio_letter_to_cache(context, application.candidate_id, letter.into())
         .await
         .map_err(to_custom_error)?;
 
@@ -182,10 +191,13 @@ pub async fn upload_portfolio_letter(
 }
 
 #[route(DELETE, "/portfolio_letter")]
-pub async fn delete_portfolio_letter(session: ApplicationAuth) -> Result<(), (rocket::http::Status, String)> {
+pub async fn delete_portfolio_letter(
+    session: ApplicationAuth,
+    context: Context<ContextDataType>,
+) -> Result<(), (rocket::http::Status, String)> {
     let candidate: entity::application::Model = session.into();
 
-    PortfolioService::delete_portfolio_letter_from_cache(candidate.candidate_id.discard_box())
+    PortfolioService::delete_portfolio_letter_from_cache(context, candidate.id)
         .await
         .map_err(to_custom_error)?;
 
@@ -195,11 +207,12 @@ pub async fn delete_portfolio_letter(session: ApplicationAuth) -> Result<(), (ro
 #[post("/portfolio_zip", data = "<portfolio>")]
 pub async fn upload_portfolio_zip(
     session: ApplicationAuth,
-    portfolio: Portfolio<NoPolicy>,
+    portfolio: Portfolio<FakePolicy>,
+    context: Context<ContextDataType>,
 ) -> Result<(), (rocket::http::Status, String)> {
     let application: entity::application::Model = session.into();
 
-    PortfolioService::add_portfolio_zip_to_cache(application.candidate_id.discard_box(), Into::<BBox<Vec<u8>, NoPolicy>>::into(portfolio).discard_box())
+    PortfolioService::add_portfolio_zip_to_cache(context, application.candidate_id, portfolio.into())
         .await
         .map_err(to_custom_error)?;
 
@@ -207,10 +220,13 @@ pub async fn upload_portfolio_zip(
 }
 
 #[route(DELETE, "/portfolio_zip")]
-pub async fn delete_portfolio_zip(session: ApplicationAuth) -> Result<(), (rocket::http::Status, String)> {
+pub async fn delete_portfolio_zip(
+    session: ApplicationAuth,
+    context: Context<ContextDataType>,
+) -> Result<(), (rocket::http::Status, String)> {
     let application: entity::application::Model = session.into();
 
-    PortfolioService::delete_portfolio_zip_from_cache(application.candidate_id.discard_box())
+    PortfolioService::delete_portfolio_zip_from_cache(context, application.candidate_id)
         .await
         .map_err(to_custom_error)?;
 
@@ -221,21 +237,15 @@ pub async fn delete_portfolio_zip(session: ApplicationAuth) -> Result<(), (rocke
 pub async fn submission_progress(
     session: ApplicationAuth,
     context: Context<ContextDataType>
-) -> MyResult<ContextResponse<String, NoPolicy, ContextDataType>, (rocket::http::Status, String)> {
+) -> MyResult<String, (rocket::http::Status, String)> {
     let application: entity::application::Model = session.into();
 
-    let submission_progress = execute_pure(application.candidate_id, 
-        PrivacyPureRegion::new(|id| {
-            PortfolioService::get_submission_progress(id)
-                .map(|x| {
-                    let s = serde_json::to_string(&x).unwrap();
-                    s
-                }).map_err(to_custom_error)
-        })
-    ).unwrap().specialize_policy().unwrap();
-    
-    match submission_progress.transpose() {
-        Ok(o) => MyResult::Ok(ContextResponse(o, context)),
+    let progress = PortfolioService::get_submission_progress(application.candidate_id)
+        .map(|x| serde_json::to_string(&x).unwrap())
+        .map_err(to_custom_error);
+        
+    match progress {
+        Ok(progress) => MyResult::Ok(progress),
         Err(e) => MyResult::Err(e),
     }
 }
@@ -257,7 +267,7 @@ pub async fn submit_portfolio(
         // Delete on critical error
         if e.code() == 500 {
             // Cleanup
-            PortfolioService::delete_portfolio(application.id.discard_box())
+            PortfolioService::delete_portfolio(application.id)
                 .await
                 .unwrap();
         }
@@ -273,7 +283,7 @@ pub async fn delete_portfolio(
 ) -> MyResult<(), (rocket::http::Status, String)> {
     let application: entity::application::Model = session.into();
 
-    PortfolioService::delete_portfolio(application.candidate_id.discard_box())
+    PortfolioService::delete_portfolio(application.candidate_id)
         .await
         .map_err(to_custom_error)?;
 
@@ -281,11 +291,14 @@ pub async fn delete_portfolio(
 }
 
 #[get("/download")]
-pub async fn download_portfolio(session: ApplicationAuth) -> Result<Vec<u8>, (rocket::http::Status, String)> {
+pub async fn download_portfolio(
+    session: ApplicationAuth,
+    context: Context<ContextDataType>,
+) -> Result<Vec<u8>, (rocket::http::Status, String)> {
     let private_key = session.get_private_key();
     let application: entity::application::Model = session.into();
 
-    let file = PortfolioService::get_portfolio(application.candidate_id.discard_box(), private_key.discard_box())
+    let file = PortfolioService::get_portfolio(context, application.candidate_id, private_key)
         .await
         .map_err(to_custom_error);
 

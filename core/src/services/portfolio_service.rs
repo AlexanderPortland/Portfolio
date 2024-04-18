@@ -1,13 +1,21 @@
 use std::{path::{Path, PathBuf}};
+use age::x25519::Recipient;
 
-use alohomora::{bbox::BBox, policy::NoPolicy};
+use alohomora::bbox::BBox;
+use alohomora::context::Context;
+use alohomora::pcr::PrivacyCriticalRegion;
 use entity::candidate;
 use log::{info, warn};
+use alohomora::policy::Policy;
+use alohomora::unbox::unbox;
 use sea_orm::{DbConn};
 use serde::{Serialize, ser::{SerializeStruct}};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use portfolio_policies::FakePolicy;
 
 use crate::{error::ServiceError, Query, crypto};
+use crate::crypto_helpers::{get_context};
+use crate::policies::context::ContextDataType;
 
 #[derive(Debug, PartialEq)]
 pub enum SubmissionProgress {
@@ -16,20 +24,6 @@ pub enum SubmissionProgress {
     AllInCache,
     Submitted,
 }
-
-// impl ResponseBBoxJson for SubmissionProgress {
-//     fn to_json(self) -> alohomora::rocket::OutputBBoxValue {
-//         alohomora::rocket::OutputBBoxValue::Object(HashMap::from(value))
-//         //     ::alohomora::rocket::OutputBBoxValue::Object(HashMap::from([
-//         //         #((String::from(#fields_strings), self.#fields.to_json()),)*
-//         //         #((
-//         //             String::from(#as_is_strings),
-//         //             ::alohomora::rocket::OutputBBoxValue::Value(serde_json::to_value(self.#as_is).unwrap()),
-//         //         )),*
-//         //     ]))
-//         // }
-//     }
-// }
 
 impl SubmissionProgress {
     pub fn index(&self) -> usize {
@@ -116,7 +110,15 @@ impl Serialize for FileType {
 
 pub struct PortfolioService;
 impl PortfolioService {
-    pub fn get_submission_progress(candidate_id: i32) -> Result<SubmissionProgress, ServiceError> {
+    pub fn get_submission_progress<P: Policy>(
+        candidate_id: BBox<i32, P>
+    ) -> Result<SubmissionProgress, ServiceError> {
+        candidate_id.into_unbox(get_context(), PrivacyCriticalRegion::new(|candidate_id: i32, ()| {
+            Self::get_submission_progress_raw(candidate_id)
+        }), ()).unwrap_or(Err(ServiceError::PolicyCheckFailed))
+    }
+
+    fn get_submission_progress_raw(candidate_id: i32) -> Result<SubmissionProgress, ServiceError> {
         let path = Self::get_file_store_path().join(&candidate_id.to_string());
         if !path.exists() {
             return Err(ServiceError::CandidateNotFound);
@@ -165,34 +167,69 @@ impl PortfolioService {
         Ok(())
     }
 
-    pub async fn create_user_dir(application_id: i32) -> tokio::io::Result<()> {
-        tokio::fs::create_dir_all(
-            Self::get_file_store_path()
-            .join(&application_id.to_string())
-            .join("cache"))
-            .await
+    pub async fn create_user_dir(application_id: BBox<i32, FakePolicy>) -> tokio::io::Result<()> {
+        application_id.into_unbox(get_context(), PrivacyCriticalRegion::new(|application_id: i32, ()| {
+            tokio::fs::create_dir_all(
+                Self::get_file_store_path()
+                    .join(&application_id.to_string())
+                    .join("cache")
+            )
+        }), ()).unwrap().await
     }
 
     
-    pub async fn add_cover_letter_to_cache(
-        candidate_id: i32,
-        letter: Vec<u8>,
+    pub async fn add_cover_letter_to_cache<P1: Policy + Clone + 'static, P2: Policy + Clone + 'static>(
+        context: Context<ContextDataType>,
+        candidate_id: BBox<i32, P1>,
+        letter: BBox<Vec<u8>, P2>,
     ) -> Result<(), ServiceError> {
-        Self::write_portfolio_file(candidate_id, letter, FileType::CoverLetterPdf).await
+        match unbox(
+            (candidate_id, letter),
+            context,
+            PrivacyCriticalRegion::new(|(candidate_id, letter): (i32, Vec<u8>), ()| {
+                Self::write_portfolio_file(candidate_id, letter, FileType::CoverLetterPdf)
+            }),
+            ()
+        ) {
+            Err(_) => Err(ServiceError::PolicyCheckFailed),
+            Ok(result) => result.await,
+        }
     }
 
-    pub async fn add_portfolio_letter_to_cache(
-        candidate_id: i32,
-        letter: Vec<u8>,
+    pub async fn add_portfolio_letter_to_cache<P1: Policy + Clone + 'static, P2: Policy + Clone + 'static>(
+        context: Context<ContextDataType>,
+        candidate_id: BBox<i32, P1>,
+        letter: BBox<Vec<u8>, P2>,
     ) -> Result<(), ServiceError> {
-        Self::write_portfolio_file(candidate_id, letter, FileType::PortfolioLetterPdf).await
+        match unbox(
+            (candidate_id, letter),
+            context,
+            PrivacyCriticalRegion::new(|(candidate_id, letter): (i32, Vec<u8>), ()| {
+                Self::write_portfolio_file(candidate_id, letter, FileType::PortfolioLetterPdf)
+            }),
+            ()
+        ) {
+            Err(_) => Err(ServiceError::PolicyCheckFailed),
+            Ok(result) => result.await,
+        }
     }
 
-    pub async fn add_portfolio_zip_to_cache(
-        candidate_id: i32,
-        zip: Vec<u8>,
+    pub async fn add_portfolio_zip_to_cache<P1: Policy + Clone + 'static, P2: Policy + Clone + 'static>(
+        context: Context<ContextDataType>,
+        candidate_id: BBox<i32, P1>,
+        letter: BBox<Vec<u8>, P2>,
     ) -> Result<(), ServiceError> {
-        Self::write_portfolio_file(candidate_id, zip, FileType::PortfolioZip).await
+        match unbox(
+            (candidate_id, letter),
+            context,
+            PrivacyCriticalRegion::new(|(candidate_id, letter): (i32, Vec<u8>), ()| {
+                Self::write_portfolio_file(candidate_id, letter, FileType::PortfolioZip)
+            }),
+            ()
+        ) {
+            Err(_) => Err(ServiceError::PolicyCheckFailed),
+            Ok(result) => result.await,
+        }
     }
     
     
@@ -231,7 +268,7 @@ impl PortfolioService {
 
     /// Returns true if portfolio is ready to be moved to the final directory
     async fn is_portfolio_prepared(candidate_id: i32) -> bool {
-        Self::get_submission_progress(candidate_id).ok() == Some(SubmissionProgress::AllInCache)
+        Self::get_submission_progress_raw(candidate_id).ok() == Some(SubmissionProgress::AllInCache)
     }
 
     // Delete single item from cache
@@ -243,22 +280,52 @@ impl PortfolioService {
         Ok(())
     }
 
-    pub async fn delete_cover_letter_from_cache(
-        candidate_id: i32,
+    pub async fn delete_cover_letter_from_cache<P: Policy>(
+        context: Context<ContextDataType>,
+        candidate_id: BBox<i32, P>,
     ) -> Result<(), ServiceError> {
-        Self::delete_cache_item(candidate_id,  FileType::CoverLetterPdf).await
+        match candidate_id.into_unbox(
+            context,
+            PrivacyCriticalRegion::new(|candidate_id: i32, ()| {
+              Self::delete_cache_item(candidate_id,  FileType::CoverLetterPdf)
+            }),
+            (),
+        ) {
+            Err(_) => Err(ServiceError::PolicyCheckFailed),
+            Ok(result) => result.await,
+        }
     }
 
-    pub async fn delete_portfolio_letter_from_cache(
-        candidate_id: i32,
+    pub async fn delete_portfolio_letter_from_cache<P: Policy>(
+        context: Context<ContextDataType>,
+        candidate_id: BBox<i32, P>,
     ) -> Result<(), ServiceError> {
-        Self::delete_cache_item(candidate_id,  FileType::PortfolioLetterPdf).await
+        match candidate_id.into_unbox(
+            context,
+            PrivacyCriticalRegion::new(|candidate_id: i32, ()| {
+              Self::delete_cache_item(candidate_id,  FileType::PortfolioLetterPdf)
+            }),
+            (),
+        ) {
+            Err(_) => Err(ServiceError::PolicyCheckFailed),
+            Ok(result) => result.await,
+        }
     }
 
-    pub async fn delete_portfolio_zip_from_cache(
-        candidate_id: i32,
+    pub async fn delete_portfolio_zip_from_cache<P: Policy>(
+        context: Context<ContextDataType>,
+        candidate_id: BBox<i32, P>,
     ) -> Result<(), ServiceError> {
-        Self::delete_cache_item(candidate_id,  FileType::PortfolioZip).await
+        match candidate_id.into_unbox(
+            context,
+            PrivacyCriticalRegion::new(|candidate_id: i32, ()| {
+              Self::delete_cache_item(candidate_id,  FileType::PortfolioZip)
+            }),
+            (),
+        ) {
+            Err(_) => Err(ServiceError::PolicyCheckFailed),
+            Ok(result) => result.await,
+        }
     }
 
     /// Removes all files from cache
@@ -271,18 +338,16 @@ impl PortfolioService {
         Ok(())
     }
 
-
-    /// Move files from cache to final directory and delete cache afterwards
-    pub async fn submit(candidate: &candidate::Model, db: &DbConn) -> Result<(), ServiceError> {
-        let candidate_id = candidate.id.clone();
-        let path = Self::get_file_store_path().join(&candidate_id.clone().discard_box().to_string()).to_path_buf();
+    // First PCR for submit.
+    async fn submit_pcr_1(candidate_id: i32) -> Result<(), ServiceError> {
+        let path = Self::get_file_store_path().join(&candidate_id.to_string()).to_path_buf();
         let cache_path = path.join("cache");
 
-        if Self::is_portfolio_prepared(candidate_id.clone().discard_box()).await == false {
+        if Self::is_portfolio_prepared(candidate_id).await == false {
             return Err(ServiceError::IncompletePortfolio);
         }
-        
-        info!("PORTFOLIO {} SUBMIT STARTED", candidate.id.clone().discard_box());
+
+        info!("PORTFOLIO {} SUBMIT STARTED", candidate_id);
 
         let mut archive = tokio::fs::File::create(path.join(FileType::PortfolioZip.as_str())).await?;
         let mut writer = async_zip::tokio::write::ZipFileWriter::with_tokio(&mut archive);
@@ -296,7 +361,7 @@ impl PortfolioService {
             entry_file.read_to_end(entry).await?;
         }
 
-        Self::delete_cache(candidate_id.clone().discard_box()).await?;
+        Self::delete_cache(candidate_id).await?;
 
         for (index, entry) in buffer.iter_mut().enumerate() {
             let filename = filenames[index];
@@ -310,8 +375,41 @@ impl PortfolioService {
 
         writer.close().await?;
         archive.shutdown().await?;
+        Ok(())
+    }
 
-        let mut applications_pubkeys: Vec<BBox<String, NoPolicy>> = Query::find_applications_by_candidate_id(db, candidate_id.clone())
+    // Second submit PCR.
+    async fn submit_pcr_2(candidate_id: i32, recipients: Vec<String>) -> Result<(), ServiceError> {
+        let path = Self::get_file_store_path().join(&candidate_id.to_string()).to_path_buf();
+        let final_path = path.join(FileType::PortfolioZip.as_str());
+        crypto::encrypt_file_with_recipients(
+            &final_path,
+            &final_path.with_extension("age"),
+            recipients,
+        ).await?;
+        tokio::fs::remove_file(final_path).await?;
+
+        if !Self::is_portfolio_submitted(candidate_id).await {
+            return Err(ServiceError::PortfolioWriteError)
+        }
+
+        Ok(())
+    }
+
+    /// Move files from cache to final directory and delete cache afterwards
+    pub async fn submit(candidate: &candidate::Model, db: &DbConn) -> Result<(), ServiceError> {
+        match candidate.id.clone().into_unbox(
+            get_context(),
+            PrivacyCriticalRegion::new(move |candidate_id: i32, ()| {
+                Self::submit_pcr_1(candidate_id)
+            }),
+            ()
+        ) {
+            Err(_) => Err(ServiceError::PolicyCheckFailed)?,
+            Ok(result) => result.await?,
+        }
+
+        let mut applications_pubkeys = Query::find_applications_by_candidate_id(db, candidate.id.clone())
             .await?
             .iter()
             .map(|a| a.public_key.clone()).collect();
@@ -320,32 +418,23 @@ impl PortfolioService {
         let mut recipients = vec![];
         recipients.append(&mut admin_public_keys);
         recipients.append(&mut applications_pubkeys);
-        let final_path = path.join(FileType::PortfolioZip.as_str());
 
-
-        let recipients = recipients.into_iter().map(|r| r.discard_box()).collect();
-        crypto::encrypt_file_with_recipients(
-            &final_path,
-            &final_path.with_extension("age"),
-            recipients,
-        ).await?;
-        tokio::fs::remove_file(final_path).await?;
-
-        // end of this bit
-
-        
-        if !Self::is_portfolio_submitted(candidate_id.clone().discard_box()).await {
-            return Err(ServiceError::PortfolioWriteError)
+        // Privacy Critical region.
+        match unbox(
+            (candidate.id.clone(), recipients),
+            get_context(),
+            PrivacyCriticalRegion::new(|(candidate_id, recipients): (i32, Vec<String>), ()| {
+                Self::submit_pcr_2(candidate_id, recipients)
+            }),
+            ()
+        ) {
+            Err(_) => Err(ServiceError::PolicyCheckFailed)?,
+            Ok(result) => result.await,
         }
-
-        info!("PORTFOLIO {} SUBMIT FINISHED", candidate_id.clone().discard_box());
-
-        Ok(())
     }
 
     /// Delete PORTFOLIO.age file
-    pub async fn delete_portfolio(candidate_id: i32) -> Result<(), ServiceError> {
-        info!("PORTFOLIO {} DELETE STARTED", candidate_id);
+    async fn delete_portfolio_pcr(candidate_id: i32) -> Result<(), ServiceError> {
         let path = Self::get_file_store_path().join(&candidate_id.to_string()).to_path_buf();
 
         let portfolio_path = path.join(FileType::PortfolioZip.as_str());
@@ -358,22 +447,40 @@ impl PortfolioService {
         if tokio::fs::metadata(&portfolio_age_path).await.is_ok() {
             tokio::fs::remove_file(&portfolio_age_path).await?;
         }
-
-        info!("PORTFOLIO {} DELETE FINISHED", candidate_id);
-
         Ok(())
+    }
+    pub async fn delete_portfolio<P: Policy>(candidate_id: BBox<i32, P>) -> Result<(), ServiceError> {
+        match candidate_id.into_unbox(
+            get_context(),
+            PrivacyCriticalRegion::new(|candidate_id: i32, ()| {
+                Self::delete_portfolio_pcr(candidate_id)
+            }),
+            (),
+        ) {
+            Err(_) => Err(ServiceError::PolicyCheckFailed),
+            Ok(result) => {
+                result.await?;
+                Ok(())
+            },
+        }
     }
 
     /// Deletes all candidate folder. Used ONLY when candidate is deleted!
-    pub async fn delete_candidate_root(candidate_id: i32) -> Result<(), ServiceError> {
-        warn!("CANDIDATE {} ROOT DIRECTORY DELETE STARTED", candidate_id);
-
-        let path = Self::get_file_store_path().join(&candidate_id.to_string()).to_path_buf();
-        tokio::fs::remove_dir_all(path).await?;
-
-        warn!("CANDIDATE {} ROOT DIRECTORY DELETE FINISHED", candidate_id);
-
-        Ok(())
+    pub async fn delete_candidate_root<P: Policy>(candidate_id: BBox<i32, P>) -> Result<(), ServiceError> {
+        match candidate_id.into_unbox(
+            get_context(),
+            PrivacyCriticalRegion::new(|candidate_id: i32, ()| {
+                let path = Self::get_file_store_path().join(&candidate_id.to_string()).to_path_buf();
+                tokio::fs::remove_dir_all(path)
+            }),
+            (),
+        ) {
+            Err(_) => Err(ServiceError::PolicyCheckFailed),
+            Ok(result) => {
+                result.await?;
+                Ok(())
+            },
+        }
     }
 
     /// Returns true if portfolio is submitted
@@ -384,24 +491,30 @@ impl PortfolioService {
     }
 
     /// Returns decrypted portfolio zip as Vec of bytes
-    pub async fn get_portfolio(candidate_id: i32, private_key: String) -> Result<Vec<u8>, ServiceError> {
-        info!("PORTFOLIO {} DECRYPT STARTED", candidate_id);
-        let path = Self::get_file_store_path()
-            .join(&candidate_id.to_string())
-            .join(FileType::Age.as_str())
-            .to_path_buf();
-
-        let buffer = crypto::decrypt_file_with_private_key_as_buffer(path, &private_key).await?;
-
-        info!("PORTFOLIO {} DECRYPT FINISHED", candidate_id);
-        Ok(buffer)
+    pub async fn get_portfolio<P1: Policy + Clone+ 'static, P2: Policy + Clone + 'static>(
+        context: Context<ContextDataType>,
+        candidate_id: BBox<i32, P1>,
+        private_key: BBox<String, P2>,
+    ) -> Result<Vec<u8>, ServiceError> {
+        match unbox(
+            (candidate_id, private_key),
+            context,
+            PrivacyCriticalRegion::new(|(candidate_id, private_key): (i32, String), ()| {
+                let path = Self::get_file_store_path()
+                    .join(&candidate_id.to_string())
+                    .join(FileType::Age.as_str())
+                    .to_path_buf();
+                crypto::decrypt_file_with_private_key_as_buffer(path, private_key)
+            }),
+            (),
+        ) {
+            Err(_) => Err(ServiceError::PolicyCheckFailed),
+            Ok(result) => result.await
+        }
     }
 
-    pub async fn reencrypt_portfolio(candidate_id: i32,
-        private_key: String,
-        recipients: &Vec<BBox<String, NoPolicy>>,
-    ) -> Result<(), ServiceError> {
-        info!("PORTFOLIO {} REENCRYPT STARTED", candidate_id);
+    // PCR for reencrypt_portfolio.
+    async fn reencrypt_portfolio_pcr(candidate_id: i32, private_key: String, recipients: Vec<String>) -> Result<(), ServiceError> {
         let path = Self::get_file_store_path()
             .join(&candidate_id.to_string())
             .join(FileType::Age.as_str())
@@ -409,34 +522,57 @@ impl PortfolioService {
 
         let plain_portfolio = crypto::decrypt_file_with_private_key_as_buffer(
             path.to_owned(),
-            &private_key
+            private_key
         ).await?;
 
-        let recipients = recipients.iter().cloned().map(|r| r.discard_box()).collect();
         let enc_portfolio= crypto::encrypt_buffer_with_recipients(
-            &plain_portfolio, 
+            &plain_portfolio,
             &recipients
         ).await?;
-        
+
         tokio::fs::remove_file(path.to_owned()).await?;
-        
+
         tokio::fs::write(path, enc_portfolio).await?;
 
-        info!("PORTFOLIO {} REENCRYPT FINISHED", candidate_id);
-
         Ok(())
+    }
+
+    pub async fn reencrypt_portfolio(candidate_id: BBox<i32, FakePolicy>,
+        private_key: BBox<String, FakePolicy>,
+        recipients: &Vec<BBox<String, FakePolicy>>,
+    ) -> Result<(), ServiceError> {
+        match unbox(
+            (candidate_id.clone(), private_key, recipients.clone()),
+            get_context(),
+            PrivacyCriticalRegion::new(|(candidate_id, private_key, recipients): (i32, String, Vec<String>), ()| {
+                Self::reencrypt_portfolio_pcr(candidate_id, private_key, recipients)
+            }),
+            (),
+        ) {
+            Err(_) => Err(ServiceError::PolicyCheckFailed)?,
+            Ok(result) => result.await,
+        }
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use alohomora::{bbox::BBox, policy::NoPolicy};
+    use alohomora::bbox::BBox;
     use serial_test::serial;
 
     use crate::{services::{portfolio_service::{PortfolioService, FileType}, candidate_service::{CandidateService, tests::put_user_data}}, utils::db::get_memory_sqlite_connection, crypto};
     use std::path::PathBuf;
+    use alohomora::pcr::PrivacyCriticalRegion;
+    use alohomora::policy::Policy;
+    use portfolio_policies::FakePolicy;
+    use crate::crypto_helpers::get_context;
 
     const APPLICATION_ID: i32 = 103151;
+
+    #[cfg(test)]
+    fn open<T, P: Policy>(bbox: BBox<T, P>) -> T {
+        bbox.into_unbox(get_context(), PrivacyCriticalRegion::new(|t: T, ()| t), ()).unwrap()
+    }
 
     #[cfg(test)]
     async fn create_data_store_temp_dir(application_id: i32) -> (PathBuf, PathBuf, PathBuf) {
@@ -468,13 +604,14 @@ mod tests {
         let temp_dir = std::env::temp_dir().join("portfolio_test_tempdir").join("create_folder");
         std::env::set_var("PORTFOLIO_STORE_PATH", temp_dir.to_str().unwrap());
 
-        let candidate = CandidateService::create(&db, BBox::new("".to_string(), NoPolicy::new()))
+        let candidate = CandidateService::create(&db, BBox::new("".to_string(), FakePolicy::new()))
             .await
             .ok()
             .unwrap();
 
-        assert!(tokio::fs::metadata(temp_dir.join(candidate.id.clone().discard_box().to_string())).await.is_ok());
-        assert!(tokio::fs::metadata(temp_dir.join(candidate.id.clone().discard_box().to_string()).join("cache")).await.is_ok());
+        let candidate_id = open(candidate.id.clone());
+        assert!(tokio::fs::metadata(temp_dir.join(candidate_id.to_string())).await.is_ok());
+        assert!(tokio::fs::metadata(temp_dir.join(candidate_id.to_string()).join("cache")).await.is_ok());
 
         tokio::fs::remove_dir_all(temp_dir).await.unwrap();
     }
@@ -665,12 +802,13 @@ mod tests {
     async fn test_add_portfolio() {
         let db = get_memory_sqlite_connection().await;
         let (_, candidate, _) = put_user_data(&db).await;
-        
-        let (temp_dir, application_dir, _) = create_data_store_temp_dir(candidate.id.clone().discard_box()).await;
+        let candidate_id = open(candidate.id.clone());
 
-        PortfolioService::add_cover_letter_to_cache(candidate.id.clone().discard_box(), vec![0]).await.unwrap();
-        PortfolioService::add_portfolio_letter_to_cache(candidate.id.clone().discard_box(), vec![0]).await.unwrap();
-        PortfolioService::add_portfolio_zip_to_cache(candidate.id.clone().discard_box(), vec![0]).await.unwrap();
+        let (temp_dir, application_dir, _) = create_data_store_temp_dir(candidate_id).await;
+
+        PortfolioService::add_cover_letter_to_cache(candidate_id, vec![0]).await.unwrap();
+        PortfolioService::add_portfolio_letter_to_cache(candidate_id, vec![0]).await.unwrap();
+        PortfolioService::add_portfolio_zip_to_cache(candidate_id, vec![0]).await.unwrap();
 
         PortfolioService::submit(&candidate.clone(), &db).await.unwrap();
         
@@ -684,12 +822,13 @@ mod tests {
     async fn test_delete_portfolio() {
         let db = get_memory_sqlite_connection().await;
         let (_, candidate, _) = put_user_data(&db).await;
+        let candidate_id = open(candidate.id.clone());
 
-        let (temp_dir, application_dir, _) = create_data_store_temp_dir(candidate.id.clone().discard_box()).await;
+        let (temp_dir, application_dir, _) = create_data_store_temp_dir(candidate_id).await;
 
-        PortfolioService::add_cover_letter_to_cache(candidate.id.clone().discard_box(), vec![0]).await.unwrap();
-        PortfolioService::add_portfolio_letter_to_cache(candidate.id.clone().discard_box(), vec![0]).await.unwrap();
-        PortfolioService::add_portfolio_zip_to_cache(candidate.id.clone().discard_box(), vec![0]).await.unwrap();
+        PortfolioService::add_cover_letter_to_cache(candidate_id, vec![0]).await.unwrap();
+        PortfolioService::add_portfolio_letter_to_cache(candidate_id, vec![0]).await.unwrap();
+        PortfolioService::add_portfolio_zip_to_cache(candidate_id, vec![0]).await.unwrap();
 
         PortfolioService::submit(&candidate, &db).await.unwrap();
         
@@ -708,23 +847,25 @@ mod tests {
         let db = get_memory_sqlite_connection().await;
 
         let (_, candidate, _) = put_user_data(&db).await;
-        let (temp_dir, _, _) = create_data_store_temp_dir(candidate.id.clone().discard_box()).await;
+        let candidate_id = open(candidate.id.clone());
 
-        PortfolioService::add_cover_letter_to_cache(candidate.id.clone().discard_box(), vec![0]).await.unwrap();
-        PortfolioService::add_portfolio_letter_to_cache(candidate.id.clone().discard_box(), vec![0]).await.unwrap();
-        PortfolioService::add_portfolio_zip_to_cache(candidate.id.clone().discard_box(), vec![0]).await.unwrap();
+        let (temp_dir, _, _) = create_data_store_temp_dir(candidate_id).await;
+
+        PortfolioService::add_cover_letter_to_cache(candidate_id, vec![0]).await.unwrap();
+        PortfolioService::add_portfolio_letter_to_cache(candidate_id, vec![0]).await.unwrap();
+        PortfolioService::add_portfolio_zip_to_cache(candidate_id, vec![0]).await.unwrap();
 
         PortfolioService::submit(&candidate, &db).await.unwrap();
         
-        assert!(PortfolioService::is_portfolio_submitted(candidate.id.clone().discard_box()).await);
+        assert!(PortfolioService::is_portfolio_submitted(candidate_id).await);
 
         clear_data_store_temp_dir(temp_dir).await;
 
-        let (temp_dir, application_dir, _) = create_data_store_temp_dir(candidate.id.clone().discard_box()).await;
+        let (temp_dir, application_dir, _) = create_data_store_temp_dir(candidate_id).await;
 
-        PortfolioService::add_cover_letter_to_cache(candidate.id.clone().discard_box(), vec![0]).await.unwrap();
-        PortfolioService::add_portfolio_letter_to_cache(candidate.id.clone().discard_box(), vec![0]).await.unwrap();
-        PortfolioService::add_portfolio_zip_to_cache(candidate.id.clone().discard_box(), vec![0]).await.unwrap();
+        PortfolioService::add_cover_letter_to_cache(candidate_id, vec![0]).await.unwrap();
+        PortfolioService::add_portfolio_letter_to_cache(candidate_id, vec![0]).await.unwrap();
+        PortfolioService::add_portfolio_zip_to_cache(candidate_id, vec![0]).await.unwrap();
 
         PortfolioService::submit(&candidate, &db).await.unwrap();
 
@@ -740,20 +881,21 @@ mod tests {
     async fn test_get_portfolio() {
         let db = get_memory_sqlite_connection().await;
         let (application, candidate, _parent) = put_user_data(&db).await;
+        let candidate_id = open(candidate.id.clone());
 
-        let (temp_dir, _, _) = create_data_store_temp_dir(candidate.id.clone().discard_box()).await;
+        let (temp_dir, _, _) = create_data_store_temp_dir(candidate_id).await;
 
         let private_key = crypto::decrypt_password(application.private_key.clone().discard_box(), "test".to_string())
             .await
             .unwrap();
 
-        PortfolioService::add_cover_letter_to_cache(candidate.id.clone().discard_box(), vec![0])
+        PortfolioService::add_cover_letter_to_cache(candidate_id, vec![0])
             .await
             .unwrap();
-        PortfolioService::add_portfolio_letter_to_cache(candidate.id.clone().discard_box(), vec![0])
+        PortfolioService::add_portfolio_letter_to_cache(candidate_id, vec![0])
             .await
             .unwrap();
-        PortfolioService::add_portfolio_zip_to_cache(candidate.id.clone().discard_box(), vec![0])
+        PortfolioService::add_portfolio_zip_to_cache(candidate_id, vec![0])
             .await
             .unwrap();
 
