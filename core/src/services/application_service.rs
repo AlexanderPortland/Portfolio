@@ -1,3 +1,5 @@
+use std::default;
+
 use async_trait::async_trait;
 use chrono::{Duration, NaiveDateTime};
 use entity::{candidate, parent, application, session};
@@ -99,13 +101,15 @@ impl ApplicationService {
     ) -> Result<(candidate::Model, BBox<String, FakePolicy>), ServiceError> {
         let candidates = Query::list_candidates_full(db).await?;
         let ids_decrypted = futures::future::join_all(
-            candidates.iter().map(|c| async {(
-                c.id.clone(),
-                EncryptedString::from(c.personal_identification_number.clone())
+            candidates.iter().map(|c| async {
+                let es = match EncryptedString::from(c.personal_identification_number.clone())
                     .decrypt(admin_private_key)
-                    .await
-                    .unwrap_or_default()
-                )
+                    .await{
+                        Ok(bbox) => Ok(bbox.specialize_policy().unwrap()),
+                        Err(e) => Err(e),
+                }.unwrap_or_default();
+                
+                (c.id.clone(), es)
             })
         ).await;
 
@@ -293,7 +297,7 @@ impl ApplicationService {
 
         let private_key = my_decrypt_password(private_key_encrypted, password).await?;
 
-        Ok(private_key)
+        Ok(private_key.specialize_policy().unwrap())
     }
 
     pub async fn extend_session_duration_to_14_days(db: &DbConn, session: session::Model) -> Result<session::Model, ServiceError> {
@@ -502,8 +506,9 @@ impl AuthenticableTrait for ApplicationService {
 
 #[cfg(test)]
 mod application_tests {
-    use alohomora::bbox::BBox;
+    use alohomora::{bbox::BBox, pcr::{execute_pcr, PrivacyCriticalRegion}, policy::NoPolicy, pure::{execute_pure, PrivacyPureRegion}};
     use portfolio_policies::FakePolicy;
+    //use sea_orm::sea_query::private;
 
     use crate::{services::{application_service::ApplicationService, candidate_service::tests::put_user_data}, utils::db::get_memory_sqlite_connection, crypto, models::auth::AuthenticableTrait};
     use crate::services::admin_service::admin_tests::create_admin;
@@ -526,10 +531,11 @@ mod application_tests {
         let (application, _, _) = put_user_data(&db).await;
 
         // The admin's private key.
-        let private_key = BBox::new(
-            crypto::decrypt_password(admin.private_key.discard_box(), "admin".to_string()).await.unwrap(),
-            FakePolicy::new()
-        );
+        let private_key = execute_pcr(admin.private_key, 
+            PrivacyCriticalRegion::new(|private_key, _, _|{
+                crypto::decrypt_password(private_key, "admin".to_string())
+            }),
+        ()).unwrap().await.unwrap();
 
         // The ip and password for the login happens with.
         let ip = BBox::new("127.0.0.1".to_string(), FakePolicy::new());
@@ -539,7 +545,7 @@ mod application_tests {
         );
 
         let new_password = ApplicationService::reset_password(
-            private_key,
+            BBox::new(private_key, FakePolicy::new()),
             &db,
             application.id.clone()
         ).await
@@ -549,7 +555,7 @@ mod application_tests {
             ApplicationService::login(&db, application.id.clone(), password, ip.clone()).await.is_err()
         );
         assert!(
-            ApplicationService::login(&db, application.id, new_password, ip.clone()).await.is_ok()
+            ApplicationService::login(&db, application.id, new_password.specialize_policy().unwrap(), ip.clone()).await.is_ok()
         );
     }
 
@@ -569,20 +575,29 @@ mod application_tests {
             BBox::new("".to_string(), FakePolicy::new())
         ).await.unwrap().0;
 
-        let encrypted_message =
-            crypto::encrypt_password_with_recipients(&secret_message, &vec![&application.public_key.discard_box()])
-                .await
-                .unwrap();
+        let public_key = execute_pcr(application.public_key, 
+            PrivacyCriticalRegion::new(|public_key: String, _, _| {
+                public_key
+            }), ()).unwrap();
 
-        let private_key_plain_text =
-            crypto::decrypt_password(application.private_key.discard_box(), plain_text_password.clone())
-                .await
-                .unwrap();
+        // ideally we'd do things this way but we cant await outside pcr bc public_key doesn't live long enough
+        // and we need it to stick around
+        // let encrypted_message = execute_pcr(application.public_key, 
+        //     PrivacyCriticalRegion::new(|public_key: String, _, _| {
+        //         crypto::encrypt_password_with_recipients(&secret_message, &vec![&public_key])
+        //     }), ()).unwrap().await.unwrap();
 
-        let decrypted_message =
-            crypto::decrypt_password_with_private_key(&encrypted_message, &private_key_plain_text)
-                .await
-                .unwrap();
+        let encrypted_message = crypto::encrypt_password_with_recipients(&secret_message, &vec![&public_key]).await.unwrap();
+
+        let private_key_plain_text = execute_pcr(application.private_key.clone(), 
+            PrivacyCriticalRegion::new(|private_key: String, _, _| {
+                crypto::decrypt_password(private_key, plain_text_password.clone())
+            }), ()).unwrap().await.unwrap();
+
+        let decrypted_message = execute_pcr(application.private_key, 
+            PrivacyCriticalRegion::new(|private_key: String, _, _| {
+                crypto::decrypt_password_with_private_key(&encrypted_message, &private_key_plain_text)
+            }), ()).unwrap().await.unwrap();
 
         assert_eq!(secret_message, decrypted_message);
     }

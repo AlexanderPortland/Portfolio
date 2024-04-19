@@ -42,7 +42,7 @@ impl SessionService {
 
 #[cfg(test)]
 mod tests {
-    use alohomora::bbox::BBox;
+    use alohomora::{bbox::BBox, pcr::{execute_pcr, PrivacyCriticalRegion}};
     use sea_orm::{
         prelude::Uuid,
     };
@@ -67,9 +67,13 @@ mod tests {
             &BBox::new(SECRET.to_string(), FakePolicy::new()),
             BBox::new("".to_string(), FakePolicy::new())).await.unwrap().0;
 
-        assert_eq!(application.id.to_owned().discard_box(), 103151);
-        assert_ne!(application.password.to_owned().discard_box(), SECRET.to_string());
-        assert!(crypto::verify_password(SECRET.to_string(), application.password.discard_box())
+        let (id, password) = execute_pcr((application.id, application.password), 
+        PrivacyCriticalRegion::new(|(id, password), _, _| {
+            (id, password)
+        }), ()).unwrap();
+        assert_eq!(id, 103151);
+        assert_ne!(password, SECRET.to_string());
+        assert!(crypto::verify_password(SECRET.to_string(), password)
             .await
             .ok()
             .unwrap());
@@ -95,8 +99,10 @@ mod tests {
         )
         .await
         .unwrap();
+        let session = execute_pcr(session, 
+            PrivacyCriticalRegion::new(|s, _, _|{s}), ()).unwrap();
         assert!(
-            ApplicationService::auth(db, BBox::new(Uuid::parse_str(&session.discard_box()).unwrap(), FakePolicy::new()))
+            ApplicationService::auth(db, BBox::new(Uuid::parse_str(&session).unwrap(), FakePolicy::new()))
                 .await
                 .is_ok()
         );

@@ -20,7 +20,11 @@ impl AdminService {
     ) -> Result<BBox<String, FakePolicy>, ServiceError> {
         let admin = Query::find_admin_by_id(db, admin_id).await?.ok_or(ServiceError::InvalidCredentials)?;
         let private_key_encrypted = admin.private_key;
-        my_decrypt_password(private_key_encrypted, password).await
+
+        match my_decrypt_password(private_key_encrypted, password).await {
+            Ok(bbox) => Ok(bbox.specialize_policy().unwrap()),
+            Err(e) => Err(e)
+        }
     }
 }
 
@@ -127,7 +131,7 @@ pub mod admin_tests {
 
         let admin = admin::ActiveModel {
             name: Set(BBox::new("admin".to_string(), FakePolicy::new())),
-            public_key: Set(pubkey),
+            public_key: Set(BBox::new(pubkey, FakePolicy::new())),
             private_key: Set(enc_priv_key),
             // should be password hash
             password: Set(BBox::new("admin".to_string(), FakePolicy::new())),
@@ -164,12 +168,26 @@ pub mod admin_tests {
             BBox::new("test".to_owned(), FakePolicy::new()),
             BBox::new("127.0.0.1".to_owned(), FakePolicy::new())).await?;
 
-        let logged_admin = AdminService::auth(&db, BBox::new(session_id.discard_box().parse().unwrap(), FakePolicy::new())).await?;
-
-        assert_eq!(logged_admin.id.discard_box(), 1);
-        assert_eq!(logged_admin.name.discard_box(), "Admin");
         
+        let session_id = execute_pure(session_id, 
+            PrivacyPureRegion::new(|s: String| {
+                Uuid::parse_str(&s).unwrap()
+            })
+        ).unwrap().specialize_policy().unwrap();
+        let logged_admin = AdminService::auth(&db, session_id).await?;
 
+        let check_vals = execute_pure((logged_admin.id, logged_admin.name), 
+            PrivacyPureRegion::new(|(id, name)| {
+                if id == 1 && name == "Admin" {
+                    Ok(())
+                } else {
+                    Err("waooo")
+                }
+            })
+        ).unwrap().transpose();
+
+        assert!(check_vals.is_ok());
+        
         Ok(())
 
     }

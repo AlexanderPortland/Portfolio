@@ -54,7 +54,7 @@ impl ParentService {
 mod tests {
     use std::sync::Mutex;
 
-    use alohomora::{bbox::BBox, policy::AnyPolicy};
+    use alohomora::{bbox::BBox, pcr::{execute_pcr, PrivacyCriticalRegion}, policy::AnyPolicy};
     use once_cell::sync::Lazy;
     use portfolio_policies::FakePolicy;
 
@@ -100,7 +100,7 @@ mod tests {
     #[tokio::test]
     async fn create_parent_test() {
         let db = get_memory_sqlite_connection().await;
-        let candidate = CandidateService::create(&db, BBox::new("".to_string(), AnyPolicy::new(FakePolicy::new()))).await.unwrap();
+        let candidate = CandidateService::create(&db, BBox::new("".to_string(), FakePolicy::new())).await.unwrap();
         super::ParentService::create(&db, candidate.id.clone()).await.unwrap();
         super::ParentService::create(&db, candidate.id).await.unwrap();
     }
@@ -119,8 +119,12 @@ mod tests {
             .await
             .unwrap();
 
+        let priv_key = execute_pcr(application.private_key, 
+            PrivacyCriticalRegion::new(|private_key: String, _, _| {
+                crypto::decrypt_password(private_key, plain_text_password)
+            }), ()).unwrap().await.unwrap();
         let priv_key = BBox::new(
-            crypto::decrypt_password(application.private_key.clone().discard_box(), plain_text_password).await.unwrap(), AnyPolicy::new(FakePolicy::new()));
+            priv_key, FakePolicy::new());
         let dec_details = EncryptedApplicationDetails::try_from((&candidate, &parents))
             .unwrap()
             .decrypt(priv_key)
