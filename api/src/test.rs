@@ -20,10 +20,9 @@ pub mod tests {
     pub const CANDIDATE_PASSWORD: &'static str = "test";
     pub const PERSONAL_ID_NUMBER: &'static str = "0101010000";
 
-    const TESTING_ADMIN_COOKIE: &str = "0xdeadbeef12345678deadbeef12345678";
-    const TESTING_ADMIN_KEY: &str = "blahblah";
+    use portfolio_core::utils::db::{TESTING_ADMIN_COOKIE, TESTING_ADMIN_KEY};
 
-    fn get_test_context() -> Context<TestContextData<ContextDataType>> {
+    pub fn get_test_context() -> Context<TestContextData<ContextDataType>> {
         Context::test(ContextDataType{
             session_id: Some(BBox::new(TESTING_ADMIN_COOKIE.to_string(), NoPolicy::new())),
             key: Some(BBox::new(TESTING_ADMIN_KEY.to_string(), NoPolicy::new())),

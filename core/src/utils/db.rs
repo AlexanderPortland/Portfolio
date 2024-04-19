@@ -7,7 +7,6 @@ use portfolio_policies::FakePolicy;
 use crate::Query;
 use crate::error::ServiceError;
 
-// PARELLEL IMPLEMENTATION IN api/src/test.rs so change that if you change this
 pub const TESTING_ADMIN_COOKIE: &str = "0xdeadbeef12345678deadbeef12345678";
 const TESTING_ADMIN_ID: &str = "1";
 pub const TESTING_ADMIN_KEY: &str = "blahblah";
