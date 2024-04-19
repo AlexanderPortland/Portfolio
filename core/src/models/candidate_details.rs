@@ -401,7 +401,7 @@ pub mod tests {
     use std::sync::Mutex;
 
     use portfolio_policies::FakePolicy;
-    use alohomora::{bbox::BBox, policy::AnyPolicy};
+    use alohomora::{bbox::BBox, pcr::{execute_pcr, PrivacyCriticalRegion}, policy::AnyPolicy, pure::PrivacyPureRegion};
     use chrono::Local;
     use entity::admin;
     use once_cell::sync::Lazy;
@@ -432,8 +432,8 @@ pub mod tests {
                 schoolName: BBox::new("school_name".to_string(), AnyPolicy::new(FakePolicy::new())),
                 healthInsurance: BBox::new("health_insurance".to_string(), AnyPolicy::new(FakePolicy::new())),
                 grades: BBox::new(GradeList::from(vec![]), AnyPolicy::new(FakePolicy::new())),
-                firstSchool: BBox::new(School::from_opt_str(Some(BBox::new("{\"name\": \"SSPS\", \"field\": \"KB\"}".to_string(), AnyPolicy::new(FakePolicy::new())))).unwrap(), AnyPolicy::new(FakePolicy::new())),
-                secondSchool: BBox::new(School::from_opt_str(Some(BBox::new("{\"name\": \"SSPS\", \"field\": \"IT\"}".to_string(), AnyPolicy::new(FakePolicy::new())))).unwrap(), AnyPolicy::new(FakePolicy::new())),
+                firstSchool: School::from_opt_str(Some(BBox::new("{\"name\": \"SSPS\", \"field\": \"KB\"}".to_string(), AnyPolicy::new(FakePolicy::new())))).unwrap(),
+                secondSchool: School::from_opt_str(Some(BBox::new("{\"name\": \"SSPS\", \"field\": \"IT\"}".to_string(), AnyPolicy::new(FakePolicy::new())))).unwrap(),
                 testLanguage: BBox::new("test_language".to_string(), AnyPolicy::new(FakePolicy::new())),
             },
             parents: vec![ParentDetails {
@@ -465,15 +465,15 @@ pub mod tests {
 
     async fn insert_test_admin(db: &DbConn) -> admin::Model {
         admin::ActiveModel {
-            id: Set(BBox::new(1, AnyPolicy::new(FakePolicy::new()))),
-            name: Set(BBox::new("Admin".to_owned(), AnyPolicy::new(FakePolicy::new()))),
-            public_key: Set(BBox::new("age1u889gp407hsz309wn09kxx9anl6uns30m27lfwnctfyq9tq4qpus8tzmq5".to_owned(), AnyPolicy::new(FakePolicy::new()))),
+            id: Set(BBox::new(1, FakePolicy::new())),
+            name: Set(BBox::new("Admin".to_owned(), FakePolicy::new())),
+            public_key: Set(BBox::new("age1u889gp407hsz309wn09kxx9anl6uns30m27lfwnctfyq9tq4qpus8tzmq5".to_owned(), FakePolicy::new())),
             // AGE-SECRET-KEY-14QG24502DMUUQDT2SPMX2YXPSES0X8UD6NT0PCTDAT6RH8V5Q3GQGSRXPS
-            private_key: Set(BBox::new("5KCEGk0ueWVGnu5Xo3rmpLoilcVZ2ZWmwIcdZEJ8rrBNW7jwzZU/XTcTXtk/xyy/zjF8s+YnuVpOklQvX3EC/Sn+ZwyPY3jokM2RNwnZZlnqdehOEV1SMm/Y".to_owned(), AnyPolicy::new(FakePolicy::new()))),
+            private_key: Set(BBox::new("5KCEGk0ueWVGnu5Xo3rmpLoilcVZ2ZWmwIcdZEJ8rrBNW7jwzZU/XTcTXtk/xyy/zjF8s+YnuVpOklQvX3EC/Sn+ZwyPY3jokM2RNwnZZlnqdehOEV1SMm/Y".to_owned(), FakePolicy::new())),
             // test
-            password: Set(BBox::new("$argon2i$v=19$m=6000,t=3,p=10$WE9xCQmmWdBK82R4SEjoqA$TZSc6PuLd4aWK2x2WAb+Lm9sLySqjK3KLbNyqyQmzPQ".to_owned(), AnyPolicy::new(FakePolicy::new()))),
-            created_at: Set(BBox::new(Local::now().naive_local(), AnyPolicy::new(FakePolicy::new()))),
-            updated_at: Set(BBox::new(Local::now().naive_local(), AnyPolicy::new(FakePolicy::new()))),
+            password: Set(BBox::new("$argon2i$v=19$m=6000,t=3,p=10$WE9xCQmmWdBK82R4SEjoqA$TZSc6PuLd4aWK2x2WAb+Lm9sLySqjK3KLbNyqyQmzPQ".to_owned(), FakePolicy::new())),
+            created_at: Set(BBox::new(Local::now().naive_local(), FakePolicy::new())),
+            updated_at: Set(BBox::new(Local::now().naive_local(), FakePolicy::new())),
             ..Default::default()
         }
             .insert(db)
@@ -485,36 +485,33 @@ pub mod tests {
     async fn test_encrypted_application_details_new() {
         let encrypted_details = EncryptedApplicationDetails::new(
             &APPLICATION_DETAILS.lock().unwrap().clone(),
-            &vec![PUBLIC_KEY.to_string()],
+            &vec![BBox::new(PUBLIC_KEY.to_string(), FakePolicy::new())],
         )
         .await
         .unwrap();
 
-        assert_eq!(
-            crypto::decrypt_password_with_private_key(&encrypted_details.candidate.name.unwrap().discard_box().0, PRIVATE_KEY)
-                .await
-                .unwrap(),
-            "name"
-        );
-        assert_eq!(
-            crypto::decrypt_password_with_private_key(&encrypted_details.candidate.email.unwrap().discard_box().0, PRIVATE_KEY)
-                .await
-                .unwrap(),
-            "email"
-        );
-        assert_eq!(
-            crypto::decrypt_password_with_private_key(&encrypted_details.candidate.sex.unwrap().discard_box().0, PRIVATE_KEY)
-                .await
-                .unwrap(),
-            "sex"
-        );
+        // let dec_key_eq = PrivacyCriticalRegion::new(|enc_password: String, _, _|{
+        //     crypto::decrypt_password_with_private_key(&enc_password, PRIVATE_KEY)
+        // });
+
+        let (name, email, sex) = execute_pcr((
+                encrypted_details.candidate.name.unwrap().0, 
+                encrypted_details.candidate.email.unwrap().0, 
+                encrypted_details.candidate.sex.unwrap().0), 
+            PrivacyCriticalRegion::new(|(name, email, sex), _, _|{
+                (name, email, sex)
+            }), ()).unwrap();
+
+        assert_eq!(name, "name");
+        assert_eq!(email, "email");
+        assert_eq!(sex, "sex");
     }
 
     #[tokio::test]
     async fn test_encrypted_application_details_decrypt() {
         let encrypted_details = EncryptedApplicationDetails::new(
             &APPLICATION_DETAILS.lock().unwrap().clone(),
-            &vec![PUBLIC_KEY.to_string()],
+            &vec![BBox::new(PUBLIC_KEY.to_string(), FakePolicy::new())],
         )
         .await
         .unwrap();
@@ -537,7 +534,7 @@ pub mod tests {
         let encrypted_details = EncryptedApplicationDetails::try_from((&candidate, &parents)).unwrap();
 
         let application_details = encrypted_details
-            .decrypt(BBox::new(PRIVATE_KEY.to_string(), AnyPolicy::new(FakePolicy::new()))) // decrypt with admin's private key
+            .decrypt(BBox::new(PRIVATE_KEY.to_string(), FakePolicy::new())) // decrypt with admin's private key
             .await
             .unwrap();
 
@@ -547,14 +544,17 @@ pub mod tests {
     #[tokio::test]
     async fn test_encrypted_string_new() {
         let encrypted = EncryptedString::new(
-            "test",
+            BBox::new("test".to_string(), FakePolicy::new()),
             &vec![BBox::new(PUBLIC_KEY.to_string(), FakePolicy {})]
         ).await.unwrap();
 
+        let enc_password = execute_pcr(encrypted.0, 
+            PrivacyCriticalRegion::new(|enc_password: String, _, _|{
+            enc_password
+        }), ()).unwrap();
+
         assert_eq!(
-            crypto::decrypt_password_with_private_key(&encrypted.0, PRIVATE_KEY)
-                .await
-                .unwrap(),
+            crypto::decrypt_password_with_private_key(&enc_password, PRIVATE_KEY).await.unwrap(),
             "test"
         );
     }
@@ -562,13 +562,13 @@ pub mod tests {
     #[tokio::test]
     async fn test_encrypted_string_decrypt() {
         let encrypted = EncryptedString::new(
-            "test",
+            BBox::new("test".to_string(), FakePolicy::new()),
             &vec![BBox::new(PUBLIC_KEY.to_string(), FakePolicy {})]
         ).await.unwrap();
 
         assert_eq!(
-            encrypted.decrypt(&PRIVATE_KEY.to_string()).await.unwrap(),
-            "test"
+            encrypted.decrypt(&BBox::new(PRIVATE_KEY.to_string(), FakePolicy::new())).await.unwrap(),
+            BBox::new("test".to_string(), FakePolicy::new())
         );
     }
 }

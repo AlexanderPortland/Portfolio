@@ -63,6 +63,7 @@ impl CandidateService {
 #[cfg(test)]
 pub mod tests {
     use alohomora::bbox::BBox;
+    use alohomora::pcr::{execute_pcr, PrivacyCriticalRegion};
     use sea_orm::DbConn;
 
     use crate::models::candidate_details::tests::assert_all_application_details;
@@ -82,7 +83,11 @@ pub mod tests {
     async fn test_list_applications() {
         let db = get_memory_sqlite_connection().await;
         let admin = create_admin(&db).await;
-        let private_key = crypto::decrypt_password(admin.private_key.discard_box(), "admin".to_string()).await.unwrap();
+        let private_key = execute_pcr(admin.private_key, 
+            PrivacyCriticalRegion::new(|private_key: String, _, _| {
+                crypto::decrypt_password(private_key, "admin".to_string())
+            }), ()).unwrap().await.unwrap();
+        //let private_key = crypto::decrypt_password(admin.private_key.discard_box(), "admin".to_string()).await.unwrap();
         let private_key = BBox::new(private_key, FakePolicy::new());
         let candidates = ApplicationService::list_applications(&private_key, &db, None, None, None).await.unwrap();
         assert_eq!(candidates.len(), 0);
@@ -136,9 +141,13 @@ pub mod tests {
         let db = get_memory_sqlite_connection().await;
         let (application, enc_candidate, enc_parent) = put_user_data(&db).await;
 
-        let dec_priv_key = crypto::decrypt_password(application.private_key.clone().discard_box(), password)
-            .await
-            .unwrap();
+        let dec_priv_key = execute_pcr(application.private_key, 
+            PrivacyCriticalRegion::new(|private_key: String, _, _| {
+                crypto::decrypt_password(private_key, password)
+            }), ()).unwrap().await.unwrap();
+        // let dec_priv_key = crypto::decrypt_password(application.private_key.clone().discard_box(), password)
+        //     .await
+        //     .unwrap();
         let dec_priv_key = BBox::new(dec_priv_key, FakePolicy::new());
         let enc_details = EncryptedApplicationDetails::try_from((&enc_candidate, &enc_parent))
             .ok()
