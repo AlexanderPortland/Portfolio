@@ -7,6 +7,10 @@ use portfolio_policies::FakePolicy;
 use crate::Query;
 use crate::error::ServiceError;
 
+pub const TESTING_ADMIN_COOKIE: &str = "0xdeadbeef12345678deadbeef12345678";
+const TESTING_ADMIN_ID: &str = "1";
+pub const TESTING_ADMIN_KEY: &str = "blahblah";
+
 pub async fn get_recipients(db: &DbConn, candidate_pubkey: BBox<String, FakePolicy>)
     -> Result<Vec<BBox<String, FakePolicy>>, ServiceError>
 {
@@ -21,8 +25,8 @@ pub async fn get_memory_sqlite_connection() -> sea_orm::DbConn {
     use sea_orm::{sea_query::TableCreateStatement, ConnectionTrait, DbBackend};
 
 
-    let base_url = String::from("sqlite::memory:");
-    let database_url = std::env::var("PORTFOLIO_DATABASE_URL").unwrap_or(base_url);
+    //let base_url = String::from("sqlite::memory:");
+    let database_url = std::env::var("PORTFOLIO_DATABASE_URL").unwrap();//.unwrap_or(base_url);
     println!("TRYING TO CONNECT TO {}", database_url);
     let db: DbConn = Database::connect(database_url.clone()).await.unwrap();
 
@@ -65,6 +69,17 @@ pub async fn get_memory_sqlite_connection() -> sea_orm::DbConn {
             a.to_string(),
         )).await;
     }
+
+    // add a admin session for testing
+    let _ = db.execute(Statement::from_string(
+        db.get_database_backend(),
+        "INSERT INTO admin_session 
+            (id, admin_id, ip_address, created_at, expires_at, updated_at) VALUES 
+            (".to_string() + TESTING_ADMIN_COOKIE + ", "
+                + TESTING_ADMIN_ID + ", \"127.0.0.1\", 
+                NOW(), NOW() + 10000000000000, NOW());",
+//              ^now   ^session expiry date    ^updated date
+    )).await;
 
     db
 }

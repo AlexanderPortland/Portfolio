@@ -42,18 +42,23 @@ impl SessionService {
 
 #[cfg(test)]
 mod tests {
-    use alohomora::{bbox::BBox, pcr::{execute_pcr, PrivacyCriticalRegion}};
+    use alohomora::{bbox::BBox, context::Context, pcr::{execute_pcr, PrivacyCriticalRegion}, policy::NoPolicy, testing::TestContextData};
     use sea_orm::{
         prelude::Uuid,
     };
-    use portfolio_policies::FakePolicy;
+    use portfolio_policies::{context::ContextDataType, FakePolicy};
 
     use crate::{
-        crypto,
-        services::{application_service::ApplicationService},
-        utils::db::get_memory_sqlite_connection, models::auth::AuthenticableTrait,
+        crypto, models::auth::AuthenticableTrait, services::application_service::ApplicationService, utils::{self, db::get_memory_sqlite_connection}
     };
     const SECRET: &str = "Tajny_kod";
+
+    fn get_test_context() -> Context<TestContextData<ContextDataType>> {
+        Context::test(ContextDataType{
+            session_id: Some(BBox::new(utils::db::TESTING_ADMIN_COOKIE.to_string(), NoPolicy::new())),
+            key: Some(BBox::new(utils::db::TESTING_ADMIN_KEY.to_string(), NoPolicy::new())),
+        })
+    }
 
     #[tokio::test]
     async fn test_create_candidate() {
@@ -61,6 +66,7 @@ mod tests {
         let db = get_memory_sqlite_connection().await;
 
         let application = ApplicationService::create(
+            get_test_context(),
             &BBox::new("".to_string(), FakePolicy::new()),
             &db, 
             BBox::new(103151, FakePolicy::new()),
@@ -84,6 +90,7 @@ mod tests {
         let db = &get_memory_sqlite_connection().await;
 
         let application = ApplicationService::create(
+            get_test_context(),
             &BBox::new("".to_string(), FakePolicy::new()),
             &db, 
             BBox::new(103151, FakePolicy::new()),
@@ -113,6 +120,7 @@ mod tests {
         let db = &get_memory_sqlite_connection().await;
 
         let application = ApplicationService::create(
+            get_test_context(),
             &BBox::new("".to_string(), FakePolicy::new()),
             &db, 
             BBox::new(103151, FakePolicy::new()),

@@ -5,15 +5,22 @@ use ::rocket::http::Status;
 use alohomora::rocket::{BBoxRequest, BBoxRequestOutcome, FromBBoxRequest};
 use ::rocket::outcome::IntoOutcome;
 
+pub type ContextDataType = RealContextDataType;
+
 #[derive(AlohomoraType, Clone)]
-pub struct ContextDataType {
+pub struct RealContextDataType {
     pub session_id: Option<BBox<String, NoPolicy>>,
     pub key: Option<BBox<String, NoPolicy>>,
     //pub db: Arc<Mutex<BBoxConn>>,
 }
 
+// #[derive(AlohomoraType, Clone)]
+// pub struct FakeContextDataType {
+    
+// }
+
 #[::rocket::async_trait]
-impl<'a, 'r> FromBBoxRequest<'a, 'r> for ContextDataType {
+impl<'a, 'r> FromBBoxRequest<'a, 'r> for RealContextDataType {
     type BBoxError = ();
     
     async fn from_bbox_request(request: BBoxRequest<'a, 'r>,) -> BBoxRequestOutcome<Self, Self::BBoxError> {
@@ -24,7 +31,7 @@ impl<'a, 'r> FromBBoxRequest<'a, 'r> for ContextDataType {
             .and_then(|k| Some(k.value().to_owned()));
         
         request.route().and_then(|_|{
-            Some(ContextDataType{
+            Some(RealContextDataType{
                 key,
                 session_id,
                 //db: todo!()
@@ -32,3 +39,14 @@ impl<'a, 'r> FromBBoxRequest<'a, 'r> for ContextDataType {
         }).into_outcome((Status::InternalServerError, ()))
     }
 }
+
+// #[::rocket::async_trait]
+// impl<'a, 'r> FromBBoxRequest<'a, 'r> for FakeContextDataType {
+//     type BBoxError = ();
+    
+//     async fn from_bbox_request(request: BBoxRequest<'a, 'r>,) -> BBoxRequestOutcome<Self, Self::BBoxError> {
+//         request.route().and_then(|_|{
+//             Some(FakeContextDataType{})
+//         }).into_outcome((Status::InternalServerError, ()))
+//     }
+// }

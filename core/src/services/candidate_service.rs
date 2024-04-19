@@ -1,4 +1,4 @@
-use alohomora::bbox::BBox;
+use alohomora::{bbox::BBox, context::Context};
 use entity::candidate;
 use sea_orm::DbConn;
 use portfolio_policies::FakePolicy;
@@ -19,7 +19,8 @@ impl CandidateService {
     /// Hashed password
     /// Encrypted private key
     /// Public key
-    pub(in crate::services) async fn create(
+    pub(in crate::services) async fn create<D: alohomora::context::ContextData + Clone>(
+        context: Context<D>,
         db: &DbConn,
         enc_personal_id_number: BBox<String, FakePolicy>,
     ) -> Result<candidate::Model, ServiceError> {
@@ -29,14 +30,18 @@ impl CandidateService {
         )
             .await?;
 
-        PortfolioService::create_user_dir(candidate.id.clone()).await?;
+        PortfolioService::create_user_dir(context, candidate.id.clone()).await?;
 
 
         Ok(candidate)
     }
 
-    pub async fn delete_candidate(db: &DbConn, candidate: candidate::Model) -> Result<(), ServiceError> {
-        PortfolioService::delete_candidate_root(candidate.id.clone()).await?;
+    pub async fn delete_candidate<D: alohomora::context::ContextData + Clone>(
+        context: Context<D>, 
+        db: &DbConn, candidate: 
+        candidate::Model
+    ) -> Result<(), ServiceError> {
+        PortfolioService::delete_candidate_root(context, candidate.id.clone()).await?;
 
         Mutation::delete_candidate(db, candidate).await?;
         Ok(())
@@ -63,13 +68,17 @@ impl CandidateService {
 #[cfg(test)]
 pub mod tests {
     use alohomora::bbox::BBox;
+    use alohomora::context::Context;
     use alohomora::pcr::{execute_pcr, PrivacyCriticalRegion};
+    use alohomora::policy::NoPolicy;
+    use alohomora::testing::TestContextData;
+    use portfolio_policies::context::ContextDataType;
     use sea_orm::DbConn;
 
     use crate::models::candidate_details::tests::assert_all_application_details;
     use crate::services::admin_service::admin_tests::create_admin;
     use crate::utils::db::get_memory_sqlite_connection;
-    use crate::{crypto};
+    use crate::{crypto, utils};
 
     use crate::models::candidate_details::EncryptedApplicationDetails;
     use entity::{application, candidate, parent};
@@ -78,6 +87,13 @@ pub mod tests {
     use crate::services::application_service::ApplicationService;
 
     const APPLICATION_ID: i32 = 103151;
+
+    fn get_test_context() -> Context<TestContextData<ContextDataType>> {
+        Context::test(ContextDataType{
+            session_id: Some(BBox::new(utils::db::TESTING_ADMIN_COOKIE.to_string(), NoPolicy::new())),
+            key: Some(BBox::new(utils::db::TESTING_ADMIN_KEY.to_string(), NoPolicy::new())),
+        })
+    }
 
     #[tokio::test]
     async fn test_list_applications() {
@@ -104,6 +120,7 @@ pub mod tests {
 
         let plain_text_password = "test".to_string();
         let application = ApplicationService::create(
+            get_test_context(),
             &BBox::new("".to_string(), FakePolicy::new()),
             db,
             BBox::new(APPLICATION_ID, FakePolicy::new()),

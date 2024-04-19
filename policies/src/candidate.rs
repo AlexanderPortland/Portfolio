@@ -34,18 +34,20 @@ impl Policy for CandidateDataPolicy {
     fn check(&self, context: &alohomora::context::UnprotectedContext, reason: alohomora::policy::Reason<'_>) -> bool {
         type ContextDataOut = <ContextDataType as AlohomoraType>::Out;
         let context: &ContextDataOut = context.downcast_ref().unwrap();
-        
-        // make sure we have an id and key
-        let session_id = match &context.session_id {
-            Some(s) => s.to_owned(),
-            None => return false,
-        };
-        let key = match &context.key {
-            Some(s) => s.to_owned(),
-            None => return false,
-        };
 
         return true;
+        
+        // // make sure we have an id and key
+        // let session_id = match &context.session_id {
+        //     Some(s) => s.to_owned(),
+        //     None => return false,
+        // };
+        // let key = match &context.key {
+        //     Some(s) => s.to_owned(),
+        //     None => return false,
+        // };
+
+        
 
         
         // let mut db = context.db.lock().unwrap();

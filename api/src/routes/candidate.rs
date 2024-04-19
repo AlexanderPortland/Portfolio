@@ -333,7 +333,7 @@ pub async fn submission_progress(
 ) -> MyResult<String, (rocket::http::Status, String)> {
     let application: entity::application::Model = session.into();
 
-    let progress = PortfolioService::get_submission_progress(application.candidate_id)
+    let progress = PortfolioService::get_submission_progress(context, application.candidate_id)
         .map(|x| serde_json::to_string(&x).unwrap())
         .map_err(to_custom_error);
         
@@ -347,20 +347,21 @@ pub async fn submission_progress(
 pub async fn submit_portfolio(
     conn: Connection<'_, Db>,
     session: ApplicationAuth,
+    context: Context<ContextDataType>
 ) -> MyResult<(), (rocket::http::Status, String)> {
     let db = conn.into_inner();
 
     let application: entity::application::Model = session.into();
     let candidate = ApplicationService::find_related_candidate(&db, &application).await.map_err(to_custom_error)?; // TODO
 
-    let submit = PortfolioService::submit(&candidate, &db).await;
+    let submit = PortfolioService::submit(context.clone(), &candidate, &db).await;
 
     if submit.is_err() {
         let e = submit.err().unwrap();
         // Delete on critical error
         if e.code() == 500 {
             // Cleanup
-            PortfolioService::delete_portfolio(application.id)
+            PortfolioService::delete_portfolio(context, application.id)
                 .await
                 .unwrap();
         }
@@ -373,10 +374,11 @@ pub async fn submit_portfolio(
 #[post("/delete")]
 pub async fn delete_portfolio(
     session: ApplicationAuth,
+    context: Context<ContextDataType>
 ) -> MyResult<(), (rocket::http::Status, String)> {
     let application: entity::application::Model = session.into();
 
-    PortfolioService::delete_portfolio(application.candidate_id)
+    PortfolioService::delete_portfolio(context, application.candidate_id)
         .await
         .map_err(to_custom_error)?;
 
