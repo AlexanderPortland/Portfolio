@@ -1,7 +1,7 @@
 use alohomora::{bbox::BBox, context::Context};
 use entity::candidate;
 use sea_orm::DbConn;
-use portfolio_policies::{context::ContextDataType, FakePolicy};
+use portfolio_policies::FakePolicy;
 
 use crate::{
     models::{candidate_details::EncryptedCandidateDetails, candidate::CandidateDetails},
@@ -19,8 +19,8 @@ impl CandidateService {
     /// Hashed password
     /// Encrypted private key
     /// Public key
-    pub(in crate::services) async fn create(
-        context: Context<ContextDataType>,
+    pub(in crate::services) async fn create<D: alohomora::context::ContextData + Clone>(
+        context: Context<D>,
         db: &DbConn,
         enc_personal_id_number: BBox<String, FakePolicy>,
     ) -> Result<candidate::Model, ServiceError> {
@@ -36,7 +36,11 @@ impl CandidateService {
         Ok(candidate)
     }
 
-    pub async fn delete_candidate(context: Context<ContextDataType>, db: &DbConn, candidate: candidate::Model) -> Result<(), ServiceError> {
+    pub async fn delete_candidate<D: alohomora::context::ContextData + Clone>(
+        context: Context<D>, 
+        db: &DbConn, candidate: 
+        candidate::Model
+    ) -> Result<(), ServiceError> {
         PortfolioService::delete_candidate_root(context, candidate.id.clone()).await?;
 
         Mutation::delete_candidate(db, candidate).await?;

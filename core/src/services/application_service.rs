@@ -1,6 +1,6 @@
 use std::default;
 
-use alohomora::context::Context;
+use alohomora::context::{Context, ContextData};
 use async_trait::async_trait;
 use chrono::{Duration, NaiveDateTime};
 use entity::{candidate, parent, application, session};
@@ -27,8 +27,8 @@ impl ApplicationService {
     /// Hashed password
     /// Encrypted private key
     /// Public key
-    pub async fn create(
-        context: Context<ContextDataType>,
+    pub async fn create<D: ContextData + Clone>(
+        context: Context<D>,
         admin_private_key: &BBox<String, FakePolicy>,
         db: &DbConn,
         application_id: BBox<i32, FakePolicy>,
@@ -95,8 +95,8 @@ impl ApplicationService {
         )
     }
 
-    async fn find_or_create_candidate_with_personal_id(
-        context: Context<ContextDataType>,
+    async fn find_or_create_candidate_with_personal_id<D: ContextData + Clone>(
+        context: Context<D>,
         application_id: BBox<i32, FakePolicy>,
         admin_private_key: &BBox<String, FakePolicy>,
         db: &DbConn,
@@ -191,7 +191,11 @@ impl ApplicationService {
         )
     }
 
-    pub async fn delete(context: Context<ContextDataType>, db: &DbConn, application: application::Model) -> Result<(), ServiceError> {
+    pub async fn delete<D: ContextData + Clone>(
+        context: Context<D>, 
+        db: &DbConn, application: 
+        application::Model
+    ) -> Result<(), ServiceError> {
         let candidate = ApplicationService::find_related_candidate(db, &application).await?;
         
         let applications = Query::find_applications_by_candidate_id(db, candidate.id.clone()).await?;
@@ -326,8 +330,8 @@ impl ApplicationService {
         }
     }
 
-    pub async fn reset_password(
-        context: Context<ContextDataType>,
+    pub async fn reset_password<D: ContextData + Clone>(
+        context: Context<D>,
         admin_private_key: BBox<String, FakePolicy>,
         db: &DbConn,
         id: BBox<i32, FakePolicy>,

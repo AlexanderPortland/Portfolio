@@ -1,7 +1,7 @@
 use std::{path::{Path, PathBuf}};
 use age::x25519::Recipient;
 
-use alohomora::bbox::BBox;
+use alohomora::{bbox::BBox, context::ContextData};
 use alohomora::context::Context;
 use alohomora::pcr::PrivacyCriticalRegion;
 use entity::candidate;
@@ -110,8 +110,8 @@ impl Serialize for FileType {
 
 pub struct PortfolioService;
 impl PortfolioService {
-    pub fn get_submission_progress<P: Policy>(
-        context: Context<ContextDataType>,
+    pub fn get_submission_progress<P: Policy, D: ContextData + Clone>(
+        context: Context<D>,
         candidate_id: BBox<i32, P>
     ) -> Result<SubmissionProgress, ServiceError> {
         candidate_id.into_unbox(context, PrivacyCriticalRegion::new(|candidate_id: i32, ()| {
@@ -168,8 +168,8 @@ impl PortfolioService {
         Ok(())
     }
 
-    pub async fn create_user_dir(
-        context: Context<ContextDataType>,
+    pub async fn create_user_dir<D: alohomora::context::ContextData + Clone>(
+        context: Context<D>,
         application_id: BBox<i32, FakePolicy>
     ) -> tokio::io::Result<()> {
         application_id.into_unbox(context, PrivacyCriticalRegion::new(|application_id: i32, ()| {
@@ -182,8 +182,8 @@ impl PortfolioService {
     }
 
     
-    pub async fn add_cover_letter_to_cache<P1: Policy + Clone + 'static, P2: Policy + Clone + 'static>(
-        context: Context<ContextDataType>,
+    pub async fn add_cover_letter_to_cache<P1: Policy + Clone + 'static, P2: Policy + Clone + 'static, D: alohomora::context::ContextData + Clone>(
+        context: Context<D>,
         candidate_id: BBox<i32, P1>,
         letter: BBox<Vec<u8>, P2>,
     ) -> Result<(), ServiceError> {
@@ -200,8 +200,10 @@ impl PortfolioService {
         }
     }
 
-    pub async fn add_portfolio_letter_to_cache<P1: Policy + Clone + 'static, P2: Policy + Clone + 'static>(
-        context: Context<ContextDataType>,
+    pub async fn add_portfolio_letter_to_cache<P1: Policy + Clone + 'static, 
+                                               P2: Policy + Clone + 'static,
+                                               D: alohomora::context::ContextData + Clone>(
+        context: Context<D>,
         candidate_id: BBox<i32, P1>,
         letter: BBox<Vec<u8>, P2>,
     ) -> Result<(), ServiceError> {
@@ -218,8 +220,10 @@ impl PortfolioService {
         }
     }
 
-    pub async fn add_portfolio_zip_to_cache<P1: Policy + Clone + 'static, P2: Policy + Clone + 'static>(
-        context: Context<ContextDataType>,
+    pub async fn add_portfolio_zip_to_cache<P1: Policy + Clone + 'static, 
+                                            P2: Policy + Clone + 'static, 
+                                            D: alohomora::context::ContextData + Clone>(
+        context: Context<D>,
         candidate_id: BBox<i32, P1>,
         letter: BBox<Vec<u8>, P2>,
     ) -> Result<(), ServiceError> {
@@ -286,8 +290,8 @@ impl PortfolioService {
         Ok(())
     }
 
-    pub async fn delete_cover_letter_from_cache<P: Policy>(
-        context: Context<ContextDataType>,
+    pub async fn delete_cover_letter_from_cache<P: Policy, D: alohomora::context::ContextData + Clone>(
+        context: Context<D>,
         candidate_id: BBox<i32, P>,
     ) -> Result<(), ServiceError> {
         match candidate_id.into_unbox(
@@ -302,8 +306,8 @@ impl PortfolioService {
         }
     }
 
-    pub async fn delete_portfolio_letter_from_cache<P: Policy>(
-        context: Context<ContextDataType>,
+    pub async fn delete_portfolio_letter_from_cache<P: Policy, D: alohomora::context::ContextData + Clone>(
+        context: Context<D>,
         candidate_id: BBox<i32, P>,
     ) -> Result<(), ServiceError> {
         match candidate_id.into_unbox(
@@ -318,8 +322,8 @@ impl PortfolioService {
         }
     }
 
-    pub async fn delete_portfolio_zip_from_cache<P: Policy>(
-        context: Context<ContextDataType>,
+    pub async fn delete_portfolio_zip_from_cache<P: Policy, D: alohomora::context::ContextData + Clone>(
+        context: Context<D>,
         candidate_id: BBox<i32, P>,
     ) -> Result<(), ServiceError> {
         match candidate_id.into_unbox(
@@ -403,8 +407,8 @@ impl PortfolioService {
     }
 
     /// Move files from cache to final directory and delete cache afterwards
-    pub async fn submit(
-        context: Context<ContextDataType>,
+    pub async fn submit<D: alohomora::context::ContextData + Clone>(
+        context: Context<D>,
         candidate: &candidate::Model, 
         db: &DbConn
     ) -> Result<(), ServiceError> {
@@ -459,8 +463,8 @@ impl PortfolioService {
         }
         Ok(())
     }
-    pub async fn delete_portfolio<P: Policy>(
-        context: Context<ContextDataType>,
+    pub async fn delete_portfolio<P: Policy, D: alohomora::context::ContextData + Clone>(
+        context: Context<D>,
         candidate_id: BBox<i32, P>
     ) -> Result<(), ServiceError> {
         match candidate_id.into_unbox(
@@ -479,8 +483,8 @@ impl PortfolioService {
     }
 
     /// Deletes all candidate folder. Used ONLY when candidate is deleted!
-    pub async fn delete_candidate_root<P: Policy>(
-        context: Context<ContextDataType>,
+    pub async fn delete_candidate_root<P: Policy, D: alohomora::context::ContextData + Clone>(
+        context: Context<D>,
         candidate_id: BBox<i32, P>
     ) -> Result<(), ServiceError> {
         match candidate_id.into_unbox(
@@ -507,8 +511,10 @@ impl PortfolioService {
     }
 
     /// Returns decrypted portfolio zip as Vec of bytes
-    pub async fn get_portfolio<P1: Policy + Clone+ 'static, P2: Policy + Clone + 'static>(
-        context: Context<ContextDataType>,
+    pub async fn get_portfolio<P1: Policy + Clone+ 'static, 
+                               P2: Policy + Clone + 'static, 
+                               D: alohomora::context::ContextData + Clone>(
+        context: Context<D>,
         candidate_id: BBox<i32, P1>,
         private_key: BBox<String, P2>,
     ) -> Result<Vec<u8>, ServiceError> {
@@ -553,8 +559,8 @@ impl PortfolioService {
         Ok(())
     }
 
-    pub async fn reencrypt_portfolio(
-        context: Context<ContextDataType>,
+    pub async fn reencrypt_portfolio<D: ContextData>(
+        context: Context<D>,
         candidate_id: BBox<i32, FakePolicy>,
         private_key: BBox<String, FakePolicy>,
         recipients: &Vec<BBox<String, FakePolicy>>,
