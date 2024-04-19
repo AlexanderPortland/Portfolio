@@ -1,7 +1,7 @@
 #[cfg(test)]
 pub mod tests {
     use crate::rocket;
-    use alohomora::{bbox::BBox, context::Context, testing::{BBoxClient, TestContextData}};
+    use alohomora::{bbox::BBox, context::Context, policy::NoPolicy, testing::{BBoxClient, TestContextData}};
     use portfolio_policies::{context::ContextDataType, FakePolicy};
     use entity::admin;
     use once_cell::sync::OnceCell;
@@ -20,9 +20,13 @@ pub mod tests {
     pub const CANDIDATE_PASSWORD: &'static str = "test";
     pub const PERSONAL_ID_NUMBER: &'static str = "0101010000";
 
+    const TESTING_ADMIN_COOKIE: &str = "0xdeadbeef12345678deadbeef12345678";
+    const TESTING_ADMIN_KEY: &str = "blahblah";
+
     fn get_test_context() -> Context<TestContextData<ContextDataType>> {
         Context::test(ContextDataType{
-            
+            session_id: Some(BBox::new(TESTING_ADMIN_COOKIE.to_string(), NoPolicy::new())),
+            key: Some(BBox::new(TESTING_ADMIN_KEY.to_string(), NoPolicy::new())),
         })
     }
 

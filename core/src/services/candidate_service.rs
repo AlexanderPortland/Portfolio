@@ -70,6 +70,7 @@ pub mod tests {
     use alohomora::bbox::BBox;
     use alohomora::context::Context;
     use alohomora::pcr::{execute_pcr, PrivacyCriticalRegion};
+    use alohomora::policy::NoPolicy;
     use alohomora::testing::TestContextData;
     use portfolio_policies::context::ContextDataType;
     use sea_orm::DbConn;
@@ -77,7 +78,7 @@ pub mod tests {
     use crate::models::candidate_details::tests::assert_all_application_details;
     use crate::services::admin_service::admin_tests::create_admin;
     use crate::utils::db::get_memory_sqlite_connection;
-    use crate::{crypto};
+    use crate::{crypto, utils};
 
     use crate::models::candidate_details::EncryptedApplicationDetails;
     use entity::{application, candidate, parent};
@@ -89,7 +90,8 @@ pub mod tests {
 
     fn get_test_context() -> Context<TestContextData<ContextDataType>> {
         Context::test(ContextDataType{
-            
+            session_id: Some(BBox::new(utils::db::TESTING_ADMIN_COOKIE.to_string(), NoPolicy::new())),
+            key: Some(BBox::new(utils::db::TESTING_ADMIN_KEY.to_string(), NoPolicy::new())),
         })
     }
 

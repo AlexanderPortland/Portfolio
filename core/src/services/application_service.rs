@@ -519,9 +519,10 @@ impl AuthenticableTrait for ApplicationService {
 mod application_tests {
     use alohomora::{bbox::BBox, context::Context, pcr::{execute_pcr, PrivacyCriticalRegion}, policy::NoPolicy, pure::{execute_pure, PrivacyPureRegion}, testing::TestContextData};
     use portfolio_policies::{context::ContextDataType, FakePolicy};
+    use rocket::figment::util;
     //use sea_orm::sea_query::private;
 
-    use crate::{services::{application_service::ApplicationService, candidate_service::tests::put_user_data}, utils::db::get_memory_sqlite_connection, crypto, models::auth::AuthenticableTrait};
+    use crate::{crypto, models::auth::AuthenticableTrait, services::{application_service::ApplicationService, candidate_service::tests::put_user_data}, utils::{self, db::get_memory_sqlite_connection}};
     use crate::services::admin_service::admin_tests::create_admin;
 
     #[tokio::test]
@@ -537,7 +538,8 @@ mod application_tests {
 
     fn get_test_context() -> Context<TestContextData<ContextDataType>> {
         Context::test(ContextDataType{
-            
+            session_id: Some(BBox::new(utils::db::TESTING_ADMIN_COOKIE.to_string(), NoPolicy::new())),
+            key: Some(BBox::new(utils::db::TESTING_ADMIN_KEY.to_string(), NoPolicy::new())),
         })
     }
 

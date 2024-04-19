@@ -54,15 +54,16 @@ impl ParentService {
 mod tests {
     use std::sync::Mutex;
 
-    use alohomora::{bbox::BBox, context::Context, pcr::{execute_pcr, PrivacyCriticalRegion}, policy::AnyPolicy, testing::TestContextData};
+    use alohomora::{bbox::BBox, context::Context, pcr::{execute_pcr, PrivacyCriticalRegion}, policy::{AnyPolicy, NoPolicy}, testing::TestContextData};
     use once_cell::sync::Lazy;
     use portfolio_policies::{context::ContextDataType, FakePolicy};
 
-    use crate::{utils::db::get_memory_sqlite_connection, models::{candidate::{ParentDetails, ApplicationDetails, CandidateDetails}, candidate_details::EncryptedApplicationDetails, grade::GradeList, school::School}, services::{candidate_service::{CandidateService, tests::put_user_data}, application_service::ApplicationService, parent_service::ParentService}, crypto};
+    use crate::{crypto, models::{candidate::{ApplicationDetails, CandidateDetails, ParentDetails}, candidate_details::EncryptedApplicationDetails, grade::GradeList, school::School}, services::{application_service::ApplicationService, candidate_service::{tests::put_user_data, CandidateService}, parent_service::ParentService}, utils::{self, db::get_memory_sqlite_connection}};
 
     fn get_test_context() -> Context<TestContextData<ContextDataType>> {
         Context::test(ContextDataType{
-            
+            session_id: Some(BBox::new(utils::db::TESTING_ADMIN_COOKIE.to_string(), NoPolicy::new())),
+            key: Some(BBox::new(utils::db::TESTING_ADMIN_KEY.to_string(), NoPolicy::new())),
         })
     }
 

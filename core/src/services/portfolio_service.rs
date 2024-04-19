@@ -581,11 +581,11 @@ impl PortfolioService {
 
 #[cfg(test)]
 mod tests {
-    use alohomora::{bbox::BBox, context::Context, pcr::execute_pcr, testing::TestContextData};
+    use alohomora::{bbox::BBox, context::Context, pcr::execute_pcr, policy::NoPolicy, testing::TestContextData};
     use rocket::response::content;
     use serial_test::serial;
 
-    use crate::{services::{portfolio_service::{PortfolioService, FileType}, candidate_service::{CandidateService, tests::put_user_data}}, utils::db::get_memory_sqlite_connection, crypto};
+    use crate::{crypto, services::{candidate_service::{tests::put_user_data, CandidateService}, portfolio_service::{FileType, PortfolioService}}, utils::{self, db::get_memory_sqlite_connection}};
     use std::path::PathBuf;
     use alohomora::pcr::PrivacyCriticalRegion;
     use alohomora::policy::Policy;
@@ -595,7 +595,8 @@ mod tests {
 
     fn get_test_context() -> Context<TestContextData<ContextDataType>> {
         Context::test(ContextDataType{
-            
+            session_id: Some(BBox::new(utils::db::TESTING_ADMIN_COOKIE.to_string(), NoPolicy::new())),
+            key: Some(BBox::new(utils::db::TESTING_ADMIN_KEY.to_string(), NoPolicy::new())),
         })
     }
 
