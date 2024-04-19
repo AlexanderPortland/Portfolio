@@ -1,3 +1,4 @@
+use std::any::Any;
 use std::fmt::Debug;
 use alohomora::bbox::BBox;
 use alohomora::orm::ORMPolicy;
@@ -86,17 +87,17 @@ impl EncryptedString {
         }
     }
 
-    pub async fn decrypt<P1: Policy + Clone + 'static, P2: Policy + Clone + 'static>(
+    pub async fn decrypt<P1: Policy + Clone + 'static>(
         self,
         private_key: &BBox<String, P1>
-    ) -> Result<BBox<String, P2>, ServiceError> {
+    ) -> Result<BBox<String, AnyPolicy>, ServiceError> {
         my_decrypt_password_with_private_key(self.0, private_key.clone()).await
     }
 
-    pub async fn decrypt_option<P1: Policy + Clone + 'static, P2: Policy + Clone + 'static>(
+    pub async fn decrypt_option<P1: Policy + Clone + 'static>(
         self_: &Option<Self>,
         private_key: &BBox<String, P1>,
-    ) -> Result<Option<BBox<String, P2>>, ServiceError> {
+    ) -> Result<Option<BBox<String, AnyPolicy>>, ServiceError> {
         match self_ {
             None => Ok(None),
             Some(self_) => Ok(Some(self_.clone().decrypt(private_key).await?)),
@@ -502,9 +503,9 @@ pub mod tests {
                 (name, email, sex)
             }), ()).unwrap();
 
-        assert_eq!(name, "name");
-        assert_eq!(email, "email");
-        assert_eq!(sex, "sex");
+        assert_eq!(crypto::decrypt_password_with_private_key(&name, PRIVATE_KEY).await.unwrap(), "name");
+        assert_eq!(crypto::decrypt_password_with_private_key(&email, PRIVATE_KEY).await.unwrap(), "email");
+        assert_eq!(crypto::decrypt_password_with_private_key(&sex, PRIVATE_KEY).await.unwrap(), "sex");
     }
 
     #[tokio::test]
@@ -567,7 +568,7 @@ pub mod tests {
         ).await.unwrap();
 
         assert_eq!(
-            encrypted.decrypt(&BBox::new(PRIVATE_KEY.to_string(), FakePolicy::new())).await.unwrap(),
+            encrypted.decrypt(&BBox::new(PRIVATE_KEY.to_string(), FakePolicy::new())).await.unwrap().specialize_policy().unwrap(),
             BBox::new("test".to_string(), FakePolicy::new())
         );
     }

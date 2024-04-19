@@ -1,3 +1,5 @@
+use std::default;
+
 use async_trait::async_trait;
 use chrono::{Duration, NaiveDateTime};
 use entity::{candidate, parent, application, session};
@@ -99,13 +101,15 @@ impl ApplicationService {
     ) -> Result<(candidate::Model, BBox<String, FakePolicy>), ServiceError> {
         let candidates = Query::list_candidates_full(db).await?;
         let ids_decrypted = futures::future::join_all(
-            candidates.iter().map(|c| async {(
-                c.id.clone(),
-                EncryptedString::from(c.personal_identification_number.clone())
+            candidates.iter().map(|c| async {
+                let es = match EncryptedString::from(c.personal_identification_number.clone())
                     .decrypt(admin_private_key)
-                    .await
-                    .unwrap_or_default()
-                )
+                    .await{
+                        Ok(bbox) => Ok(bbox.specialize_policy().unwrap()),
+                        Err(e) => Err(e),
+                }.unwrap_or_default();
+                
+                (c.id.clone(), es)
             })
         ).await;
 
@@ -293,7 +297,7 @@ impl ApplicationService {
 
         let private_key = my_decrypt_password(private_key_encrypted, password).await?;
 
-        Ok(private_key)
+        Ok(private_key.specialize_policy().unwrap())
     }
 
     pub async fn extend_session_duration_to_14_days(db: &DbConn, session: session::Model) -> Result<session::Model, ServiceError> {

@@ -20,7 +20,11 @@ impl AdminService {
     ) -> Result<BBox<String, FakePolicy>, ServiceError> {
         let admin = Query::find_admin_by_id(db, admin_id).await?.ok_or(ServiceError::InvalidCredentials)?;
         let private_key_encrypted = admin.private_key;
-        my_decrypt_password(private_key_encrypted, password).await
+
+        match my_decrypt_password(private_key_encrypted, password).await {
+            Ok(bbox) => Ok(bbox.specialize_policy().unwrap()),
+            Err(e) => Err(e)
+        }
     }
 }
 
