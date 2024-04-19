@@ -9,7 +9,7 @@ use ::rocket::outcome::IntoOutcome;
 pub struct ContextDataType {
     pub session_id: Option<BBox<String, NoPolicy>>,
     pub key: Option<BBox<String, NoPolicy>>,
-    pub db: Arc<Mutex<BBoxConn>>,
+    //pub db: Arc<Mutex<BBoxConn>>,
 }
 
 #[::rocket::async_trait]
@@ -27,7 +27,7 @@ impl<'a, 'r> FromBBoxRequest<'a, 'r> for ContextDataType {
             Some(ContextDataType{
                 key,
                 session_id,
-                db: todo!()
+                //db: todo!()
             })
         }).into_outcome((Status::InternalServerError, ()))
     }

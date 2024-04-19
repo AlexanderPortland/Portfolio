@@ -23,10 +23,13 @@ use super::to_custom_error;
 pub async fn login(
     conn: Connection<'_, Db>,
     login_form: BBoxJson<AdminLoginRequest>,
-    ip_addr: BBox<SocketAddr, FakePolicy>,
+    //ip_addr: BBox<SocketAddr, FakePolicy>,
     cookies: BBoxCookieJar<'_, '_>,
     context: Context<ContextDataType>
 ) -> Result<(), (rocket::http::Status, String)> {
+    let ip_addr = BBox::new(
+        SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 0),
+        FakePolicy::new());
     let ip_addr = ip_addr.into_ppr(PrivacyPureRegion::new(|ip: SocketAddr| {
         ip.to_string()
     }));

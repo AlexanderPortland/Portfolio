@@ -45,29 +45,31 @@ impl Policy for CandidateDataPolicy {
             None => return false,
         };
 
+        return true;
+
         
-        let mut db = context.db.lock().unwrap();
-        //let a: Conn = db.into();
+        // let mut db = context.db.lock().unwrap();
+        // //let a: Conn = db.into();
 
-        // check if we have a valid admin session
-        let admin_sessions = db.exec_iter("SELECT * FROM admin_session WHERE id = ? AND expires_at > NOW()", (session_id.clone(),)).unwrap();
-        //                                               ^^check session id is valid    ^^it hasn't expired    
-        if admin_sessions.count() == 1 { return true; }
+        // // check if we have a valid admin session
+        // let admin_sessions = db.exec_iter("SELECT * FROM admin_session WHERE id = ? AND expires_at > NOW()", (session_id.clone(),)).unwrap();
+        // //                                               ^^check session id is valid    ^^it hasn't expired    
+        // if admin_sessions.count() == 1 { return true; }
 
 
-        // verify that we're a valid candidate & get our id
-        let mut candidate_sessions = db.exec_iter("SELECT * FROM session WHERE id = ? AND expires_at > NOW()", (session_id,)).unwrap();
+        // // verify that we're a valid candidate & get our id
+        // let mut candidate_sessions = db.exec_iter("SELECT * FROM session WHERE id = ? AND expires_at > NOW()", (session_id,)).unwrap();
 
-        let my_id: i32 = match candidate_sessions.next() {
-            None => return false,
-            Some(row_res) => mysql::from_value(row_res.unwrap().get(1).unwrap())
-        };
+        // let my_id: i32 = match candidate_sessions.next() {
+        //     None => return false,
+        //     Some(row_res) => mysql::from_value(row_res.unwrap().get(1).unwrap())
+        // };
         
-        // if we have a valid session, check if we're the candidate with the data
-        match self.candidate_id {
-            None => false,
-            Some(data_id) => my_id == data_id,
-        }
+        // // if we have a valid session, check if we're the candidate with the data
+        // match self.candidate_id {
+        //     None => false,
+        //     Some(data_id) => my_id == data_id,
+        // }
     }
 
     fn join(&self, other: alohomora::policy::AnyPolicy) -> Result<alohomora::policy::AnyPolicy, ()> {
