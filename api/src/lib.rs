@@ -109,7 +109,6 @@ pub fn rocket() -> BBoxRocket<Build> {
         .attach(AdHoc::try_on_ignite("Migrations", run_migrations))
         //.mount("/", routes![hello, all_options])
         .mount("/", routes![hello])
-        /*
         .mount(
             "/candidate/",
             routes![
@@ -145,22 +144,20 @@ pub fn rocket() -> BBoxRocket<Build> {
                 routes::candidate::delete_portfolio,
             ],
         )
-        */
         .mount(
             "/admin/",
             routes![
                 routes::admin::login,
-                /*routes::admin::logout,
+                routes::admin::logout,
                 routes::admin::whoami,
                 routes::admin::hello,
                 routes::admin::create_candidate,
                 routes::admin::get_candidate,
-                routes::admin::reset_candidate_password,*/
-                // routes::admin::get_candidate_portfolio,
-                //routes::admin::delete_candidate,
+                routes::admin::reset_candidate_password,
+                routes::admin::get_candidate_portfolio,
+                routes::admin::delete_candidate,
             ],
         )
-        /*
         .mount(
             "/admin/list",
             routes![
@@ -168,8 +165,7 @@ pub fn rocket() -> BBoxRocket<Build> {
                 routes::admin::list_candidates_csv,
                 routes::admin::list_admissions_csv
             ]
-        }
-        */
+        )
         .register("/", catchers![])
 }
 
