@@ -64,7 +64,9 @@ impl CandidateService {
 #[cfg(test)]
 pub mod tests {
     use alohomora::bbox::BBox;
+    use alohomora::context::Context;
     use alohomora::pcr::{execute_pcr, PrivacyCriticalRegion};
+    use portfolio_policies::context::ContextDataType;
     use sea_orm::DbConn;
 
     use crate::models::candidate_details::tests::assert_all_application_details;
@@ -79,6 +81,10 @@ pub mod tests {
     use crate::services::application_service::ApplicationService;
 
     const APPLICATION_ID: i32 = 103151;
+
+    fn get_test_context() -> Context<ContextDataType> {
+        Context::empty()
+    }
 
     #[tokio::test]
     async fn test_list_applications() {
@@ -105,7 +111,7 @@ pub mod tests {
 
         let plain_text_password = "test".to_string();
         let application = ApplicationService::create(
-            todo!(),
+            get_test_context(),
             &BBox::new("".to_string(), FakePolicy::new()),
             db,
             BBox::new(APPLICATION_ID, FakePolicy::new()),

@@ -1,8 +1,8 @@
 #[cfg(test)]
 pub mod tests {
     use crate::rocket;
-    use alohomora::{bbox::BBox, testing::BBoxClient};
-    use portfolio_policies::FakePolicy;
+    use alohomora::{bbox::BBox, context::Context, testing::BBoxClient};
+    use portfolio_policies::{context::ContextDataType, FakePolicy};
     use entity::admin;
     use once_cell::sync::OnceCell;
     use portfolio_core::{
@@ -19,6 +19,10 @@ pub mod tests {
     pub const APPLICATION_ID: i32 = 103151;
     pub const CANDIDATE_PASSWORD: &'static str = "test";
     pub const PERSONAL_ID_NUMBER: &'static str = "0101010000";
+
+    fn get_test_context() -> Context<ContextDataType> {
+        Context::empty()
+    }
 
     pub async fn run_test_migrations(db: &DbConn) {
         let (pubkey, priv_key) = crypto::create_identity();
@@ -43,7 +47,7 @@ pub mod tests {
         .unwrap();
 
         ApplicationService::create(
-            todo!(),
+            get_test_context(),
             &BBox::new("".to_string(), FakePolicy::new()),
             db,
             BBox::new(APPLICATION_ID, FakePolicy::new()),

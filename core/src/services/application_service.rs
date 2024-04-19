@@ -513,8 +513,8 @@ impl AuthenticableTrait for ApplicationService {
 
 #[cfg(test)]
 mod application_tests {
-    use alohomora::{bbox::BBox, pcr::{execute_pcr, PrivacyCriticalRegion}, policy::NoPolicy, pure::{execute_pure, PrivacyPureRegion}};
-    use portfolio_policies::FakePolicy;
+    use alohomora::{bbox::BBox, context::Context, pcr::{execute_pcr, PrivacyCriticalRegion}, policy::NoPolicy, pure::{execute_pure, PrivacyPureRegion}};
+    use portfolio_policies::{context::ContextDataType, FakePolicy};
     //use sea_orm::sea_query::private;
 
     use crate::{services::{application_service::ApplicationService, candidate_service::tests::put_user_data}, utils::db::get_memory_sqlite_connection, crypto, models::auth::AuthenticableTrait};
@@ -529,6 +529,10 @@ mod application_tests {
         assert!(!ApplicationService::is_application_id_valid(100_109));
         assert!(!ApplicationService::is_application_id_valid(201_109));
         assert!(!ApplicationService::is_application_id_valid(101));
+    }
+
+    fn get_test_context() -> Context<ContextDataType> {
+        Context::empty()
     }
 
     #[tokio::test]
@@ -552,7 +556,7 @@ mod application_tests {
         );
 
         let new_password = ApplicationService::reset_password(
-            todo!(),
+            get_test_context(),
             BBox::new(private_key, FakePolicy::new()),
             &db,
             application.id.clone()
@@ -576,7 +580,7 @@ mod application_tests {
         let secret_message = "trnka".to_string();
 
         let application = ApplicationService::create(
-            todo!(),
+            get_test_context(),
             &BBox::new("".to_string(), FakePolicy::new()),
             &db,
             BBox::new(103100, FakePolicy::new()),

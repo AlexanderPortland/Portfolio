@@ -54,11 +54,15 @@ impl ParentService {
 mod tests {
     use std::sync::Mutex;
 
-    use alohomora::{bbox::BBox, pcr::{execute_pcr, PrivacyCriticalRegion}, policy::AnyPolicy};
+    use alohomora::{bbox::BBox, context::Context, pcr::{execute_pcr, PrivacyCriticalRegion}, policy::AnyPolicy};
     use once_cell::sync::Lazy;
-    use portfolio_policies::FakePolicy;
+    use portfolio_policies::{context::ContextDataType, FakePolicy};
 
     use crate::{utils::db::get_memory_sqlite_connection, models::{candidate::{ParentDetails, ApplicationDetails, CandidateDetails}, candidate_details::EncryptedApplicationDetails, grade::GradeList, school::School}, services::{candidate_service::{CandidateService, tests::put_user_data}, application_service::ApplicationService, parent_service::ParentService}, crypto};
+
+    fn get_test_context() -> Context<ContextDataType> {
+        Context::empty()
+    }
 
     pub static APPLICATION_DETAILS_TWO_PARENTS: Lazy<Mutex<ApplicationDetails>> = Lazy::new(|| 
         Mutex::new(ApplicationDetails {
@@ -100,7 +104,7 @@ mod tests {
     #[tokio::test]
     async fn create_parent_test() {
         let db = get_memory_sqlite_connection().await;
-        let candidate = CandidateService::create(todo!(), &db, BBox::new("".to_string(), FakePolicy::new())).await.unwrap();
+        let candidate = CandidateService::create(get_test_context(), &db, BBox::new("".to_string(), FakePolicy::new())).await.unwrap();
         super::ParentService::create(&db, candidate.id.clone()).await.unwrap();
         super::ParentService::create(&db, candidate.id).await.unwrap();
     }

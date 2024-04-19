@@ -42,11 +42,11 @@ impl SessionService {
 
 #[cfg(test)]
 mod tests {
-    use alohomora::{bbox::BBox, pcr::{execute_pcr, PrivacyCriticalRegion}};
+    use alohomora::{bbox::BBox, context::Context, pcr::{execute_pcr, PrivacyCriticalRegion}};
     use sea_orm::{
         prelude::Uuid,
     };
-    use portfolio_policies::FakePolicy;
+    use portfolio_policies::{context::ContextDataType, FakePolicy};
 
     use crate::{
         crypto,
@@ -55,13 +55,17 @@ mod tests {
     };
     const SECRET: &str = "Tajny_kod";
 
+    fn get_test_context() -> Context<ContextDataType> {
+        Context::empty()
+    }
+
     #[tokio::test]
     async fn test_create_candidate() {
 
         let db = get_memory_sqlite_connection().await;
 
         let application = ApplicationService::create(
-            todo!(),
+            get_test_context(),
             &BBox::new("".to_string(), FakePolicy::new()),
             &db, 
             BBox::new(103151, FakePolicy::new()),
@@ -85,7 +89,7 @@ mod tests {
         let db = &get_memory_sqlite_connection().await;
 
         let application = ApplicationService::create(
-            todo!(),
+            get_test_context(),
             &BBox::new("".to_string(), FakePolicy::new()),
             &db, 
             BBox::new(103151, FakePolicy::new()),
@@ -115,7 +119,7 @@ mod tests {
         let db = &get_memory_sqlite_connection().await;
 
         let application = ApplicationService::create(
-            todo!(),
+            get_test_context(),
             &BBox::new("".to_string(), FakePolicy::new()),
             &db, 
             BBox::new(103151, FakePolicy::new()),
