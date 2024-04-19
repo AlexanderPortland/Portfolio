@@ -1,7 +1,7 @@
 #[cfg(test)]
 pub mod tests {
     use crate::rocket;
-    use alohomora::{bbox::BBox, context::Context, testing::BBoxClient};
+    use alohomora::{bbox::BBox, context::Context, testing::{BBoxClient, TestContextData}};
     use portfolio_policies::{context::ContextDataType, FakePolicy};
     use entity::admin;
     use once_cell::sync::OnceCell;
@@ -20,8 +20,10 @@ pub mod tests {
     pub const CANDIDATE_PASSWORD: &'static str = "test";
     pub const PERSONAL_ID_NUMBER: &'static str = "0101010000";
 
-    fn get_test_context() -> Context<ContextDataType> {
-        Context::empty()
+    fn get_test_context() -> Context<TestContextData<ContextDataType>> {
+        Context::test(ContextDataType{
+            
+        })
     }
 
     pub async fn run_test_migrations(db: &DbConn) {

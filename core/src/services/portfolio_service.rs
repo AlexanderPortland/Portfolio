@@ -581,7 +581,7 @@ impl PortfolioService {
 
 #[cfg(test)]
 mod tests {
-    use alohomora::{bbox::BBox, context::Context, pcr::execute_pcr};
+    use alohomora::{bbox::BBox, context::Context, pcr::execute_pcr, testing::TestContextData};
     use rocket::response::content;
     use serial_test::serial;
 
@@ -593,8 +593,10 @@ mod tests {
 
     const APPLICATION_ID: i32 = 103151;
 
-    fn get_test_context() -> Context<ContextDataType> {
-        Context::empty()
+    fn get_test_context() -> Context<TestContextData<ContextDataType>> {
+        Context::test(ContextDataType{
+            
+        })
     }
 
     #[cfg(test)]

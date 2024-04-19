@@ -70,6 +70,7 @@ pub mod tests {
     use alohomora::bbox::BBox;
     use alohomora::context::Context;
     use alohomora::pcr::{execute_pcr, PrivacyCriticalRegion};
+    use alohomora::testing::TestContextData;
     use portfolio_policies::context::ContextDataType;
     use sea_orm::DbConn;
 
@@ -86,8 +87,10 @@ pub mod tests {
 
     const APPLICATION_ID: i32 = 103151;
 
-    fn get_test_context() -> Context<ContextDataType> {
-        Context::empty()
+    fn get_test_context() -> Context<TestContextData<ContextDataType>> {
+        Context::test(ContextDataType{
+            
+        })
     }
 
     #[tokio::test]

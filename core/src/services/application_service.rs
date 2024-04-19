@@ -517,7 +517,7 @@ impl AuthenticableTrait for ApplicationService {
 
 #[cfg(test)]
 mod application_tests {
-    use alohomora::{bbox::BBox, context::Context, pcr::{execute_pcr, PrivacyCriticalRegion}, policy::NoPolicy, pure::{execute_pure, PrivacyPureRegion}};
+    use alohomora::{bbox::BBox, context::Context, pcr::{execute_pcr, PrivacyCriticalRegion}, policy::NoPolicy, pure::{execute_pure, PrivacyPureRegion}, testing::TestContextData};
     use portfolio_policies::{context::ContextDataType, FakePolicy};
     //use sea_orm::sea_query::private;
 
@@ -535,8 +535,10 @@ mod application_tests {
         assert!(!ApplicationService::is_application_id_valid(101));
     }
 
-    fn get_test_context() -> Context<ContextDataType> {
-        Context::empty()
+    fn get_test_context() -> Context<TestContextData<ContextDataType>> {
+        Context::test(ContextDataType{
+            
+        })
     }
 
     #[tokio::test]

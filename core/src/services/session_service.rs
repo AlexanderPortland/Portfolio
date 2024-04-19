@@ -42,7 +42,7 @@ impl SessionService {
 
 #[cfg(test)]
 mod tests {
-    use alohomora::{bbox::BBox, context::Context, pcr::{execute_pcr, PrivacyCriticalRegion}};
+    use alohomora::{bbox::BBox, context::Context, pcr::{execute_pcr, PrivacyCriticalRegion}, testing::TestContextData};
     use sea_orm::{
         prelude::Uuid,
     };
@@ -55,8 +55,10 @@ mod tests {
     };
     const SECRET: &str = "Tajny_kod";
 
-    fn get_test_context() -> Context<ContextDataType> {
-        Context::empty()
+    fn get_test_context() -> Context<TestContextData<ContextDataType>> {
+        Context::test(ContextDataType{
+            
+        })
     }
 
     #[tokio::test]
