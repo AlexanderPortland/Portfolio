@@ -61,6 +61,7 @@ mod tests {
         let db = get_memory_sqlite_connection().await;
 
         let application = ApplicationService::create(
+            todo!(),
             &BBox::new("".to_string(), FakePolicy::new()),
             &db, 
             BBox::new(103151, FakePolicy::new()),
@@ -84,6 +85,7 @@ mod tests {
         let db = &get_memory_sqlite_connection().await;
 
         let application = ApplicationService::create(
+            todo!(),
             &BBox::new("".to_string(), FakePolicy::new()),
             &db, 
             BBox::new(103151, FakePolicy::new()),
@@ -113,6 +115,7 @@ mod tests {
         let db = &get_memory_sqlite_connection().await;
 
         let application = ApplicationService::create(
+            todo!(),
             &BBox::new("".to_string(), FakePolicy::new()),
             &db, 
             BBox::new(103151, FakePolicy::new()),

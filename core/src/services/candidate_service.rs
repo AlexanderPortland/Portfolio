@@ -1,7 +1,7 @@
-use alohomora::bbox::BBox;
+use alohomora::{bbox::BBox, context::Context};
 use entity::candidate;
 use sea_orm::DbConn;
-use portfolio_policies::FakePolicy;
+use portfolio_policies::{context::ContextDataType, FakePolicy};
 
 use crate::{
     models::{candidate_details::EncryptedCandidateDetails, candidate::CandidateDetails},
@@ -20,6 +20,7 @@ impl CandidateService {
     /// Encrypted private key
     /// Public key
     pub(in crate::services) async fn create(
+        context: Context<ContextDataType>,
         db: &DbConn,
         enc_personal_id_number: BBox<String, FakePolicy>,
     ) -> Result<candidate::Model, ServiceError> {
@@ -29,14 +30,14 @@ impl CandidateService {
         )
             .await?;
 
-        PortfolioService::create_user_dir(candidate.id.clone()).await?;
+        PortfolioService::create_user_dir(context, candidate.id.clone()).await?;
 
 
         Ok(candidate)
     }
 
-    pub async fn delete_candidate(db: &DbConn, candidate: candidate::Model) -> Result<(), ServiceError> {
-        PortfolioService::delete_candidate_root(candidate.id.clone()).await?;
+    pub async fn delete_candidate(context: Context<ContextDataType>, db: &DbConn, candidate: candidate::Model) -> Result<(), ServiceError> {
+        PortfolioService::delete_candidate_root(context, candidate.id.clone()).await?;
 
         Mutation::delete_candidate(db, candidate).await?;
         Ok(())
@@ -104,6 +105,7 @@ pub mod tests {
 
         let plain_text_password = "test".to_string();
         let application = ApplicationService::create(
+            todo!(),
             &BBox::new("".to_string(), FakePolicy::new()),
             db,
             BBox::new(APPLICATION_ID, FakePolicy::new()),

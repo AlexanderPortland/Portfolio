@@ -43,6 +43,7 @@ pub mod tests {
         .unwrap();
 
         ApplicationService::create(
+            todo!(),
             &BBox::new("".to_string(), FakePolicy::new()),
             db,
             BBox::new(APPLICATION_ID, FakePolicy::new()),

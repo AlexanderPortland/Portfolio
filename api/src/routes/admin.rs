@@ -91,7 +91,6 @@ pub async fn logout(conn: Connection<'_, Db>,
 
 
 #[get("/whoami")]
-//pub async fn whoami(session: AdminAuth, context: Context<ContextDataType>) -> Result<String, (rocket::http::Status, String)> {
 pub async fn whoami(
     session: AdminAuth,
     context: Context<ContextDataType>
@@ -122,6 +121,7 @@ pub async fn create_candidate(
     let plain_text_password = BBox::new(random_12_char_string(), FakePolicy {});
 
     let (application, applications, personal_id_number) = match ApplicationService::create(
+        context.clone(),
         &private_key,
         &db,
         form.applicationId,
@@ -156,7 +156,7 @@ pub async fn list_candidates(
     // These are intentionally NoPolicy. It's pagination information.
     field: Option<BBox<String, NoPolicy>>,
     page: Option<BBox<u64, NoPolicy>>,
-    sort: Option<BBox<String, NoPolicy>>, // how to do this part
+    sort: Option<BBox<String, NoPolicy>>,
     context: Context<ContextDataType>
 ) -> MyResult<JsonResponse<Vec<ApplicationResponse>, ContextDataType>, (rocket::http::Status, String)> {
     let db = conn.into_inner();
@@ -243,6 +243,7 @@ pub async fn delete_candidate(
     conn: Connection<'_, Db>,
     _session: AdminAuth,
     id: BBox<i32, FakePolicy>,
+    context: Context<ContextDataType>
 ) -> Result<(), (rocket::http::Status, String)> {
     let db = conn.into_inner();
 
@@ -252,7 +253,7 @@ pub async fn delete_candidate(
         .ok_or(to_custom_error(ServiceError::CandidateNotFound))?;
 
 
-    ApplicationService::delete(db, application)
+    ApplicationService::delete(context, db, application)
         .await
         .map_err(to_custom_error)
 
@@ -268,7 +269,7 @@ pub async fn reset_candidate_password(
     let db = conn.into_inner();
     let private_key = session.get_private_key();
 
-    let response = ApplicationService::reset_password(private_key, db, id)
+    let response = ApplicationService::reset_password(context.clone(), private_key, db, id)
         .await
         .map_err(to_custom_error)?;
     

@@ -14,7 +14,7 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use portfolio_policies::FakePolicy;
 
 use crate::{error::ServiceError, Query, crypto};
-use crate::crypto_helpers::{get_context};
+//use crate::crypto_helpers::get_context;
 use portfolio_policies::context::ContextDataType;
 
 #[derive(Debug, PartialEq)]
@@ -111,9 +111,10 @@ impl Serialize for FileType {
 pub struct PortfolioService;
 impl PortfolioService {
     pub fn get_submission_progress<P: Policy>(
+        context: Context<ContextDataType>,
         candidate_id: BBox<i32, P>
     ) -> Result<SubmissionProgress, ServiceError> {
-        candidate_id.into_unbox(get_context(), PrivacyCriticalRegion::new(|candidate_id: i32, ()| {
+        candidate_id.into_unbox(context, PrivacyCriticalRegion::new(|candidate_id: i32, ()| {
             Self::get_submission_progress_raw(candidate_id)
         }), ()).unwrap_or(Err(ServiceError::PolicyCheckFailed))
     }
@@ -167,8 +168,11 @@ impl PortfolioService {
         Ok(())
     }
 
-    pub async fn create_user_dir(application_id: BBox<i32, FakePolicy>) -> tokio::io::Result<()> {
-        application_id.into_unbox(get_context(), PrivacyCriticalRegion::new(|application_id: i32, ()| {
+    pub async fn create_user_dir(
+        context: Context<ContextDataType>,
+        application_id: BBox<i32, FakePolicy>
+    ) -> tokio::io::Result<()> {
+        application_id.into_unbox(context, PrivacyCriticalRegion::new(|application_id: i32, ()| {
             tokio::fs::create_dir_all(
                 Self::get_file_store_path()
                     .join(&application_id.to_string())
@@ -397,9 +401,13 @@ impl PortfolioService {
     }
 
     /// Move files from cache to final directory and delete cache afterwards
-    pub async fn submit(candidate: &candidate::Model, db: &DbConn) -> Result<(), ServiceError> {
+    pub async fn submit(
+        context: Context<ContextDataType>,
+        candidate: &candidate::Model, 
+        db: &DbConn
+    ) -> Result<(), ServiceError> {
         match candidate.id.clone().into_unbox(
-            get_context(),
+            context.clone(),
             PrivacyCriticalRegion::new(move |candidate_id: i32, ()| {
                 Self::submit_pcr_1(candidate_id)
             }),
@@ -422,7 +430,7 @@ impl PortfolioService {
         // Privacy Critical region.
         match unbox(
             (candidate.id.clone(), recipients),
-            get_context(),
+            context,
             PrivacyCriticalRegion::new(|(candidate_id, recipients): (i32, Vec<String>), ()| {
                 Self::submit_pcr_2(candidate_id, recipients)
             }),
@@ -449,9 +457,12 @@ impl PortfolioService {
         }
         Ok(())
     }
-    pub async fn delete_portfolio<P: Policy>(candidate_id: BBox<i32, P>) -> Result<(), ServiceError> {
+    pub async fn delete_portfolio<P: Policy>(
+        context: Context<ContextDataType>,
+        candidate_id: BBox<i32, P>
+    ) -> Result<(), ServiceError> {
         match candidate_id.into_unbox(
-            get_context(),
+            context,
             PrivacyCriticalRegion::new(|candidate_id: i32, ()| {
                 Self::delete_portfolio_pcr(candidate_id)
             }),
@@ -466,9 +477,12 @@ impl PortfolioService {
     }
 
     /// Deletes all candidate folder. Used ONLY when candidate is deleted!
-    pub async fn delete_candidate_root<P: Policy>(candidate_id: BBox<i32, P>) -> Result<(), ServiceError> {
+    pub async fn delete_candidate_root<P: Policy>(
+        context: Context<ContextDataType>,
+        candidate_id: BBox<i32, P>
+    ) -> Result<(), ServiceError> {
         match candidate_id.into_unbox(
-            get_context(),
+            context,
             PrivacyCriticalRegion::new(|candidate_id: i32, ()| {
                 let path = Self::get_file_store_path().join(&candidate_id.to_string()).to_path_buf();
                 tokio::fs::remove_dir_all(path)
@@ -537,13 +551,15 @@ impl PortfolioService {
         Ok(())
     }
 
-    pub async fn reencrypt_portfolio(candidate_id: BBox<i32, FakePolicy>,
+    pub async fn reencrypt_portfolio(
+        context: Context<ContextDataType>,
+        candidate_id: BBox<i32, FakePolicy>,
         private_key: BBox<String, FakePolicy>,
         recipients: &Vec<BBox<String, FakePolicy>>,
     ) -> Result<(), ServiceError> {
         match unbox(
             (candidate_id.clone(), private_key, recipients.clone()),
-            get_context(),
+            context,
             PrivacyCriticalRegion::new(|(candidate_id, private_key, recipients): (i32, String, Vec<String>), ()| {
                 Self::reencrypt_portfolio_pcr(candidate_id, private_key, recipients)
             }),
@@ -555,367 +571,367 @@ impl PortfolioService {
     }
 }
 
-// #[cfg(test)]
-// mod tests {
-//     use alohomora::{bbox::BBox, pcr::execute_pcr};
-//     use serial_test::serial;
+#[cfg(test)]
+mod tests {
+    use alohomora::{bbox::BBox, pcr::execute_pcr};
+    use serial_test::serial;
 
-//     use crate::{services::{portfolio_service::{PortfolioService, FileType}, candidate_service::{CandidateService, tests::put_user_data}}, utils::db::get_memory_sqlite_connection, crypto};
-//     use std::path::PathBuf;
-//     use alohomora::pcr::PrivacyCriticalRegion;
-//     use alohomora::policy::Policy;
-//     use portfolio_policies::FakePolicy;
-//     use crate::crypto_helpers::get_context;
+    use crate::{services::{portfolio_service::{PortfolioService, FileType}, candidate_service::{CandidateService, tests::put_user_data}}, utils::db::get_memory_sqlite_connection, crypto};
+    use std::path::PathBuf;
+    use alohomora::pcr::PrivacyCriticalRegion;
+    use alohomora::policy::Policy;
+    use portfolio_policies::FakePolicy;
+    use crate::crypto_helpers::get_context;
 
-//     const APPLICATION_ID: i32 = 103151;
+    const APPLICATION_ID: i32 = 103151;
 
-//     #[cfg(test)]
-//     fn open<T, P: Policy>(bbox: BBox<T, P>) -> T {
-//         bbox.into_unbox(get_context(), PrivacyCriticalRegion::new(|t: T, ()| t), ()).unwrap()
-//     }
+    #[cfg(test)]
+    fn open<T, P: Policy>(bbox: BBox<T, P>) -> T {
+        bbox.into_unbox(get_context(), PrivacyCriticalRegion::new(|t: T, ()| t), ()).unwrap()
+    }
 
-//     #[cfg(test)]
-//     async fn create_data_store_temp_dir(application_id: i32) -> (PathBuf, PathBuf, PathBuf) {
-//         let random_number: u32 = rand::Rng::gen(&mut rand::thread_rng());
+    #[cfg(test)]
+    async fn create_data_store_temp_dir(application_id: i32) -> (PathBuf, PathBuf, PathBuf) {
+        let random_number: u32 = rand::Rng::gen(&mut rand::thread_rng());
         
-//         let temp_dir = std::env::temp_dir().join("portfolio_test_tempdir").join(random_number.to_string());
-//         let application_dir = temp_dir.join(application_id.to_string());
-//         let application_cache_dir = application_dir.join("cache");
+        let temp_dir = std::env::temp_dir().join("portfolio_test_tempdir").join(random_number.to_string());
+        let application_dir = temp_dir.join(application_id.to_string());
+        let application_cache_dir = application_dir.join("cache");
 
-//         tokio::fs::create_dir_all(application_cache_dir.clone()).await.unwrap();
+        tokio::fs::create_dir_all(application_cache_dir.clone()).await.unwrap();
 
-//         std::env::set_var("PORTFOLIO_STORE_PATH", temp_dir.to_str().unwrap());
+        std::env::set_var("PORTFOLIO_STORE_PATH", temp_dir.to_str().unwrap());
 
-//         (temp_dir, application_dir, application_cache_dir)
-//     }
+        (temp_dir, application_dir, application_cache_dir)
+    }
 
-//     #[cfg(test)]
-//     async fn clear_data_store_temp_dir(temp_dir: PathBuf) {
-//         tokio::fs::remove_dir_all(temp_dir).await.unwrap();
+    #[cfg(test)]
+    async fn clear_data_store_temp_dir(temp_dir: PathBuf) {
+        tokio::fs::remove_dir_all(temp_dir).await.unwrap();
 
-//         std::env::remove_var("PORTFOLIO_STORE_PATH");
-//     }
+        std::env::remove_var("PORTFOLIO_STORE_PATH");
+    }
 
-//     #[tokio::test]
-//     #[serial]
-//     async fn test_folder_creation() {
-//         let db = get_memory_sqlite_connection().await;
+    #[tokio::test]
+    #[serial]
+    async fn test_folder_creation() {
+        let db = get_memory_sqlite_connection().await;
 
-//         let temp_dir = std::env::temp_dir().join("portfolio_test_tempdir").join("create_folder");
-//         std::env::set_var("PORTFOLIO_STORE_PATH", temp_dir.to_str().unwrap());
+        let temp_dir = std::env::temp_dir().join("portfolio_test_tempdir").join("create_folder");
+        std::env::set_var("PORTFOLIO_STORE_PATH", temp_dir.to_str().unwrap());
 
-//         let candidate = CandidateService::create(&db, BBox::new("".to_string(), FakePolicy::new()))
-//             .await
-//             .ok()
-//             .unwrap();
+        let candidate = CandidateService::create(todo!(), &db, BBox::new("".to_string(), FakePolicy::new()))
+            .await
+            .ok()
+            .unwrap();
 
-//         let candidate_id = open(candidate.id.clone());
-//         assert!(tokio::fs::metadata(temp_dir.join(candidate_id.to_string())).await.is_ok());
-//         assert!(tokio::fs::metadata(temp_dir.join(candidate_id.to_string()).join("cache")).await.is_ok());
+        let candidate_id = open(candidate.id.clone());
+        assert!(tokio::fs::metadata(temp_dir.join(candidate_id.to_string())).await.is_ok());
+        assert!(tokio::fs::metadata(temp_dir.join(candidate_id.to_string()).join("cache")).await.is_ok());
 
-//         tokio::fs::remove_dir_all(temp_dir).await.unwrap();
-//     }
+        tokio::fs::remove_dir_all(temp_dir).await.unwrap();
+    }
 
-//     #[tokio::test]
-//     #[serial]
-//     async fn test_write_portfolio_file() {
-//         let (temp_dir, _, application_cache_dir) = create_data_store_temp_dir(APPLICATION_ID).await;
+    #[tokio::test]
+    #[serial]
+    async fn test_write_portfolio_file() {
+        let (temp_dir, _, application_cache_dir) = create_data_store_temp_dir(APPLICATION_ID).await;
 
-//         PortfolioService::write_portfolio_file(APPLICATION_ID, vec![0], crate::services::portfolio_service::FileType::PortfolioLetterPdf).await.unwrap();
+        PortfolioService::write_portfolio_file(APPLICATION_ID, vec![0], crate::services::portfolio_service::FileType::PortfolioLetterPdf).await.unwrap();
         
-//         assert!(tokio::fs::metadata(application_cache_dir.join(FileType::PortfolioLetterPdf.as_str())).await.is_ok());
+        assert!(tokio::fs::metadata(application_cache_dir.join(FileType::PortfolioLetterPdf.as_str())).await.is_ok());
 
-//         clear_data_store_temp_dir(temp_dir).await;
-//     }
+        clear_data_store_temp_dir(temp_dir).await;
+    }
 
-//     #[tokio::test]
-//     #[serial]
-//     async fn test_add_cover_letter_to_cache() {
-//         let (temp_dir, _, application_cache_dir) = create_data_store_temp_dir(APPLICATION_ID).await;
+    #[tokio::test]
+    #[serial]
+    async fn test_add_cover_letter_to_cache() {
+        let (temp_dir, _, application_cache_dir) = create_data_store_temp_dir(APPLICATION_ID).await;
 
-//         PortfolioService::add_cover_letter_to_cache(todo!(), BBox::new(APPLICATION_ID, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
+        PortfolioService::add_cover_letter_to_cache(todo!(), BBox::new(APPLICATION_ID, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
         
-//         assert!(tokio::fs::metadata(application_cache_dir.join("MOTIVACNI_DOPIS.pdf")).await.is_ok());
+        assert!(tokio::fs::metadata(application_cache_dir.join("MOTIVACNI_DOPIS.pdf")).await.is_ok());
 
-//         clear_data_store_temp_dir(temp_dir).await;
-//     }
+        clear_data_store_temp_dir(temp_dir).await;
+    }
 
-//     #[tokio::test]
-//     #[serial]
-//     async fn test_delete_cover_letter_from_cache() {
-//         let (temp_dir, _, application_cache_dir) = create_data_store_temp_dir(APPLICATION_ID).await;
+    #[tokio::test]
+    #[serial]
+    async fn test_delete_cover_letter_from_cache() {
+        let (temp_dir, _, application_cache_dir) = create_data_store_temp_dir(APPLICATION_ID).await;
 
-//         let context = todo!();
+        let context = todo!();
 
-//         PortfolioService::add_cover_letter_to_cache(context, BBox::new(APPLICATION_ID, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
+        PortfolioService::add_cover_letter_to_cache(context, BBox::new(APPLICATION_ID, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
         
-//         PortfolioService::delete_cover_letter_from_cache(context, BBox::new(APPLICATION_ID, FakePolicy::new())).await.unwrap();
+        PortfolioService::delete_cover_letter_from_cache(context, BBox::new(APPLICATION_ID, FakePolicy::new())).await.unwrap();
 
-//         assert!(tokio::fs::metadata(application_cache_dir.join("MOTIVACNI_DOPIS.pdf")).await.is_err());
+        assert!(tokio::fs::metadata(application_cache_dir.join("MOTIVACNI_DOPIS.pdf")).await.is_err());
 
-//         clear_data_store_temp_dir(temp_dir).await;
-//     }
+        clear_data_store_temp_dir(temp_dir).await;
+    }
 
-//     #[tokio::test]
-//     #[serial]
-//     async fn test_is_cover_letter() {
-//         let (temp_dir, _, _) = create_data_store_temp_dir(APPLICATION_ID).await;
+    #[tokio::test]
+    #[serial]
+    async fn test_is_cover_letter() {
+        let (temp_dir, _, _) = create_data_store_temp_dir(APPLICATION_ID).await;
 
-//         PortfolioService::add_cover_letter_to_cache(todo!(), BBox::new(APPLICATION_ID, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
+        PortfolioService::add_cover_letter_to_cache(todo!(), BBox::new(APPLICATION_ID, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
         
-//         assert!(PortfolioService::is_cover_letter(APPLICATION_ID).await);
+        assert!(PortfolioService::is_cover_letter(APPLICATION_ID).await);
 
-//         clear_data_store_temp_dir(temp_dir).await;
-//     }
+        clear_data_store_temp_dir(temp_dir).await;
+    }
 
-//     #[tokio::test]
-//     #[serial]
-//     async fn test_delete_cache_item() {
-//         let (temp_dir, _, application_cache_dir) = create_data_store_temp_dir(APPLICATION_ID).await;
+    #[tokio::test]
+    #[serial]
+    async fn test_delete_cache_item() {
+        let (temp_dir, _, application_cache_dir) = create_data_store_temp_dir(APPLICATION_ID).await;
 
-//         PortfolioService::add_cover_letter_to_cache(todo!(), BBox::new(APPLICATION_ID, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
+        PortfolioService::add_cover_letter_to_cache(todo!(), BBox::new(APPLICATION_ID, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
 
-//         PortfolioService::delete_cache_item(APPLICATION_ID, FileType::CoverLetterPdf).await.unwrap();
+        PortfolioService::delete_cache_item(APPLICATION_ID, FileType::CoverLetterPdf).await.unwrap();
 
-//         assert!(tokio::fs::metadata(application_cache_dir.join("MOTIVACNI_DOPIS.pdf")).await.is_err());
+        assert!(tokio::fs::metadata(application_cache_dir.join("MOTIVACNI_DOPIS.pdf")).await.is_err());
         
-//         clear_data_store_temp_dir(temp_dir).await;
-//     }
+        clear_data_store_temp_dir(temp_dir).await;
+    }
     
 
-//     #[tokio::test]
-//     #[serial]
-//     async fn test_add_portfolio_letter_to_cache() {
-//         let (temp_dir, _, application_cache_dir) = create_data_store_temp_dir(APPLICATION_ID).await;
+    #[tokio::test]
+    #[serial]
+    async fn test_add_portfolio_letter_to_cache() {
+        let (temp_dir, _, application_cache_dir) = create_data_store_temp_dir(APPLICATION_ID).await;
         
-//         PortfolioService::add_portfolio_letter_to_cache(todo!(), BBox::new(APPLICATION_ID, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
+        PortfolioService::add_portfolio_letter_to_cache(todo!(), BBox::new(APPLICATION_ID, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
         
-//         assert!(tokio::fs::metadata(application_cache_dir.join("PORTFOLIO.pdf")).await.is_ok());
+        assert!(tokio::fs::metadata(application_cache_dir.join("PORTFOLIO.pdf")).await.is_ok());
 
-//         clear_data_store_temp_dir(temp_dir).await;
-//     }
+        clear_data_store_temp_dir(temp_dir).await;
+    }
 
-//     #[tokio::test]
-//     #[serial]
-//     async fn test_delete_portfolio_letter_from_cache() {
-//         let (temp_dir, _, application_cache_dir) = create_data_store_temp_dir(APPLICATION_ID).await;
+    #[tokio::test]
+    #[serial]
+    async fn test_delete_portfolio_letter_from_cache() {
+        let (temp_dir, _, application_cache_dir) = create_data_store_temp_dir(APPLICATION_ID).await;
 
-//         PortfolioService::add_portfolio_letter_to_cache(todo!(), BBox::new(APPLICATION_ID, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
+        PortfolioService::add_portfolio_letter_to_cache(todo!(), BBox::new(APPLICATION_ID, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
         
-//         PortfolioService::delete_portfolio_letter_from_cache(todo!(), BBox::new(APPLICATION_ID, FakePolicy::new())).await.unwrap();
+        PortfolioService::delete_portfolio_letter_from_cache(todo!(), BBox::new(APPLICATION_ID, FakePolicy::new())).await.unwrap();
 
-//         assert!(tokio::fs::metadata(application_cache_dir.join("PORTFOLIO.pdf")).await.is_err());
+        assert!(tokio::fs::metadata(application_cache_dir.join("PORTFOLIO.pdf")).await.is_err());
 
-//         clear_data_store_temp_dir(temp_dir).await;
-//     }
+        clear_data_store_temp_dir(temp_dir).await;
+    }
 
-//     #[tokio::test]
-//     #[serial]
-//     async fn test_is_portfolio_letter() {
-//         let (temp_dir, _, _) = create_data_store_temp_dir(APPLICATION_ID).await;
+    #[tokio::test]
+    #[serial]
+    async fn test_is_portfolio_letter() {
+        let (temp_dir, _, _) = create_data_store_temp_dir(APPLICATION_ID).await;
 
-//         PortfolioService::add_portfolio_zip_to_cache(todo!(), BBox::new(APPLICATION_ID, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
+        PortfolioService::add_portfolio_zip_to_cache(todo!(), BBox::new(APPLICATION_ID, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
         
-//         assert!(PortfolioService::is_portfolio_letter(APPLICATION_ID).await);
+        assert!(PortfolioService::is_portfolio_letter(APPLICATION_ID).await);
 
-//         clear_data_store_temp_dir(temp_dir).await;
-//     }
+        clear_data_store_temp_dir(temp_dir).await;
+    }
 
-//     #[tokio::test]
-//     #[serial]
-//     async fn test_add_portfolio_zip_to_cache() {
-//         let (temp_dir, _, application_cache_dir) = create_data_store_temp_dir(APPLICATION_ID).await;
+    #[tokio::test]
+    #[serial]
+    async fn test_add_portfolio_zip_to_cache() {
+        let (temp_dir, _, application_cache_dir) = create_data_store_temp_dir(APPLICATION_ID).await;
 
-//         PortfolioService::add_portfolio_zip_to_cache(todo!(), BBox::new(APPLICATION_ID, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
+        PortfolioService::add_portfolio_zip_to_cache(todo!(), BBox::new(APPLICATION_ID, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
         
-//         assert!(tokio::fs::metadata(application_cache_dir.join("PORTFOLIO.zip")).await.is_ok());
+        assert!(tokio::fs::metadata(application_cache_dir.join("PORTFOLIO.zip")).await.is_ok());
 
-//         clear_data_store_temp_dir(temp_dir).await;
-//     }
+        clear_data_store_temp_dir(temp_dir).await;
+    }
 
-//     #[tokio::test]
-//     #[serial]
-//     async fn test_delete_portfolio_zip_from_cache() {
-//         let (temp_dir, _, application_cache_dir) = create_data_store_temp_dir(APPLICATION_ID).await;
+    #[tokio::test]
+    #[serial]
+    async fn test_delete_portfolio_zip_from_cache() {
+        let (temp_dir, _, application_cache_dir) = create_data_store_temp_dir(APPLICATION_ID).await;
 
-//         PortfolioService::add_portfolio_zip_to_cache(todo!(), BBox::new(APPLICATION_ID, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
+        PortfolioService::add_portfolio_zip_to_cache(todo!(), BBox::new(APPLICATION_ID, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
         
-//         PortfolioService::delete_portfolio_zip_from_cache(todo!(), BBox::new(APPLICATION_ID, FakePolicy::new())).await.unwrap();
+        PortfolioService::delete_portfolio_zip_from_cache(todo!(), BBox::new(APPLICATION_ID, FakePolicy::new())).await.unwrap();
 
-//         assert!(tokio::fs::metadata(application_cache_dir.join("PORTFOLIO.zip")).await.is_err());
+        assert!(tokio::fs::metadata(application_cache_dir.join("PORTFOLIO.zip")).await.is_err());
 
-//         clear_data_store_temp_dir(temp_dir).await;
-//     }
+        clear_data_store_temp_dir(temp_dir).await;
+    }
 
-//     #[tokio::test]
-//     #[serial]
-//     async fn test_is_portfolio_zip() {
-//         let (temp_dir, _, _) = create_data_store_temp_dir(APPLICATION_ID).await;
+    #[tokio::test]
+    #[serial]
+    async fn test_is_portfolio_zip() {
+        let (temp_dir, _, _) = create_data_store_temp_dir(APPLICATION_ID).await;
 
-//         PortfolioService::add_portfolio_zip_to_cache(todo!(), BBox::new(APPLICATION_ID, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
+        PortfolioService::add_portfolio_zip_to_cache(todo!(), BBox::new(APPLICATION_ID, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
         
-//         assert!(PortfolioService::is_portfolio_zip(APPLICATION_ID).await);
+        assert!(PortfolioService::is_portfolio_zip(APPLICATION_ID).await);
 
-//         clear_data_store_temp_dir(temp_dir).await;
-//     }
+        clear_data_store_temp_dir(temp_dir).await;
+    }
 
-//     #[tokio::test]
-//     #[serial]
-//     async fn test_is_portfolio_prepared() {
-//         let (temp_dir, _, _) = create_data_store_temp_dir(APPLICATION_ID).await;
+    #[tokio::test]
+    #[serial]
+    async fn test_is_portfolio_prepared() {
+        let (temp_dir, _, _) = create_data_store_temp_dir(APPLICATION_ID).await;
 
-//         PortfolioService::add_cover_letter_to_cache(todo!(),  BBox::new(APPLICATION_ID, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
-//         PortfolioService::add_portfolio_letter_to_cache(todo!(), BBox::new(APPLICATION_ID, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
-//         PortfolioService::add_portfolio_zip_to_cache(todo!(), BBox::new(APPLICATION_ID, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
+        PortfolioService::add_cover_letter_to_cache(todo!(),  BBox::new(APPLICATION_ID, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
+        PortfolioService::add_portfolio_letter_to_cache(todo!(), BBox::new(APPLICATION_ID, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
+        PortfolioService::add_portfolio_zip_to_cache(todo!(), BBox::new(APPLICATION_ID, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
 
-//         assert!(PortfolioService::is_portfolio_prepared(APPLICATION_ID).await);
+        assert!(PortfolioService::is_portfolio_prepared(APPLICATION_ID).await);
 
-//         clear_data_store_temp_dir(temp_dir).await;
+        clear_data_store_temp_dir(temp_dir).await;
 
-//         let (temp_dir, _, _) = create_data_store_temp_dir(APPLICATION_ID).await;
+        let (temp_dir, _, _) = create_data_store_temp_dir(APPLICATION_ID).await;
 
-//         PortfolioService::add_cover_letter_to_cache(todo!(), BBox::new(APPLICATION_ID, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
-//         //BBox::new(APPLICATION_ID, FakePolicy::new())
-//         PortfolioService::add_portfolio_zip_to_cache(todo!(), BBox::new(APPLICATION_ID, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
+        PortfolioService::add_cover_letter_to_cache(todo!(), BBox::new(APPLICATION_ID, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
+        //BBox::new(APPLICATION_ID, FakePolicy::new())
+        PortfolioService::add_portfolio_zip_to_cache(todo!(), BBox::new(APPLICATION_ID, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
 
-//         assert!(!PortfolioService::is_portfolio_prepared(APPLICATION_ID).await);
+        assert!(!PortfolioService::is_portfolio_prepared(APPLICATION_ID).await);
 
-//         clear_data_store_temp_dir(temp_dir).await;
-//     }
+        clear_data_store_temp_dir(temp_dir).await;
+    }
 
-//     #[tokio::test]
-//     #[serial]
-//     async fn test_delete_cache() {
-//         let (temp_dir, _, _) = create_data_store_temp_dir(APPLICATION_ID).await;
+    #[tokio::test]
+    #[serial]
+    async fn test_delete_cache() {
+        let (temp_dir, _, _) = create_data_store_temp_dir(APPLICATION_ID).await;
 
-//         PortfolioService::add_portfolio_zip_to_cache(todo!(), BBox::new(APPLICATION_ID, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
+        PortfolioService::add_portfolio_zip_to_cache(todo!(), BBox::new(APPLICATION_ID, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
         
-//         assert!(PortfolioService::is_portfolio_zip(APPLICATION_ID).await);
+        assert!(PortfolioService::is_portfolio_zip(APPLICATION_ID).await);
 
-//         PortfolioService::delete_cache(APPLICATION_ID).await.unwrap();
+        PortfolioService::delete_cache(APPLICATION_ID).await.unwrap();
 
-//         assert!(!PortfolioService::is_portfolio_zip(APPLICATION_ID).await);
+        assert!(!PortfolioService::is_portfolio_zip(APPLICATION_ID).await);
 
-//         clear_data_store_temp_dir(temp_dir).await;
-//     }
+        clear_data_store_temp_dir(temp_dir).await;
+    }
 
-//     #[tokio::test]
-//     #[serial]
-//     async fn test_add_portfolio() {
-//         let db = get_memory_sqlite_connection().await;
-//         let (_, candidate, _) = put_user_data(&db).await;
-//         let candidate_id = open(candidate.id.clone());
+    #[tokio::test]
+    #[serial]
+    async fn test_add_portfolio() {
+        let db = get_memory_sqlite_connection().await;
+        let (_, candidate, _) = put_user_data(&db).await;
+        let candidate_id = open(candidate.id.clone());
 
-//         let (temp_dir, application_dir, _) = create_data_store_temp_dir(candidate_id).await;
+        let (temp_dir, application_dir, _) = create_data_store_temp_dir(candidate_id).await;
 
-//         PortfolioService::add_cover_letter_to_cache(todo!(),  BBox::new(candidate_id, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
-//         PortfolioService::add_portfolio_letter_to_cache(todo!(), BBox::new(candidate_id, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
-//         PortfolioService::add_portfolio_zip_to_cache(todo!(), BBox::new(candidate_id, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
+        PortfolioService::add_cover_letter_to_cache(todo!(),  BBox::new(candidate_id, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
+        PortfolioService::add_portfolio_letter_to_cache(todo!(), BBox::new(candidate_id, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
+        PortfolioService::add_portfolio_zip_to_cache(todo!(), BBox::new(candidate_id, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
 
-//         PortfolioService::submit(&candidate.clone(), &db).await.unwrap();
+        PortfolioService::submit(todo!(), &candidate.clone(), &db).await.unwrap();
         
-//         assert!(tokio::fs::metadata(application_dir.join("PORTFOLIO.age")).await.is_ok());
+        assert!(tokio::fs::metadata(application_dir.join("PORTFOLIO.age")).await.is_ok());
 
-//         clear_data_store_temp_dir(temp_dir).await;
-//     }
+        clear_data_store_temp_dir(temp_dir).await;
+    }
 
-//     #[tokio::test]
-//     #[serial]
-//     async fn test_delete_portfolio() {
-//         let db = get_memory_sqlite_connection().await;
-//         let (_, candidate, _) = put_user_data(&db).await;
-//         let candidate_id = open(candidate.id.clone());
+    #[tokio::test]
+    #[serial]
+    async fn test_delete_portfolio() {
+        let db = get_memory_sqlite_connection().await;
+        let (_, candidate, _) = put_user_data(&db).await;
+        let candidate_id = open(candidate.id.clone());
 
-//         let (temp_dir, application_dir, _) = create_data_store_temp_dir(candidate_id).await;
+        let (temp_dir, application_dir, _) = create_data_store_temp_dir(candidate_id).await;
 
-//         PortfolioService::add_cover_letter_to_cache(todo!(),  BBox::new(candidate_id, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
-//         PortfolioService::add_portfolio_letter_to_cache(todo!(), BBox::new(candidate_id, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
-//         PortfolioService::add_portfolio_zip_to_cache(todo!(), BBox::new(candidate_id, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
+        PortfolioService::add_cover_letter_to_cache(todo!(),  BBox::new(candidate_id, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
+        PortfolioService::add_portfolio_letter_to_cache(todo!(), BBox::new(candidate_id, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
+        PortfolioService::add_portfolio_zip_to_cache(todo!(), BBox::new(candidate_id, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
 
-//         PortfolioService::submit(&candidate, &db).await.unwrap();
+        PortfolioService::submit(todo!(), &candidate, &db).await.unwrap();
         
-//         assert!(tokio::fs::metadata(application_dir.join("PORTFOLIO.age")).await.is_ok());
+        assert!(tokio::fs::metadata(application_dir.join("PORTFOLIO.age")).await.is_ok());
 
-//         PortfolioService::delete_portfolio(candidate.id).await.unwrap();
+        PortfolioService::delete_portfolio(todo!(), candidate.id).await.unwrap();
 
-//         assert!(!tokio::fs::metadata(application_dir.join("PORTFOLIO.age")).await.is_ok());
+        assert!(!tokio::fs::metadata(application_dir.join("PORTFOLIO.age")).await.is_ok());
 
-//         clear_data_store_temp_dir(temp_dir).await;
-//     }
+        clear_data_store_temp_dir(temp_dir).await;
+    }
 
-//     #[tokio::test]
-//     #[serial]
-//     async fn test_is_portfolio_submitted() {
-//         let db = get_memory_sqlite_connection().await;
+    #[tokio::test]
+    #[serial]
+    async fn test_is_portfolio_submitted() {
+        let db = get_memory_sqlite_connection().await;
 
-//         let (_, candidate, _) = put_user_data(&db).await;
-//         let candidate_id = open(candidate.id.clone());
+        let (_, candidate, _) = put_user_data(&db).await;
+        let candidate_id = open(candidate.id.clone());
 
-//         let (temp_dir, _, _) = create_data_store_temp_dir(candidate_id).await;
+        let (temp_dir, _, _) = create_data_store_temp_dir(candidate_id).await;
 
-//         PortfolioService::add_cover_letter_to_cache(todo!(),  BBox::new(candidate_id, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
-//         PortfolioService::add_portfolio_letter_to_cache(todo!(), BBox::new(candidate_id, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
-//         PortfolioService::add_portfolio_zip_to_cache(todo!(), BBox::new(candidate_id, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
+        PortfolioService::add_cover_letter_to_cache(todo!(),  BBox::new(candidate_id, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
+        PortfolioService::add_portfolio_letter_to_cache(todo!(), BBox::new(candidate_id, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
+        PortfolioService::add_portfolio_zip_to_cache(todo!(), BBox::new(candidate_id, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
 
-//         PortfolioService::submit(&candidate, &db).await.unwrap();
+        PortfolioService::submit(todo!(), &candidate, &db).await.unwrap();
         
-//         assert!(PortfolioService::is_portfolio_submitted(candidate_id).await);
+        assert!(PortfolioService::is_portfolio_submitted(candidate_id).await);
 
-//         clear_data_store_temp_dir(temp_dir).await;
+        clear_data_store_temp_dir(temp_dir).await;
 
-//         let (temp_dir, application_dir, _) = create_data_store_temp_dir(candidate_id).await;
+        let (temp_dir, application_dir, _) = create_data_store_temp_dir(candidate_id).await;
 
-//         PortfolioService::add_cover_letter_to_cache(todo!(),  BBox::new(candidate_id, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
-//         PortfolioService::add_portfolio_letter_to_cache(todo!(), BBox::new(candidate_id, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
-//         PortfolioService::add_portfolio_zip_to_cache(todo!(), BBox::new(candidate_id, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
+        PortfolioService::add_cover_letter_to_cache(todo!(),  BBox::new(candidate_id, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
+        PortfolioService::add_portfolio_letter_to_cache(todo!(), BBox::new(candidate_id, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
+        PortfolioService::add_portfolio_zip_to_cache(todo!(), BBox::new(candidate_id, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
 
-//         PortfolioService::submit(&candidate, &db).await.unwrap();
+        PortfolioService::submit(todo!(), &candidate, &db).await.unwrap();
 
-//         tokio::fs::remove_file(application_dir.join("PORTFOLIO.age")).await.unwrap();
+        tokio::fs::remove_file(application_dir.join("PORTFOLIO.age")).await.unwrap();
         
-//         let is_submitted = execute_pcr(candidate.id, 
-//             PrivacyCriticalRegion::new(|id, _, _|{
-//                 PortfolioService::is_portfolio_submitted(id)
-//             }), ()).unwrap().await;
-//         assert!(!is_submitted);
+        let is_submitted = execute_pcr(candidate.id, 
+            PrivacyCriticalRegion::new(|id, _, _|{
+                PortfolioService::is_portfolio_submitted(id)
+            }), ()).unwrap().await;
+        assert!(!is_submitted);
 
-//         clear_data_store_temp_dir(temp_dir).await;
-//     }
+        clear_data_store_temp_dir(temp_dir).await;
+    }
 
-//     #[tokio::test]
-//     #[serial]
-//     async fn test_get_portfolio() {
-//         let db = get_memory_sqlite_connection().await;
-//         let (application, candidate, _parent) = put_user_data(&db).await;
-//         let candidate_id = open(candidate.id.clone());
+    #[tokio::test]
+    #[serial]
+    async fn test_get_portfolio() {
+        let db = get_memory_sqlite_connection().await;
+        let (application, candidate, _parent) = put_user_data(&db).await;
+        let candidate_id = open(candidate.id.clone());
 
-//         let (temp_dir, _, _) = create_data_store_temp_dir(candidate_id).await;
+        let (temp_dir, _, _) = create_data_store_temp_dir(candidate_id).await;
 
-//         let private_key = execute_pcr(application.private_key, 
-//             PrivacyCriticalRegion::new(|pk, _, _|{pk}), ()).unwrap();
+        let private_key = execute_pcr(application.private_key, 
+            PrivacyCriticalRegion::new(|pk, _, _|{pk}), ()).unwrap();
 
-//         let private_key = crypto::decrypt_password(private_key, "test".to_string())
-//             .await
-//             .unwrap();
+        let private_key = crypto::decrypt_password(private_key, "test".to_string())
+            .await
+            .unwrap();
 
-//         PortfolioService::add_cover_letter_to_cache(todo!(), BBox::new(candidate_id, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new()))
-//             .await
-//             .unwrap();
-//         PortfolioService::add_portfolio_letter_to_cache(todo!(), BBox::new(candidate_id, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new()))
-//             .await
-//             .unwrap();
-//         PortfolioService::add_portfolio_zip_to_cache(todo!(), BBox::new(candidate_id, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new()))
-//             .await
-//             .unwrap();
+        PortfolioService::add_cover_letter_to_cache(todo!(), BBox::new(candidate_id, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new()))
+            .await
+            .unwrap();
+        PortfolioService::add_portfolio_letter_to_cache(todo!(), BBox::new(candidate_id, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new()))
+            .await
+            .unwrap();
+        PortfolioService::add_portfolio_zip_to_cache(todo!(), BBox::new(candidate_id, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new()))
+            .await
+            .unwrap();
 
-//         PortfolioService::submit(&candidate, &db)
-//             .await
-//             .unwrap();
+        PortfolioService::submit(todo!(), &candidate, &db)
+            .await
+            .unwrap();
 
-//         PortfolioService::get_portfolio(todo!(), candidate.id, BBox::new(private_key, FakePolicy::new()))
-//             .await
-//             .unwrap();
+        PortfolioService::get_portfolio(todo!(), candidate.id, BBox::new(private_key, FakePolicy::new()))
+            .await
+            .unwrap();
 
-//         clear_data_store_temp_dir(temp_dir).await;
-//     }
-// }
+        clear_data_store_temp_dir(temp_dir).await;
+    }
+}

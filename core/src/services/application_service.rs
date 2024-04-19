@@ -1,8 +1,10 @@
 use std::default;
 
+use alohomora::context::Context;
 use async_trait::async_trait;
 use chrono::{Duration, NaiveDateTime};
 use entity::{candidate, parent, application, session};
+use portfolio_policies::context::ContextDataType;
 use sea_orm::{DbConn, prelude::Uuid, IntoActiveModel};
 use alohomora::bbox::BBox;
 use alohomora::policy::AnyPolicy;
@@ -26,6 +28,7 @@ impl ApplicationService {
     /// Encrypted private key
     /// Public key
     pub async fn create(
+        context: Context<ContextDataType>,
         admin_private_key: &BBox<String, FakePolicy>,
         db: &DbConn,
         application_id: BBox<i32, FakePolicy>,
@@ -58,6 +61,7 @@ impl ApplicationService {
         ).await?;
 
         let (candidate, enc_personal_id_number) = Self::find_or_create_candidate_with_personal_id(
+            context.clone(),
             application_id.clone(),
             admin_private_key,
             db,
@@ -78,7 +82,7 @@ impl ApplicationService {
         let applications = Query::find_applications_by_candidate_id(db, candidate.id).await?;
         if applications.len() >= 3 {
             for application in applications {
-                ApplicationService::delete(db, application).await?;
+                ApplicationService::delete(context.clone(), db, application).await?;
             }
             return Err(ServiceError::InternalServerError);
         }
@@ -92,6 +96,7 @@ impl ApplicationService {
     }
 
     async fn find_or_create_candidate_with_personal_id(
+        context: Context<ContextDataType>,
         application_id: BBox<i32, FakePolicy>,
         admin_private_key: &BBox<String, FakePolicy>,
         db: &DbConn,
@@ -136,7 +141,7 @@ impl ApplicationService {
 
             Ok(
                 (
-                    CandidateService::create(db, enc_personal_id_number.clone()).await?,
+                    CandidateService::create(context, db, enc_personal_id_number.clone()).await?,
                     enc_personal_id_number,
                 )
             )
@@ -186,13 +191,13 @@ impl ApplicationService {
         )
     }
 
-    pub async fn delete(db: &DbConn, application: application::Model) -> Result<(), ServiceError> {
+    pub async fn delete(context: Context<ContextDataType>, db: &DbConn, application: application::Model) -> Result<(), ServiceError> {
         let candidate = ApplicationService::find_related_candidate(db, &application).await?;
         
         let applications = Query::find_applications_by_candidate_id(db, candidate.id.clone()).await?;
         if applications.len() <= 1 &&
             (EncryptedCandidateDetails::from(&candidate).is_filled() ||
-            PortfolioService::get_submission_progress(candidate.id.clone())?.index() > 1) {
+            PortfolioService::get_submission_progress(context.clone(), candidate.id.clone())?.index() > 1) {
             return Err(ServiceError::Forbidden);
         }
 
@@ -200,7 +205,7 @@ impl ApplicationService {
 
         let remaining_applications = Query::find_applications_by_candidate_id(db, candidate.id.clone()).await?;
         if remaining_applications.is_empty() {
-            CandidateService::delete_candidate(db, candidate).await?;
+            CandidateService::delete_candidate(context, db, candidate).await?;
         }
     
         Ok(())
@@ -322,6 +327,7 @@ impl ApplicationService {
     }
 
     pub async fn reset_password(
+        context: Context<ContextDataType>,
         admin_private_key: BBox<String, FakePolicy>,
         db: &DbConn,
         id: BBox<i32, FakePolicy>,
@@ -370,8 +376,9 @@ impl ApplicationService {
              &admin_private_key
         ).await?;
 
-        if PortfolioService::get_submission_progress(candidate.id.clone())? == SubmissionProgress::Submitted {
+        if PortfolioService::get_submission_progress(context.clone(), candidate.id.clone())? == SubmissionProgress::Submitted {
             PortfolioService::reencrypt_portfolio(
+                context,
                 candidate.id,
                 admin_private_key,
                 &recipients,
@@ -545,6 +552,7 @@ mod application_tests {
         );
 
         let new_password = ApplicationService::reset_password(
+            todo!(),
             BBox::new(private_key, FakePolicy::new()),
             &db,
             application.id.clone()
@@ -568,6 +576,7 @@ mod application_tests {
         let secret_message = "trnka".to_string();
 
         let application = ApplicationService::create(
+            todo!(),
             &BBox::new("".to_string(), FakePolicy::new()),
             &db,
             BBox::new(103100, FakePolicy::new()),

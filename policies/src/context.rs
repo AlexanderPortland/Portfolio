@@ -12,6 +12,11 @@ pub struct ContextDataType {
     //pub db: Arc<Mutex<BBoxConn>>,
 }
 
+#[derive(AlohomoraType, Clone)]
+pub struct EmptyContextDataType {
+    
+}
+
 #[::rocket::async_trait]
 impl<'a, 'r> FromBBoxRequest<'a, 'r> for ContextDataType {
     type BBoxError = ();
