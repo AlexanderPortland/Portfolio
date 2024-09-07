@@ -11,8 +11,13 @@
 
 	const redirectToCode = () => {
 		// TODO: Validation
+		console.log(applicationValue);
 		if (applicationValue) {
-			goto(`login/${applicationValue}`);
+			// console.log("goin to");
+			let g = `login/${applicationValue}`;
+			console.log("goin to", g);
+			// goto(`login/${applicationValue}`);
+			goto(g);
 		}
 	};
 </script>

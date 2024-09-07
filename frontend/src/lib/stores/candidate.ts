@@ -69,10 +69,10 @@ export interface BaseCandidate {
 }
 
 export interface CreateCandidateLogin {
-	applicationId: number;
+	application_id: number;
 	personal_id_number: string;
 	applications: [];
-	fieldOfStudy: string;
+	field_of_study: string;
 	password: string;
 }
 

@@ -18,3 +18,6 @@
                 - or `849098/6163`
 3. try to log in as that applicant
     - use id & password given (eg `10222324` & `UB272EQWUIF2`)
+    -   Ev. č.: 103324443
+        R. č.: 736028/5163
+        Heslo: 7FNPL9WYKHSH

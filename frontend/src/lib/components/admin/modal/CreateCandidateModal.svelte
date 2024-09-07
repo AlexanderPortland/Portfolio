@@ -110,7 +110,8 @@
 		doc.setTextColor(r, g, b);
 
 		await doc.svg(element);
-		doc.text(login.applicationId.toString(), 120, 110);
+		console.log(login);
+		doc.text(login.application_id.toString(), 120, 110);
 		doc.text(login.password, 54, 129);
 		doc.text(login.personal_id_number, 90, 147.62);
 		if (login.applications.length > 1) {
@@ -121,7 +122,7 @@
 			);
 		}
 
-		doc.save('PRIHLASOVACI_UDAJE_' + login.applicationId.toString());
+		doc.save('PRIHLASOVACI_UDAJE_' + login.application_id.toString());
 
 		element.innerHTML = '';
 	};

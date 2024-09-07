@@ -69,6 +69,7 @@ export const apiWhoami = async (fetchSsr?: Fetch): Promise<BaseCandidate> => {
 
 export const apiLogin = async (data: CandidateLogin): Promise<number> => {
 	try {
+		console.log("posting login");
 		const res = await axios.post(API_URL + '/candidate/login', data, { withCredentials: true });
 		return data.applicationId;
 	} catch (e: any) {

@@ -36,12 +36,15 @@
 			if (nextElement) codeElementArray[index + 1].focus();
 		}
 		codeValueMobile = codeValueArray.join('');
+		console.log(codeValueMobile);
 	};
 
 	$: {
+		console.log(codeValueMobile);
 		if (codeValueMobile.length === 12) {
 			submit();
 		} else {
+			console.log(codeValueMobile);
 			isError = false;
 		}
 	}
