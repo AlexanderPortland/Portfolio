@@ -220,10 +220,14 @@ pub async fn get_candidate(
     let db = conn.into_inner();
     let private_key = session.get_private_key();
 
+    println!("a");
+
     let application = Query::find_application_by_id(db, id)
         .await
         .map_err(|e| to_custom_error(ServiceError::DbError(e)))?
         .ok_or(to_custom_error(ServiceError::CandidateNotFound))?;
+
+        println!("b");
     
     let details = ApplicationService::decrypt_all_details(
         private_key,
@@ -232,7 +236,7 @@ pub async fn get_candidate(
     )
         .await
         .map_err(to_custom_error)?;
-
+    println!("c");
     MyResult::Ok(
         JsonResponse::from((details, context))
     )
@@ -354,6 +358,21 @@ pub mod tests {
         response.into_json::<CleanCreateCandidateResponse>().unwrap()
     }
 
+    fn check_incomplete_candidate(
+        client: &Client,
+        cookies: (Cookie, Cookie),
+        id: i32,
+    ) {
+        let response = client
+            .get(format!("/admin/candidate/{id}"))
+            .cookie(cookies.0)
+            .cookie(cookies.1)
+            .dispatch();
+
+        // we want to get 406 bc the portfolio is incomplete
+        assert_eq!(response.status(), Status::from_code(406).unwrap());
+    }
+
     fn list_candidates(
         client: &Client,
         cookies: (Cookie, Cookie)
@@ -401,6 +420,22 @@ pub mod tests {
                 app.personal_id_number == pid && app.application_id == app_id
             }).count();
             assert!(matches >= 1);
+        }
+    }
+
+    #[test]
+    fn test_add_get_candidates() {
+        let client = test_client().lock().unwrap();
+        let to_create = vec![(1019132, "40"), (1019133, "10"), (1029193, "20"), (1019678, "90"), (1019456, "120"), (1029234, "230")];
+        
+        for (app_id, pid) in to_create.clone() {
+            let cookies = admin_login(&client);
+
+            let response = create_candidate(&client, cookies.clone(), app_id, pid.to_string());
+            assert_eq!(response.password.len(), 12);
+
+            // test the candidate exists, but is incomplete
+            check_incomplete_candidate(&client, cookies, app_id);
         }
     }
 }
