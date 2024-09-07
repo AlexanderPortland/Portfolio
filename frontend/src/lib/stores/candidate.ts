@@ -39,15 +39,15 @@ export interface CandidateData {
 }
 
 export interface CandidatePreview {
-	applicationId?: number;
-	candidateId?: number;
-	relatedApplications?: Array<number>;
-	personalIdNumber?: string;
+	application_id?: number;
+	candidate_id?: number;
+	related_applications?: Array<number>;
+	personal_id_number?: string;
 	name?: string;
 	surname?: string;
 	email?: string;
-	fieldOfStudy?: string;
-	createdAt?: string;
+	field_of_study?: string;
+	created_at?: string;
 }
 
 export interface CandidateLogin {
