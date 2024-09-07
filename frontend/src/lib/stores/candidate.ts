@@ -22,7 +22,7 @@ export interface CandidateData {
 		citizenship: string;
 		email: string;
 		sex: string;
-		personalIdNumber: string;
+		personal_id_number: string;
 		schoolName: string;
 		healthInsurance: string;
 		grades: Array<GradeBackend>;
@@ -63,12 +63,14 @@ export interface CreateCandidate {
 export interface BaseCandidate {
 	currentApplication: number;
 	applications: Array<number>;
-	personalIdNumber: string;
+	personal_id_number: string;
 	detailsFilled: boolean;
 	encryptedBy?: number;
 }
 
-export interface CreateCandidateLogin extends CreateCandidate {
+export interface CreateCandidateLogin {
+	applicationId: number;
+	personal_id_number: string;
 	applications: [];
 	fieldOfStudy: string;
 	password: string;
@@ -77,7 +79,7 @@ export interface CreateCandidateLogin extends CreateCandidate {
 export const baseCandidateData = writable<BaseCandidate>({
 	currentApplication: 0,
 	applications: [],
-	personalIdNumber: '',
+	personal_id_number: '',
 	detailsFilled: false
 });
 
@@ -94,7 +96,7 @@ export const candidateData = writable<CandidateData>({
 		citizenship: '',
 		email: '',
 		sex: '',
-		personalIdNumber: '',
+		personal_id_number: '',
 		schoolName: '',
 		healthInsurance: '',
 		grades: [],

@@ -112,7 +112,7 @@
 		await doc.svg(element);
 		doc.text(login.applicationId.toString(), 120, 110);
 		doc.text(login.password, 54, 129);
-		doc.text(login.personalIdNumber, 90, 147.62);
+		doc.text(login.personal_id_number, 90, 147.62);
 		if (login.applications.length > 1) {
 			doc.text(
 				'Slinkováno s přihláškou ' + login.applications.filter((a) => a != applicationId)[0],
@@ -140,7 +140,7 @@
 				<svg width="210mm" height="297mm" class="hidden h-[297mm] w-[210mm]" id="svg-element" />
 
 				<h1 class="text-sspsBlue text-3xl font-semibold">Ev. č.: {applicationId}</h1>
-				<h1 class="text-sspsBlue text-3xl font-semibold">R. č.: {login.personalIdNumber}</h1>
+				<h1 class="text-sspsBlue text-3xl font-semibold">R. č.: {login.personal_id_number}</h1>
 				<h1 class="text-sspsBlue text-3xl font-semibold">Heslo: {login.password}</h1>
 				{#if login.applications.length > 1}
 					<h1 class="text-sspsBlue text-3xl font-semibold">

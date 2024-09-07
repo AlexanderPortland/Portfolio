@@ -38,7 +38,10 @@ export const apiLogin = async (data: AdminLogin): Promise<number> => {
 // return created candidate's applicationId, personalIdNumber and password
 export const apiCreateCandidate = async (data: CreateCandidate): Promise<CreateCandidateLogin> => {
 	try {
+		console.log("tryiing to pose");
 		const res = await axios.post(API_URL + '/admin/create', data, { withCredentials: true });
+		console.log("my data is coming");
+		console.log(res.data);
 		return res.data;
 	} catch (e) {
 		throw errorHandler(e, 'Candidate creation failed');
@@ -51,7 +54,7 @@ export const apiDeleteCandidate = async (id: number): Promise<string> => {
 		const res = await axios.delete(API_URL + `/admin/candidate/${id}`, { withCredentials: true });
 		return res.data;
 	} catch (e) {
-		throw errorHandler(e, 'Candidate creation failed');
+		throw errorHandler(e, 'Candidate deletion failed');
 	}
 };
 

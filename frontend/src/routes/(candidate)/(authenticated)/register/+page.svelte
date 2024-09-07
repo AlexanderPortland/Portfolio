@@ -80,7 +80,7 @@
 			city: '',
 			zip: '',
 			citizenship: '',
-			personalIdNumber: 'TODO: remove this',
+			personal_id_number: 'TODO: remove this',
 			schoolName: '',
 			healthInsurance: '',
 			grades: [],
@@ -131,7 +131,7 @@
 				.test((_val) => {
 					if ($form.candidate.citizenship !== 'Česká republika') return true;
 					if (!_val) return false;
-					if (isPersonalIdMatchingBirthdate(data.whoami.personalIdNumber, _val)) {
+					if (isPersonalIdMatchingBirthdate(data.whoami.personal_id_number, _val)) {
 						return true;
 					} else {
 						pushErrorText('Datum narození a rodné číslo se neshodují.');
@@ -354,7 +354,7 @@
 			case 4:
 				if (
 					$typedErrors['candidate']['citizenship'] ||
-					$typedErrors['candidate']['personalIdNumber'] ||
+					$typedErrors['candidate']['personal_id_number'] ||
 					$typedErrors['candidate']['schoolName'] ||
 					$typedErrors['candidate']['healthInsurance'] ||
 					$typedErrors['candidate']['birthdate'] ||
@@ -462,12 +462,12 @@
 		$form.candidate.sex = '';
 
 		if ($form.candidate.citizenship === 'Česká republika') {
-			let [birthdate, sex] = parseBirthdateSexFromPersonalId(data.whoami.personalIdNumber);
+			let [birthdate, sex] = parseBirthdateSexFromPersonalId(data.whoami.personal_id_number);
 			$form.candidate.birthdate = birthdate;
 			$form.candidate.sex = sex;
 			if (pageIndex === 4) {
 				pushSuccessText(
-					`Datum narození a pohlaví bylo vyplněno automaticky podle Vašeho rodného čísla (${data.whoami.personalIdNumber}).`
+					`Datum narození a pohlaví bylo vyplněno automaticky podle Vašeho rodného čísla (${data.whoami.personal_id_number}).`
 				);
 			}
 		}
@@ -479,7 +479,7 @@
 	{#if visibleModals.personalIdModal}
 		<PersonalIdErrorModal
 			on:close={(_) => (visibleModals.personalIdModal = false)}
-			personalIdNumber={baseCandidateDetails.personalIdNumber}
+			personalIdNumber={baseCandidateDetails.personal_id_number}
 		/>
 	{:else if visibleModals.linkErrorModal}
 		<LinkErrorModal
@@ -503,7 +503,7 @@
 					</p>
 					<div class="field">
 						<PersonalIdConfirmCheckBox
-							personalIdNumber={baseCandidateDetails.personalIdNumber}
+							personalIdNumber={baseCandidateDetails.personal_id_number}
 							bind:personalIdOk={$form.personalIdOk}
 							bind:personalIdErr={$form.personalIdErr}
 							error={$typedErrors['personalIdOk']}

@@ -15,5 +15,6 @@
                 - eg `736028/5163`
                 - or `739098/6163`
                 - or `846028/5163`
+                - or `849098/6163`
 3. try to log in as that applicant
     - use id & password given (eg `10222324` & `UB272EQWUIF2`)
