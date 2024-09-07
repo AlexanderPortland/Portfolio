@@ -302,12 +302,13 @@ pub async fn get_candidate_portfolio(
 
 #[cfg(test)]
 pub mod tests {
-    use portfolio_core::models::candidate::CleanCreateCandidateResponse;
+    use portfolio_core::models::{application::{ApplicationResponse, CleanApplicationResponse}, candidate::CleanCreateCandidateResponse};
     use rocket::{http::{Cookie, Status}, local::blocking::Client};
 
     use crate::test::tests::{ADMIN_ID, ADMIN_PASSWORD, test_client};
 
     pub fn admin_login(client: &Client) -> (Cookie, Cookie) {
+        let response = client.post("/admin/logout").dispatch();
         let response = client
             .post("/admin/login")
             .body(format!(
@@ -355,13 +356,66 @@ pub mod tests {
         response.into_json::<CleanCreateCandidateResponse>().unwrap()
     }
 
+    fn list_candidates(
+        client: &Client,
+        cookies: (Cookie, Cookie),
+        // id: i32,
+        // pid: String,
+    ) -> Vec<CleanApplicationResponse> {
+        let response = client
+            .get("/admin/list/candidates")
+            .cookie(cookies.0)
+            .cookie(cookies.1)
+            .dispatch();
+
+        assert_eq!(response.status(), Status::Ok);
+
+        response.into_json::<Vec<CleanApplicationResponse>>().unwrap()
+    }
+
     #[test]
     fn test_create_candidate() {
         let client = test_client().lock().unwrap();
         let cookies = admin_login(&client);
-        println!("+++got some cookies {:?}", cookies);
+        // println!("+++got some cookies {:?}", cookies);
         let response = create_candidate(&client, cookies, 1031511, "0".to_string());
     
         assert_eq!(response.password.len(), 12);
+    }
+
+    #[test]
+    // Added aportlan for Sesame testing
+    fn test_create_list_candidates() {
+        let client = test_client().lock().unwrap();
+        
+        let to_create = vec![(1013132, "4"), (1013133, "1"), (1024193, "2"), (1015678, "9"), (1013456, "12"), (1021234, "23")];
+        let to_create2 = to_create.clone();
+        // TODO: (aportlan) idk why but only 3 seems to work here before the cookies time out
+        
+
+        // add all candidates to system
+        for (app_id, pid) in to_create {
+            println!("\ton pid {pid}");
+            let cookies = admin_login(&client);
+            
+            // println!("+++got some cookies {:?}", cookies);
+
+            let response = create_candidate(&client, cookies.clone(), app_id, pid.to_string());
+            assert_eq!(response.password.len(), 12);
+        }
+
+        // get a list of candidates
+        let cookies = admin_login(&client);
+        let response = list_candidates(&client, cookies);
+        // println!("got response {:?}", response);
+
+        // make sure they all show up in system
+        for (app_id, pid) in to_create2 {
+            let matches = response.iter().filter(|app|{
+                app.personal_id_number == pid && app.application_id == app_id
+            }).count();
+            assert!(matches >= 1);
+        }
+        
     }
 }

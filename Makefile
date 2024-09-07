@@ -1,9 +1,10 @@
-.PHONY: check test frontend backend back front
+.PHONY: check api check-api test frontend backend back front
 
-check:
-	export PORTFOLIO_DATABASE_URL=mysql://root:@127.0.0.1/ \
+check-api:
+	export PORTFOLIO_DATABASE_URL=mysql://root:@127.0.0.1/ && \
 	cd api; cargo test --no-fail-fast -- --test-threads=1
 
+check: check-api
 	export PORTFOLIO_DATABASE_URL=mysql://root:@127.0.0.1/ && \
 	cd core; cargo test --no-fail-fast -- --test-threads=1
 	
@@ -19,3 +20,5 @@ frontend:
 test: check
 back: backend
 front: frontend
+
+api: check-api
