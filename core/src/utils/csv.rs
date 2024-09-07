@@ -26,11 +26,13 @@ impl TryFrom<(BBox<i32, FakePolicy>, ApplicationDetails)> for ApplicationRow {
             grades.group_by_semester()
         })).transpose()?;
 
+        // FIXME: figure out some sandbox folding here
         let diploma_1_8 = diplomas.clone().into_ppr(PrivacyPureRegion::new(|d: Tup| d.0.to_string()));
         let diploma_2_8 = diplomas.clone().into_ppr(PrivacyPureRegion::new(|d: Tup| d.1.to_string()));
         let diploma_1_9 = diplomas.clone().into_ppr(PrivacyPureRegion::new(|d: Tup| d.2.to_string()));
         let diploma_2_9 = diplomas.into_ppr(PrivacyPureRegion::new(|d: Tup| d.3.to_string()));
 
+        // FIXME: also here
         let first_school_name = c.firstSchool.clone().into_ppr(PrivacyPureRegion::new(|s: School| s.name().to_string()));
         let first_school_field = c.firstSchool.clone().into_ppr(PrivacyPureRegion::new(|s: School| s.field().to_string()));
         let second_school_name = c.secondSchool.clone().into_ppr(PrivacyPureRegion::new(|s: School| s.name().to_string()));

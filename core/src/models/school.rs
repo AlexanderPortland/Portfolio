@@ -6,6 +6,8 @@ use validator::Validate;
 
 use crate::error::ServiceError;
 
+use super::grade::serde_from_sandbox_caller;
+
 #[derive(Debug, Clone, Serialize, Deserialize, Validate, PartialEq, Eq, alohomora_derive::ResponseBBoxJson)]
 pub struct School {
     #[validate(length(min = 1, max = 255))]
@@ -18,9 +20,7 @@ impl School {
     pub fn from_opt_str<P: Policy>(school: Option<BBox<String, P>>) -> Option<BBox<Self, P>> {
         match school {
             None => None,
-            Some(school) => Some(school.into_ppr(PrivacyPureRegion::new(|school: String| {
-                serde_json::from_str(&school).unwrap()
-            }))),
+            Some(school) => Some(serde_from_sandbox_caller(school)),
         }
     }
 

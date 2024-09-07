@@ -2,6 +2,7 @@ use alohomora::{bbox::BBox};
 use alohomora::policy::Policy;
 use alohomora::pure::PrivacyPureRegion;
 use alohomora::rocket::{OutputBBoxValue, ResponseBBoxJson};
+use csv::DeserializeError;
 use serde::{Serialize, Deserialize};
 use validator::Validate;
 
@@ -65,6 +66,18 @@ impl ResponseBBoxJson for GradeList {
     }
 }
 
+// this will be gen-ed by macro
+pub fn serde_from_sandbox_caller<'a, T: serde::de::DeserializeOwned, P: Policy>(t: BBox<String, P>) -> BBox<T, P> {
+    t.into_ppr(PrivacyPureRegion::new(|t|{
+        serde_from_sandbox(t)
+    }))
+}
+
+// FIXME: this will also go in SANDBOX lib
+fn serde_from_sandbox<'a, T: serde::de::DeserializeOwned>(t: String) -> T {
+    serde_json::from_str(t.as_str()).unwrap()
+}
+
 impl GradeList {
     pub fn validate_self(&self) -> Result<(), ServiceError> {
         self.0.iter()
@@ -73,12 +86,10 @@ impl GradeList {
             .map(|_| ())
     }
 
-    pub fn from_opt_str<P: Policy>(grades: Option<BBox<String, P>>) -> Option<BBox<Self, P>> {
+    pub fn from_opt_str<P: Policy + Clone + 'static>(grades: Option<BBox<String, P>>) -> Option<BBox<Self, P>> {
         match grades {
             None => None,
-            Some(grades) => Some(grades.into_ppr(PrivacyPureRegion::new(|grades: String| {
-                serde_json::from_str(&grades).unwrap()
-            }))),
+            Some(grades) => Some(serde_from_sandbox_caller(grades)),
         }
     }
 
