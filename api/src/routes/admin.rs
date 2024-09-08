@@ -306,10 +306,13 @@ pub async fn get_candidate_portfolio(
 
 #[cfg(test)]
 pub mod tests {
+    use core::panic;
+
+    use entity::admin;
     use portfolio_core::models::{application::{ApplicationResponse, CleanApplicationResponse}, candidate::CleanCreateCandidateResponse};
     use rocket::{http::{Cookie, Status}, local::blocking::Client};
 
-    use crate::test::tests::{ADMIN_ID, ADMIN_PASSWORD, test_client};
+    use crate::{routes::candidate::tests::CleanApplicationDetails, test::tests::{test_client, ADMIN_ID, ADMIN_PASSWORD}};
 
     pub fn admin_login(client: &Client) -> (Cookie, Cookie) {
         let _ = client.post("/admin/logout").dispatch();
@@ -373,6 +376,21 @@ pub mod tests {
         assert_eq!(response.status(), Status::from_code(406).unwrap());
     }
 
+    fn get_candidate_info(
+        client: &Client,
+        cookies: (Cookie, Cookie),
+        id: i32,
+    ) -> CleanApplicationDetails {
+        let response = client
+            .get(format!("/admin/candidate/{id}"))
+            .cookie(cookies.0)
+            .cookie(cookies.1)
+            .dispatch();
+
+        assert_eq!(response.status(), Status::Ok);
+        response.into_json::<CleanApplicationDetails>().unwrap()
+    }
+
     fn list_candidates(
         client: &Client,
         cookies: (Cookie, Cookie)
@@ -386,6 +404,20 @@ pub mod tests {
         assert_eq!(response.status(), Status::Ok);
         response.into_json::<Vec<CleanApplicationResponse>>().unwrap()
     }
+
+    // fn csv_export(
+    //     client: &Client,
+    //     cookies: (Cookie, Cookie)
+    // ) -> Vec<u8> {
+    //     let response = client
+    //         .get("/admin/list/candidates_csv")
+    //         .cookie(cookies.0)
+    //         .cookie(cookies.1)
+    //         .dispatch();
+
+    //     assert_eq!(response.status(), Status::Ok);
+    //     response.into_json::<Vec<u8>>().unwrap()
+    // }
 
     #[test]
     fn test_create_candidate() {
@@ -414,6 +446,7 @@ pub mod tests {
         let cookies = admin_login(&client);
         let response = list_candidates(&client, cookies);
 
+        // assert_eq!(response.len(), 0);
         // make sure they all show up in system
         for (app_id, pid) in to_create {
             let matches = response.iter().filter(|app|{
@@ -424,11 +457,12 @@ pub mod tests {
     }
 
     #[test]
+    // Added by aportlan for additional Sesame testing
     fn test_add_get_candidates() {
         let client = test_client().lock().unwrap();
         let to_create = vec![(1019132, "40"), (1019133, "10"), (1029193, "20"), (1019678, "90"), (1019456, "120"), (1029234, "230")];
         
-        for (app_id, pid) in to_create.clone() {
+        for (app_id, pid) in to_create {
             let cookies = admin_login(&client);
 
             let response = create_candidate(&client, cookies.clone(), app_id, pid.to_string());
@@ -438,4 +472,50 @@ pub mod tests {
             check_incomplete_candidate(&client, cookies, app_id);
         }
     }
+
+    #[test]
+    // Added by aportlan for additional Sesame testing
+    fn test_get_candidate_details() {
+        let client = test_client().lock().unwrap();
+        let candidate_cookies = crate::routes::candidate::tests::candidate_login(&client);
+
+        // Post candidate details
+        let details_orig: CleanApplicationDetails = serde_json::from_str(crate::routes::candidate::tests::CANDIDATE_DETAILS).unwrap();
+
+        let response = client
+            .post("/candidate/details")
+            .cookie(candidate_cookies.0.clone())
+            .cookie(candidate_cookies.1.clone())
+            .body(crate::routes::candidate::tests::CANDIDATE_DETAILS.to_string())
+            .dispatch();
+        assert_eq!(response.status(), Status::Ok);
+
+        let admin_cookies = admin_login(&client);
+        let details_new = get_candidate_info(&client, admin_cookies, crate::test::tests::APPLICATION_ID);
+
+        assert_eq!(details_orig, details_new);
+    }
+
+    // NOTE: (aportlan) tabling this test for now bc any incomplete candidates mess up the datetime
+    // #[test]
+    // fn test_list_csv() {
+    //     let client = test_client().lock().unwrap();
+    //     let to_create: Vec<(i32, &str)> = vec![(1012345, "111"), (1023456, "123"), (1034567, "135")];
+
+    //     for (app_id, pid) in to_create.clone() {
+    //         let cookies = admin_login(&client);
+
+    //         let response = create_candidate(&client, cookies.clone(), app_id, pid.to_string());
+    //         assert_eq!(response.password.len(), 12);
+    //     }
+
+    //     let cookies = admin_login(&client);
+    //     let response = csv_export(&client, cookies);
+    //     let response = String::from_utf8(response).unwrap();
+
+    //     for (app_id, pid) in to_create.clone() {
+    //         println!("{}", response);
+    //         panic!();
+    //     }
+    // }
 }

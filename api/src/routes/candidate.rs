@@ -401,7 +401,7 @@ pub async fn download_portfolio(
 }
 
 #[cfg(test)]
-mod tests {
+pub mod tests {
     use chrono::NaiveDate;
     use portfolio_core::{crypto, models::candidate::CleanNewCandidateResponse, sea_orm::prelude::Uuid};
     use rocket::{
@@ -455,7 +455,7 @@ mod tests {
         pub parents: Vec<CleanParentDetails>,
     }
 
-    fn candidate_login(client: &Client) -> (Cookie, Cookie) {
+    pub fn candidate_login(client: &Client) -> (Cookie, Cookie) {
         let response = client
             .post("/candidate/login")
             .body(format!(
@@ -473,7 +473,7 @@ mod tests {
         )
     }
 
-    const CANDIDATE_DETAILS: &'static str = "{
+    pub const CANDIDATE_DETAILS: &'static str = "{
         \"candidate\": {
             \"name\": \"idk\",
             \"surname\": \"idk\",
