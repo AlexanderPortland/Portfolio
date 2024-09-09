@@ -475,6 +475,7 @@ pub mod tests {
 
     #[test]
     // Added by aportlan for additional Sesame testing
+    // FIXME: this one sometimes spuriously fails? idk why
     fn test_get_candidate_details() {
         let client = test_client().lock().unwrap();
         let candidate_cookies = crate::routes::candidate::tests::candidate_login(&client);
