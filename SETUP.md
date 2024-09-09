@@ -1,3 +1,4 @@
+*last working properly using alohomora commit: `89f09ee63dd5cba8354c5182a1aa79e4aa7d2bc2`*
 # setup steps
 1. setup backend (start from project root)
     - run `export PORTFOLIO_DATABASE_URL=mysql://root:@127.0.0.1/` to set db url (or replace with yours)

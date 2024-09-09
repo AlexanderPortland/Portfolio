@@ -1,5 +1,6 @@
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 
+use alohomora::pcr::{execute_pcr, PrivacyCriticalRegion};
 use alohomora::rocket::{ContextResponse, JsonResponse};
 use alohomora::{bbox::BBox, context::Context, orm::Connection, pure::{execute_pure, PrivacyPureRegion}, rocket::{get, post, route, BBoxCookie, BBoxCookieJar, BBoxJson}};
 use alohomora_derive::{RequestBBoxJson, ResponseBBoxJson};
@@ -247,8 +248,14 @@ pub async fn upload_cover_letter(
     context: Context<ContextDataType>,
 ) -> MyResult<(), (rocket::http::Status, String)> {
     let application: entity::application::Model = session.into();
+    println!("hello");
 
-    PortfolioService::add_cover_letter_to_cache(context, application.candidate_id, letter.into())
+    let a: BBox<Vec<u8>, FakePolicy> = letter.into();
+    execute_pcr(a.clone(), PrivacyCriticalRegion::new(|v, _, _|{
+        println!("{:?}", v);
+    }), ()).unwrap();
+
+    PortfolioService::add_cover_letter_to_cache(context, application.candidate_id, a)
         .await
         .map_err(to_custom_error)?;
     MyResult::Ok(())
@@ -401,7 +408,7 @@ pub async fn download_portfolio(
 }
 
 #[cfg(test)]
-mod tests {
+pub mod tests {
     use chrono::NaiveDate;
     use portfolio_core::{crypto, models::candidate::CleanNewCandidateResponse, sea_orm::prelude::Uuid};
     use rocket::{
@@ -455,7 +462,7 @@ mod tests {
         pub parents: Vec<CleanParentDetails>,
     }
 
-    fn candidate_login(client: &Client) -> (Cookie, Cookie) {
+    pub fn candidate_login(client: &Client) -> (Cookie, Cookie) {
         let response = client
             .post("/candidate/login")
             .body(format!(
@@ -473,7 +480,7 @@ mod tests {
         )
     }
 
-    const CANDIDATE_DETAILS: &'static str = "{
+    pub const CANDIDATE_DETAILS: &'static str = "{
         \"candidate\": {
             \"name\": \"idk\",
             \"surname\": \"idk\",
@@ -503,6 +510,11 @@ mod tests {
             }
         ]
     }";
+
+    const CANDIDATE_COVER_LETTER: &str = "hello, how are you doing? this is a test cover letter for upload!
+    I'd really like to get into high school please, I hope I get admitted! 
+    If I don't i'll probably be pretty grumpy and unhappy and stuff. :(
+    - idk";
 
     #[test]
     fn test_login_valid_credentials() {
@@ -554,6 +566,20 @@ mod tests {
         let details_resp: CleanApplicationDetails = serde_json::from_str(&response.into_string().unwrap()).unwrap();
         assert_eq!(details_orig, details_resp);
     }
+
+    // #[test]
+    // fn test_candidate_upload() {
+    //     let client = test_client().lock().unwrap();
+    //     let cookies = candidate_login(&client);
+
+    //     let response = client
+    //         .post("/candidate/add/cover_letter")
+    //         .cookie(cookies.0.clone())
+    //         .cookie(cookies.1.clone())
+    //         .body(CANDIDATE_COVER_LETTER.as_bytes())
+    //         .dispatch();
+    //     assert_eq!(response.status(), Status::Ok);
+    // }
 
     #[test]
     fn test_invalid_token_every_secured_endpoint() {

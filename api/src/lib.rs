@@ -161,7 +161,7 @@ pub fn rocket() -> BBoxRocket<Build> {
         .mount(
             "/admin/list",
             routes![
-                // routes::admin::list_candidates,
+                routes::admin::list_candidates,
                 routes::admin::list_candidates_csv,
                 routes::admin::list_admissions_csv
             ]

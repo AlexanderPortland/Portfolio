@@ -22,7 +22,7 @@ export interface CandidateData {
 		citizenship: string;
 		email: string;
 		sex: string;
-		personalIdNumber: string;
+		personal_id_number: string;
 		schoolName: string;
 		healthInsurance: string;
 		grades: Array<GradeBackend>;
@@ -39,15 +39,15 @@ export interface CandidateData {
 }
 
 export interface CandidatePreview {
-	applicationId?: number;
-	candidateId?: number;
-	relatedApplications?: Array<number>;
-	personalIdNumber?: string;
+	application_id?: number;
+	candidate_id?: number;
+	related_applications?: Array<number>;
+	personal_id_number?: string;
 	name?: string;
 	surname?: string;
 	email?: string;
-	fieldOfStudy?: string;
-	createdAt?: string;
+	field_of_study?: string;
+	created_at?: string;
 }
 
 export interface CandidateLogin {
@@ -63,21 +63,23 @@ export interface CreateCandidate {
 export interface BaseCandidate {
 	currentApplication: number;
 	applications: Array<number>;
-	personalIdNumber: string;
+	personal_id_number: string;
 	detailsFilled: boolean;
 	encryptedBy?: number;
 }
 
-export interface CreateCandidateLogin extends CreateCandidate {
+export interface CreateCandidateLogin {
+	application_id: number;
+	personal_id_number: string;
 	applications: [];
-	fieldOfStudy: string;
+	field_of_study: string;
 	password: string;
 }
 
 export const baseCandidateData = writable<BaseCandidate>({
 	currentApplication: 0,
 	applications: [],
-	personalIdNumber: '',
+	personal_id_number: '',
 	detailsFilled: false
 });
 
@@ -94,7 +96,7 @@ export const candidateData = writable<CandidateData>({
 		citizenship: '',
 		email: '',
 		sex: '',
-		personalIdNumber: '',
+		personal_id_number: '',
 		schoolName: '',
 		healthInsurance: '',
 		grades: [],

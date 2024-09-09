@@ -17,6 +17,7 @@
 	export let data: PageServerData;
 
 	let candidates: Array<CandidatePreview> = data.preview;
+		console.log(data.preview);
 
 	const getCandidates = async () => {
 		try {
@@ -25,6 +26,8 @@
 				undefined,
 				activeFilter.filter !== undefined ? { field: activeFilter.filter } : undefined
 			);
+			console.log("now for candidates");
+			console.log(candidates);
 		} catch {
 			pushErrorText('Nepodařilo se načíst uchazeče');
 		}
@@ -70,18 +73,24 @@
 	const openCreateCandidateModal = () => {
 		createCandidateModal = true;
 	};
-
+	console.log("candidates are");
+	console.log(candidates);
 	$: candidatesTable = candidates;
+	candidatesTable = candidates;
+	console.log("table is now");
+	console.log(candidatesTable);
 	let searchValue: string = '';
 	$: fuse = new Fuse(candidates, {
-		keys: ['applicationId', 'name', 'surname', 'study']
+		keys: ['application_id', 'name', 'surname', 'study']
 	});
 
 	const search = () => {
 		if (searchValue === '' || !searchValue) {
 			candidatesTable = candidates;
+			// console.log(candidatesTable);
 		} else {
 			candidatesTable = fuse.search(searchValue).map((result) => result.item);
+			// console.log(candidatesTable);
 		}
 	};
 
@@ -106,6 +115,7 @@
 	const logout = async () => {
 		goto('/admin/auth/logout');
 	};
+	console.log(candidatesTable);
 </script>
 
 {#if createCandidateModal}

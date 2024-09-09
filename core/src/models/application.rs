@@ -2,7 +2,7 @@ use alohomora::{bbox::BBox, AlohomoraType};
 use alohomora_derive::ResponseBBoxJson;
 use chrono::NaiveDateTime;
 //use sea_orm::sea_query::private;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use alohomora::policy::{AnyPolicy, NoPolicy};
 use portfolio_policies::FakePolicy;
@@ -24,6 +24,20 @@ pub struct ApplicationResponse {
     pub telephone: BBox<String, AnyPolicy>,
     pub field_of_study: Option<BBox<String, AnyPolicy>>,
     pub created_at: BBox<NaiveDateTime, AnyPolicy>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct CleanApplicationResponse {
+    pub application_id: i32,
+    pub candidate_id: i32,
+    pub related_applications: Vec<i32>,
+    pub personal_id_number: String,
+    pub name: String,
+    pub surname: String,
+    pub email: String,
+    pub telephone: String,
+    pub field_of_study: Option<String>,
+    pub created_at: NaiveDateTime,
 }
 
 impl ApplicationResponse {

@@ -270,7 +270,7 @@ impl ApplicationService {
         if enc_details.is_filled() {
             enc_details.decrypt(private_key).await
         } else {
-            Err(ServiceError::Forbidden)
+            Err(ServiceError::IncompletePortfolio)
         }
     }
 

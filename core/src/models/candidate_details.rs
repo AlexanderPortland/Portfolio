@@ -9,6 +9,7 @@ use chrono::NaiveDate;
 use entity::{candidate, parent};
 use futures::future;
 use portfolio_policies::FakePolicy;
+use serde::Serialize;
 
 use crate::{crypto, models::candidate::ApplicationDetails, error::ServiceError, utils::date::parse_naive_date_from_opt_str};
 use crate::crypto_helpers::{my_decrypt_password_with_private_key, my_encrypt_password_with_recipients};
@@ -135,10 +136,39 @@ impl<P: Policy + Clone + 'static> TryFrom<Option<BBox<NaiveDate, P>>> for Encryp
         match d {
             None => Err(ServiceError::CandidateDetailsNotSet),
             Some(d) => Ok(Self(
-                d.into_ppr(PrivacyPureRegion::new(|d: NaiveDate| d.to_string())).into_any_policy()
+                naive_date_str_caller(d.into_any_policy(), false)
             )),
         }
     }
+}
+
+fn naive_date_str_caller(date: BBox<NaiveDate, AnyPolicy>, format: bool) -> BBox<String, AnyPolicy> {
+    date.into_ppr(PrivacyPureRegion::new(|date: NaiveDate|{
+        match format {
+            true => date.to_string(),
+            false => date.format(NAIVE_DATE_FMT).to_string(),
+        }
+    }))
+}
+
+// FIXME: this will go in SANDBOX
+fn naive_date_str(date: NaiveDate, format: bool) -> String {
+    match format {
+        true => date.to_string(),
+        false => date.format(NAIVE_DATE_FMT).to_string(),
+    }
+}
+
+// this will be gen-ed by macro
+pub fn serde_to_sandbox_caller<T: Serialize>(t: BBox<T, AnyPolicy>) -> BBox<String, AnyPolicy> {
+    t.into_ppr(PrivacyPureRegion::new(|t|{
+        serde_to_sandbox(t)
+    }))
+}
+
+// FIXME: this will go in SANDBOX lib
+fn serde_to_sandbox<T: Serialize>(t: T) -> String {
+    serde_json::to_string(&t).unwrap()
 }
 
 impl EncryptedCandidateDetails {
@@ -146,10 +176,10 @@ impl EncryptedCandidateDetails {
         form: &CandidateDetails,
         recipients: &Vec<BBox<String, FakePolicy>>,
     ) -> Result<EncryptedCandidateDetails, ServiceError> {
-        let birthdate_str = form.birthdate.clone().into_ppr(PrivacyPureRegion::new(|b: NaiveDate| b.format(NAIVE_DATE_FMT).to_string()));
-        let grades_str = form.grades.clone().into_ppr(PrivacyPureRegion::new(|g: GradeList| g.to_string()));
-        let first_school_str = form.firstSchool.clone().into_ppr(PrivacyPureRegion::new(|g: School| g.to_string()));
-        let second_school_str = form.secondSchool.clone().into_ppr(PrivacyPureRegion::new(|g: School| g.to_string()));
+        let birthdate_str = naive_date_str_caller(form.birthdate.clone(), true);
+        let grades_str = serde_to_sandbox_caller(form.grades.clone());
+        let first_school_str = serde_to_sandbox_caller(form.firstSchool.clone());
+        let second_school_str = serde_to_sandbox_caller(form.secondSchool.clone());
         let d = tokio::try_join!(
             EncryptedString::new_option(&form.name, recipients),
             EncryptedString::new_option(&form.surname, recipients),

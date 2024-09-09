@@ -38,25 +38,25 @@
 									><a
 										target="_blank"
 										rel="noreferrer"
-										href="/admin/candidate/{candidate.applicationId}">{candidate.applicationId}</a
+										href="/admin/candidate/{candidate.application_id}">{candidate.application_id}</a
 									></td
 								>
 								<td class="text-gray-900">
-									{candidate.fieldOfStudy}
+									{candidate.field_of_study}
 								</td>
 								<td class="text-gray-900">
-									{candidate.personalIdNumber}
+									{candidate.personal_id_number}
 								</td>
 								<td class="text-gray-900">
-									{candidate.relatedApplications?.filter((a) => a !== candidate.applicationId)}
+									{candidate.related_applications?.filter((a) => a !== candidate.application_id)}
 								</td>
 								{#if showCreatedAt}
 									<td class="text-gray-900">
-										{formatRustChronoDateTime(candidate.createdAt)}
+										{formatRustChronoDateTime(candidate.created_at)}
 									</td>
 								{/if}
 								<td class="text-sm">
-									<Delete id={candidate.applicationId} on:delete value="Odstranit" />
+									<Delete id={candidate.application_id} on:delete value="Odstranit" />
 								</td>
 							</tr>
 						{/each}

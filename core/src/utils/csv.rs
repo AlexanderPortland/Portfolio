@@ -26,11 +26,13 @@ impl TryFrom<(BBox<i32, FakePolicy>, ApplicationDetails)> for ApplicationRow {
             grades.group_by_semester()
         })).transpose()?;
 
+        // FIXME: figure out some sandbox folding here
         let diploma_1_8 = diplomas.clone().into_ppr(PrivacyPureRegion::new(|d: Tup| d.0.to_string()));
         let diploma_2_8 = diplomas.clone().into_ppr(PrivacyPureRegion::new(|d: Tup| d.1.to_string()));
         let diploma_1_9 = diplomas.clone().into_ppr(PrivacyPureRegion::new(|d: Tup| d.2.to_string()));
         let diploma_2_9 = diplomas.into_ppr(PrivacyPureRegion::new(|d: Tup| d.3.to_string()));
 
+        // FIXME: also here
         let first_school_name = c.firstSchool.clone().into_ppr(PrivacyPureRegion::new(|s: School| s.name().to_string()));
         let first_school_field = c.firstSchool.clone().into_ppr(PrivacyPureRegion::new(|s: School| s.field().to_string()));
         let second_school_name = c.secondSchool.clone().into_ppr(PrivacyPureRegion::new(|s: School| s.name().to_string()));
@@ -97,16 +99,21 @@ pub struct ApplicationCsv;
 #[async_trait]
 impl CsvExporter for ApplicationCsv {
     async fn export(db: &DbConn, private_key: BBox<String, FakePolicy>) -> Result<BBox<Vec<u8>, AnyPolicy>, ServiceError> {
+        println!("Exportin");
         let applications = Query::list_applications_compact(&db).await?;
-
+        println!("listed apps");
         let mut rows = Vec::new();
         for application in applications {
+            println!("pre-cand");
             let candidate = ApplicationService::find_related_candidate(db, &application).await?;
+            println!("pre-par");
             let parents = Query::find_candidate_parents(db, &candidate).await?;
-
+            println!("pre-row");
             let row: ApplicationRow = match EncryptedApplicationDetails::try_from((&candidate, &parents))
             {
-                Ok(d) => ApplicationRow::try_from(
+                Ok(d) => {
+                    println!("yay");
+                    ApplicationRow::try_from(
                     d.decrypt(private_key.clone())
                         .await
                         .map(|d| (application.id.clone(), d))?,
@@ -114,15 +121,19 @@ impl CsvExporter for ApplicationCsv {
                     .unwrap_or(ApplicationRow {
                         application: application.id.into_any_policy(),
                         ..Default::default()
-                    }),
+                    })},
 
-                Err(_) => ApplicationRow {
+                Err(_) => {
+                    println!("nay");
+                    ApplicationRow {
                     application: application.id.into_any_policy(),
                     ..Default::default()
-                },
+                }},
             };
+            println!("pre-push");
             rows.push(row);
         }
+        println!("serialize?");
         serialize_in_sandbox(rows)
     }
 }
