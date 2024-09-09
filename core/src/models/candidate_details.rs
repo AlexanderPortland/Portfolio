@@ -144,15 +144,13 @@ impl<P: Policy + Clone + 'static> TryFrom<Option<BBox<NaiveDate, P>>> for Encryp
 
 fn naive_date_str_caller(date: BBox<NaiveDate, AnyPolicy>, format: bool) -> BBox<String, AnyPolicy> {
     date.into_ppr(PrivacyPureRegion::new(|date: NaiveDate|{
-        match format {
-            true => date.to_string(),
-            false => date.format(NAIVE_DATE_FMT).to_string(),
-        }
+        naive_date_str((date, format))
     }))
 }
 
-// FIXME: this will go in SANDBOX
-fn naive_date_str(date: NaiveDate, format: bool) -> String {
+// FIXME: this will go in SANDBOX 
+// (DRAFTED)
+fn naive_date_str((date, format): (chrono::NaiveDate, bool)) -> String {
     match format {
         true => date.to_string(),
         false => date.format(NAIVE_DATE_FMT).to_string(),
@@ -167,6 +165,7 @@ pub fn serde_to_sandbox_caller<T: Serialize>(t: BBox<T, AnyPolicy>) -> BBox<Stri
 }
 
 // FIXME: this will go in SANDBOX lib
+// drafted
 fn serde_to_sandbox<T: Serialize>(t: T) -> String {
     serde_json::to_string(&t).unwrap()
 }

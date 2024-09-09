@@ -178,6 +178,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "alohomora_build"
+version = "0.1.0"
+dependencies = [
+ "cargo_toml",
+ "serde",
+ "serde_json",
+ "tinytemplate",
+]
+
+[[package]]
 name = "alohomora_derive"
 version = "0.1.0"
 dependencies = [
@@ -3424,8 +3434,10 @@ name = "portfolio"
 version = "2.0.0"
 dependencies = [
  "alohomora",
+ "alohomora_build",
  "alohomora_derive",
  "portfolio-api",
+ "portfolio-sandbox",
  "sea-orm-rocket",
 ]
 
@@ -3532,6 +3544,17 @@ dependencies = [
  "sea-orm-migration",
  "sea-orm-rocket",
  "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "portfolio-sandbox"
+version = "0.1.0"
+dependencies = [
+ "alohomora",
+ "alohomora_build",
+ "alohomora_sandbox",
+ "chrono",
  "serde_json",
 ]
 

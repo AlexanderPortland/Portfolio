@@ -11,8 +11,10 @@ members = [".", "api", "core", "entity", "migration", "policies"]
 
 [dependencies]
 portfolio-api = { path = "api" }
+portfolio-sandbox = { path = "sandbox" }
 alohomora = { path = "../alohomora/alohomora" }
 alohomora_derive = { path = "../alohomora/alohomora_derive" }
+alohomora_build = { path = "../alohomora/alohomora_build" }
 
 [dependencies.sea-orm-rocket]
 git = "https://github.com/KinanBab/sea-orm.git"

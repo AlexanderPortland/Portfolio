@@ -1,0 +1,26 @@
+[package]
+name = "portfolio-sandbox"
+version = "0.1.0"
+authors = ["Alex Portland <alexanderportland1@gmail.com>"]
+edition = "2021"
+build = "build.rs"
+
+
+[dependencies]
+alohomora = { path = "../../alohomora/alohomora" }
+alohomora_sandbox = { path = "../../alohomora/alohomora_sandbox" }
+chrono = "^0.4"
+serde_json = "1.0"
+
+[build-dependencies]
+alohomora_build = { path = "../../alohomora/alohomora_build" }
+
+[package.metadata]
+sandboxes = [
+#   "naive_date_str",
+#   "train",
+  # "potato_count"
+  # "stringy"
+  # "alloc_in_sandbox",
+  # "transfer_arg"
+]
