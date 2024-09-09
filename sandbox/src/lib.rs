@@ -1,7 +1,8 @@
-use alohomora::sandbox::AlohomoraSandbox;
+// use alohomora::sandbox::AlohomoraSandbox;
+use alohomora_derive::AlohomoraSandbox;
 use serde::{Deserialize, Serialize};
 
-extern crate alohomora;
+// extern crate alohomora;
 // extern crate chrono;
 
 pub const NAIVE_DATE_FMT: &str = "%Y-%m-%d";
@@ -14,22 +15,22 @@ pub const NAIVE_DATE_FMT: &str = "%Y-%m-%d";
 //     }
 // }
 
-#[AlohomoraSandbox]
+#[AlohomoraSandbox()]
 fn serde_from_grade(t: GradeList) -> String {
     serde_json::to_string(&t).unwrap()
 }
 
-#[AlohomoraSandbox]
+#[AlohomoraSandbox()]
 fn serde_from_school(t: School) -> String {
     serde_json::to_string(&t).unwrap()
 }
 
-#[AlohomoraSandbox]
+#[AlohomoraSandbox()]
 fn serde_to_school(t: String) -> School {
     serde_json::from_str(t.as_str()).unwrap()
 }
 
-#[AlohomoraSandbox]
+#[AlohomoraSandbox()]
 fn serde_to_grade(t: String) -> GradeList {
     serde_json::from_str(t.as_str()).unwrap()
 }

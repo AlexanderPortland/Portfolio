@@ -2,24 +2,32 @@
 name = "portfolio-sandbox"
 version = "0.1.0"
 authors = ["Alex Portland <alexanderportland1@gmail.com>"]
-edition = "2021"
+edition = "2018"
 build = "build.rs"
 
-
 [dependencies]
-alohomora = { path = "../../alohomora/alohomora" }
-alohomora_sandbox = { path = "../../alohomora/alohomora_sandbox" }
-# chrono = "^0.4"
+chrono = { version = "0.4.0", features = ["serde"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
+alohomora_derive = { path = "../../alohomora/alohomora_derive" }
+alohomora_sandbox = { path = "../../alohomora/alohomora_sandbox" }
+# don't need everything below here
+linfa = "0.6.1"
+linfa-linear = "0.6.1"
+ndarray = "0.15.6"
+sha2 = "0.10.8" 
 
 [build-dependencies]
 alohomora_build = { path = "../../alohomora/alohomora_build" }
 
+[lib]
+crate-type = ["cdylib", "rlib"]
+path = "src/lib.rs"
+
 [package.metadata]
 sandboxes = [
-#   "naive_date_str",
-#   "serde_from_grade",
+    #   "naive_date_str",
+  "serde_from_grade",
   # "serde_from_school"
   # "serde_to_school"
   # "serde_to_grade",
