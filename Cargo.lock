@@ -3554,7 +3554,7 @@ dependencies = [
  "alohomora",
  "alohomora_build",
  "alohomora_sandbox",
- "chrono",
+ "serde",
  "serde_json",
 ]
 

@@ -9,7 +9,8 @@ build = "build.rs"
 [dependencies]
 alohomora = { path = "../../alohomora/alohomora" }
 alohomora_sandbox = { path = "../../alohomora/alohomora_sandbox" }
-chrono = "^0.4"
+# chrono = "^0.4"
+serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 
 [build-dependencies]
@@ -18,9 +19,8 @@ alohomora_build = { path = "../../alohomora/alohomora_build" }
 [package.metadata]
 sandboxes = [
 #   "naive_date_str",
-#   "train",
-  # "potato_count"
-  # "stringy"
-  # "alloc_in_sandbox",
-  # "transfer_arg"
+#   "serde_from_grade",
+  # "serde_from_school"
+  # "serde_to_school"
+  # "serde_to_grade",
 ]

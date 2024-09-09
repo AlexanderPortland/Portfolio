@@ -14,6 +14,7 @@ use serde::Serialize;
 use crate::{crypto, models::candidate::ApplicationDetails, error::ServiceError, utils::date::parse_naive_date_from_opt_str};
 use crate::crypto_helpers::{my_decrypt_password_with_private_key, my_encrypt_password_with_recipients};
 
+use super::grade::Grade;
 use super::{candidate::{CandidateDetails, ParentDetails}, grade::GradeList, school::School};
 
 pub const NAIVE_DATE_FMT: &str = "%Y-%m-%d";
@@ -157,16 +158,27 @@ fn naive_date_str((date, format): (chrono::NaiveDate, bool)) -> String {
     }
 }
 
-// this will be gen-ed by macro
-pub fn serde_to_sandbox_caller<T: Serialize>(t: BBox<T, AnyPolicy>) -> BBox<String, AnyPolicy> {
+fn serde_grade_sandbox_caller(t: BBox<GradeList, AnyPolicy>) -> BBox<String, AnyPolicy> {
     t.into_ppr(PrivacyPureRegion::new(|t|{
-        serde_to_sandbox(t)
+        serde_grade_sandbox(t)
     }))
 }
 
 // FIXME: this will go in SANDBOX lib
 // drafted
-fn serde_to_sandbox<T: Serialize>(t: T) -> String {
+fn serde_grade_sandbox(t: GradeList) -> String {
+    serde_json::to_string(&t).unwrap()
+}
+
+fn serde_school_sandbox_caller(t: BBox<School, AnyPolicy>) -> BBox<String, AnyPolicy> {
+    t.into_ppr(PrivacyPureRegion::new(|t|{
+        serde_school_sandbox(t)
+    }))
+}
+
+// FIXME: this will go in SANDBOX lib
+// drafted
+fn serde_school_sandbox(t: School) -> String {
     serde_json::to_string(&t).unwrap()
 }
 
@@ -176,9 +188,9 @@ impl EncryptedCandidateDetails {
         recipients: &Vec<BBox<String, FakePolicy>>,
     ) -> Result<EncryptedCandidateDetails, ServiceError> {
         let birthdate_str = naive_date_str_caller(form.birthdate.clone(), true);
-        let grades_str = serde_to_sandbox_caller(form.grades.clone());
-        let first_school_str = serde_to_sandbox_caller(form.firstSchool.clone());
-        let second_school_str = serde_to_sandbox_caller(form.secondSchool.clone());
+        let grades_str = serde_grade_sandbox_caller(form.grades.clone());
+        let first_school_str = serde_school_sandbox_caller(form.firstSchool.clone());
+        let second_school_str = serde_school_sandbox_caller(form.secondSchool.clone());
         let d = tokio::try_join!(
             EncryptedString::new_option(&form.name, recipients),
             EncryptedString::new_option(&form.surname, recipients),

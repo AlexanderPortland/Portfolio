@@ -66,15 +66,13 @@ impl ResponseBBoxJson for GradeList {
     }
 }
 
-// this will be gen-ed by macro
-pub fn serde_from_sandbox_caller<'a, T: serde::de::DeserializeOwned, P: Policy>(t: BBox<String, P>) -> BBox<T, P> {
+pub fn serde_to_grade_caller<P: Policy>(t: BBox<String, P>) -> BBox<GradeList, P> {
     t.into_ppr(PrivacyPureRegion::new(|t|{
-        serde_from_sandbox(t)
+        serde_to_grade_sandbox(t)
     }))
 }
 
-// FIXME: this will also go in SANDBOX lib
-fn serde_from_sandbox<'a, T: serde::de::DeserializeOwned>(t: String) -> T {
+fn serde_to_grade_sandbox(t: String) -> GradeList {
     serde_json::from_str(t.as_str()).unwrap()
 }
 
@@ -89,7 +87,7 @@ impl GradeList {
     pub fn from_opt_str<P: Policy + Clone + 'static>(grades: Option<BBox<String, P>>) -> Option<BBox<Self, P>> {
         match grades {
             None => None,
-            Some(grades) => Some(serde_from_sandbox_caller(grades)),
+            Some(grades) => Some(serde_to_grade_caller(grades)),
         }
     }
 
