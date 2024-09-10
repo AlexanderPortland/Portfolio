@@ -145,7 +145,7 @@ impl<P: Policy + Clone + 'static> TryFrom<Option<BBox<NaiveDate, P>>> for Encryp
     }
 }
 
-fn naive_date_str_caller(date: BBox<NaiveDate, AnyPolicy>, format: bool) -> BBox<String, AnyPolicy> {
+pub fn naive_date_str_caller(date: BBox<NaiveDate, AnyPolicy>, format: bool) -> BBox<String, AnyPolicy> {
     // date.into_ppr(PrivacyPureRegion::new(|date: NaiveDate|{
     //     naive_date_str((date, format))
     // }))

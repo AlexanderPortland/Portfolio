@@ -44,7 +44,7 @@ impl TryFrom<(BBox<i32, FakePolicy>, ApplicationDetails)> for ApplicationRow {
             surname: Some(c.surname),
             birth_surname: Some(c.birthSurname),
             birthplace: Some(c.birthplace),
-            birthdate: Some(c.birthdate.into_ppr(PrivacyPureRegion::new(|b: NaiveDate| b.to_string()))),
+            birthdate: Some(crate::models::candidate_details::naive_date_str_caller(c.birthdate, false)),
             address: Some(c.address),
             letter_address: Some(c.letterAddress),
             telephone: Some(c.telephone),
