@@ -11,7 +11,7 @@ members = [".", "api", "core", "entity", "migration", "policies"]
 
 [dependencies]
 portfolio-api = { path = "api" }
-portfolio-sandbox = { path = "sandbox" }
+portfolio_sandbox = { path = "sandbox" }
 alohomora = { path = "../alohomora/alohomora" }
 alohomora_derive = { path = "../alohomora/alohomora_derive" }
 alohomora_build = { path = "../alohomora/alohomora_build" }

@@ -5,10 +5,12 @@ use alohomora::orm::ORMPolicy;
 use alohomora::policy::{AnyPolicy, Policy, NoPolicy};
 use alohomora::pure::{execute_pure, PrivacyPureRegion};
 use chrono::NaiveDate;
+use alohomora::sandbox::execute_sandbox;
 
 use entity::{candidate, parent};
 use futures::future;
 use portfolio_policies::FakePolicy;
+use portfolio_sandbox::naive_date_str;
 use serde::Serialize;
 
 use crate::{crypto, models::candidate::ApplicationDetails, error::ServiceError, utils::date::parse_naive_date_from_opt_str};
@@ -144,19 +146,20 @@ impl<P: Policy + Clone + 'static> TryFrom<Option<BBox<NaiveDate, P>>> for Encryp
 }
 
 fn naive_date_str_caller(date: BBox<NaiveDate, AnyPolicy>, format: bool) -> BBox<String, AnyPolicy> {
-    date.into_ppr(PrivacyPureRegion::new(|date: NaiveDate|{
-        naive_date_str((date, format))
-    }))
+    // date.into_ppr(PrivacyPureRegion::new(|date: NaiveDate|{
+    //     naive_date_str((date, format))
+    // }))
+    execute_sandbox::<naive_date_str, _, _>((date, format))
 }
 
 // FIXME: this will go in SANDBOX 
 // (DRAFTED)
-fn naive_date_str((date, format): (chrono::NaiveDate, bool)) -> String {
-    match format {
-        true => date.to_string(),
-        false => date.format(NAIVE_DATE_FMT).to_string(),
-    }
-}
+// fn naive_date_str((date, format): (chrono::NaiveDate, bool)) -> String {
+//     match format {
+//         true => date.to_string(),
+//         false => date.format(NAIVE_DATE_FMT).to_string(),
+//     }
+// }
 
 fn serde_grade_sandbox_caller(t: BBox<GradeList, AnyPolicy>) -> BBox<String, AnyPolicy> {
     t.into_ppr(PrivacyPureRegion::new(|t|{

@@ -1,5 +1,6 @@
 [package]
-name = "portfolio-sandbox"
+name = "portfolio_sandbox" 
+# TODO: our build scripts (specifically the makefile) mess up kebab-case names :(
 version = "0.1.0"
 authors = ["Alex Portland <alexanderportland1@gmail.com>"]
 edition = "2018"
@@ -26,9 +27,9 @@ path = "src/lib.rs"
 
 [package.metadata]
 sandboxes = [
-    #   "naive_date_str",
-  "serde_from_grade",
-  # "serde_from_school"
-  # "serde_to_school"
-  # "serde_to_grade",
+      "naive_date_str",
+  "serde_from_grade", # this one definitely works
+  "serde_from_school",
+  "serde_to_school",
+  "serde_to_grade",
 ]

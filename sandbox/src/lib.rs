@@ -7,16 +7,18 @@ use serde::{Deserialize, Serialize};
 
 pub const NAIVE_DATE_FMT: &str = "%Y-%m-%d";
 
-// #[AlohomoraSandbox]
-// fn naive_date_str((date, format): (chrono::NaiveDate, bool)) -> String {
-//     match format {
-//         true => date.to_string(),
-//         false => date.format(NAIVE_DATE_FMT).to_string(),
-//     }
-// }
+#[AlohomoraSandbox]
+fn naive_date_str((date, format): (chrono::NaiveDate, bool)) -> String {
+    println!("in da sandbox w naive {:?}", date);
+    match format {
+        true => date.to_string(),
+        false => date.format(NAIVE_DATE_FMT).to_string(),
+    }
+}
 
 #[AlohomoraSandbox()]
 fn serde_from_grade(t: GradeList) -> String {
+    println!("in da sandbox");
     serde_json::to_string(&t).unwrap()
 }
 

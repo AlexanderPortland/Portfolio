@@ -3653,7 +3653,7 @@ dependencies = [
  "alohomora_build",
  "alohomora_derive",
  "portfolio-api",
- "portfolio-sandbox",
+ "portfolio_sandbox",
  "sea-orm-rocket",
 ]
 
@@ -3706,6 +3706,7 @@ dependencies = [
  "once_cell",
  "portfolio-entity",
  "portfolio-policies",
+ "portfolio_sandbox",
  "rand 0.8.5",
  "rocket",
  "sea-orm",
@@ -3764,7 +3765,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "portfolio-sandbox"
+name = "portfolio_sandbox"
 version = "0.1.0"
 dependencies = [
  "alohomora_build",
