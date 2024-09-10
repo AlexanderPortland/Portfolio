@@ -1,4 +1,5 @@
-use alohomora::{bbox::BBox, fold::fold, policy::AnyPolicy, pure::{execute_pure, PrivacyPureRegion}, AlohomoraType};
+use alohomora::{bbox::BBox, fold::fold, policy::AnyPolicy, pure::{execute_pure, PrivacyPureRegion}, sandbox::execute_sandbox, AlohomoraType};
+use portfolio_sandbox::serde_from_tuple;
 use crate::{
     error::ServiceError,
     models::candidate_details::EncryptedApplicationDetails,
@@ -16,6 +17,17 @@ use crate::models::candidate_details::EncryptedCandidateDetails;
 use crate::models::grade::GradeList;
 use crate::models::school::School;
 
+/// field is 0 for `name()`, 1 for `field()`
+fn serde_from_school_field_caller(s: BBox<School, AnyPolicy>, field: u8) -> BBox<String, AnyPolicy> {
+    // s.into_ppr(PrivacyPureRegion::new(|s|{
+    //     serde_from_school_field((s, field))
+    // }))
+    let s: BBox<portfolio_sandbox::School, AnyPolicy> = s.into_ppr(PrivacyPureRegion::new(|s: School|{
+        s.to_sandbox()
+    }));
+    execute_sandbox::<portfolio_sandbox::serde_from_school_field, _, _>((s, field))
+}
+
 impl TryFrom<(BBox<i32, FakePolicy>, ApplicationDetails)> for ApplicationRow {
     type Error = ServiceError;
     fn try_from((application, d): (BBox<i32, FakePolicy>, ApplicationDetails)) -> Result<Self, ServiceError> {
@@ -26,17 +38,24 @@ impl TryFrom<(BBox<i32, FakePolicy>, ApplicationDetails)> for ApplicationRow {
             grades.group_by_semester()
         })).transpose()?;
 
+        pub fn serde_from_tuple_caller(d: BBox<Tup, AnyPolicy>, i: u8) -> BBox<String, AnyPolicy> {
+            let t = d.into_ppr(PrivacyPureRegion::new(|d: (GradeList, GradeList, GradeList, GradeList)|{
+                (d.0.to_sandbox(), d.1.to_sandbox(), d.2.to_sandbox(), d.3.to_sandbox())
+            }));
+            execute_sandbox::<serde_from_tuple, _, _>((t, i))
+        }
+
         // FIXME: figure out some sandbox folding here
-        let diploma_1_8 = diplomas.clone().into_ppr(PrivacyPureRegion::new(|d: Tup| d.0.to_string()));
-        let diploma_2_8 = diplomas.clone().into_ppr(PrivacyPureRegion::new(|d: Tup| d.1.to_string()));
-        let diploma_1_9 = diplomas.clone().into_ppr(PrivacyPureRegion::new(|d: Tup| d.2.to_string()));
-        let diploma_2_9 = diplomas.into_ppr(PrivacyPureRegion::new(|d: Tup| d.3.to_string()));
+        let diploma_1_8 = serde_from_tuple_caller(diplomas.clone(), 0);
+        let diploma_2_8 = serde_from_tuple_caller(diplomas.clone(), 1);
+        let diploma_1_9 = serde_from_tuple_caller(diplomas.clone(), 2);
+        let diploma_2_9 = serde_from_tuple_caller(diplomas, 3);
 
         // FIXME: also here
-        let first_school_name = c.firstSchool.clone().into_ppr(PrivacyPureRegion::new(|s: School| s.name().to_string()));
-        let first_school_field = c.firstSchool.clone().into_ppr(PrivacyPureRegion::new(|s: School| s.field().to_string()));
-        let second_school_name = c.secondSchool.clone().into_ppr(PrivacyPureRegion::new(|s: School| s.name().to_string()));
-        let second_school_field = c.secondSchool.clone().into_ppr(PrivacyPureRegion::new(|s: School| s.field().to_string()));
+        let first_school_name = serde_from_school_field_caller(c.firstSchool.clone(), 0);
+        let first_school_field = serde_from_school_field_caller(c.firstSchool.clone(), 1);
+        let second_school_name = serde_from_school_field_caller(c.secondSchool.clone(), 0);
+        let second_school_field = serde_from_school_field_caller(c.secondSchool.clone(), 1);
 
         Ok(Self {
             application: application.into_any_policy(),
@@ -193,10 +212,10 @@ impl CsvExporter for CandidateCsv {
                 }),
             ).unwrap().specialize_policy::<FakePolicy>().unwrap();
 
-            let first_school_name = c.firstSchool.clone().into_ppr(PrivacyPureRegion::new(|s: School| s.name().to_string()));
-            let first_school_field = c.firstSchool.clone().into_ppr(PrivacyPureRegion::new(|s: School| s.field().to_string()));
-            let second_school_name = c.secondSchool.clone().into_ppr(PrivacyPureRegion::new(|s: School| s.name().to_string()));
-            let second_school_field = c.secondSchool.clone().into_ppr(PrivacyPureRegion::new(|s: School| s.field().to_string()));
+            let first_school_name = serde_from_school_field_caller(c.firstSchool.clone(), 0);
+            let first_school_field = serde_from_school_field_caller(c.firstSchool.clone(), 1);
+            let second_school_name = serde_from_school_field_caller(c.secondSchool.clone(), 0);
+            let second_school_field = serde_from_school_field_caller(c.secondSchool.clone(), 1);
 
             let row = CandidateRow {
                 id: id.into_any_policy(),
