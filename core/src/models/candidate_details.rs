@@ -165,6 +165,8 @@ fn serde_grade_sandbox_caller(t: BBox<GradeList, AnyPolicy>) -> BBox<String, Any
     t.into_ppr(PrivacyPureRegion::new(|t|{
         serde_grade_sandbox(t)
     }))
+
+    // execute_sandbox::<portfolio_sandbox::serde_from_grade, _, _>(t)
 }
 
 // FIXME: this will go in SANDBOX lib
@@ -174,16 +176,20 @@ fn serde_grade_sandbox(t: GradeList) -> String {
 }
 
 fn serde_school_sandbox_caller(t: BBox<School, AnyPolicy>) -> BBox<String, AnyPolicy> {
-    t.into_ppr(PrivacyPureRegion::new(|t|{
-        serde_school_sandbox(t)
-    }))
+    // t.into_ppr(PrivacyPureRegion::new(|t|{
+    //     serde_school_sandbox(t)
+    // }))
+    let s: BBox<portfolio_sandbox::School, AnyPolicy> = t.into_ppr(PrivacyPureRegion::new(|s: School|{
+        s.to_sandbox()
+    }));
+    execute_sandbox::<portfolio_sandbox::serde_from_school, _, _>(s)
 }
 
 // FIXME: this will go in SANDBOX lib
 // drafted
-fn serde_school_sandbox(t: School) -> String {
-    serde_json::to_string(&t).unwrap()
-}
+// fn serde_school_sandbox(t: School) -> String {
+//     serde_json::to_string(&t).unwrap()
+// }
 
 impl EncryptedCandidateDetails {
     pub async fn new(

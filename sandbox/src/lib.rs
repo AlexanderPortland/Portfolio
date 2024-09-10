@@ -18,22 +18,25 @@ fn naive_date_str((date, format): (chrono::NaiveDate, bool)) -> String {
 
 #[AlohomoraSandbox()]
 fn serde_from_grade(t: GradeList) -> String {
-    println!("in da sandbox");
+    println!("in da sandbox from grade");
     serde_json::to_string(&t).unwrap()
 }
 
 #[AlohomoraSandbox()]
 fn serde_from_school(t: School) -> String {
+    println!("in da sandbox from school");
     serde_json::to_string(&t).unwrap()
 }
 
 #[AlohomoraSandbox()]
 fn serde_to_school(t: String) -> School {
+    println!("in da sandbox to school");
     serde_json::from_str(t.as_str()).unwrap()
 }
 
 #[AlohomoraSandbox()]
 fn serde_to_grade(t: String) -> GradeList {
+    println!("in da sandbox to grade");
     serde_json::from_str(t.as_str()).unwrap()
 }
 
@@ -41,8 +44,8 @@ fn serde_to_grade(t: String) -> GradeList {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct School {
-    name: String,
-    field: String,
+    pub name: String,
+    pub field: String,
 }
 
 // ************** NEEDED FOR grade sandboxes **************
@@ -52,9 +55,9 @@ pub struct GradeList(Vec<Grade>);
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Grade {
-    subject: String,
-    semester: Semester,
-    value: i32,
+    pub subject: String,
+    pub semester: Semester,
+    pub value: i32,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

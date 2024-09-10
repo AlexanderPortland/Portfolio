@@ -39,6 +39,24 @@ impl Semester {
             Semester::SecondNinth => "2/9",
         }
     }
+
+    pub fn to_sandbox(self) -> portfolio_sandbox::Semester {
+        match self {
+            Self::FirstEighth => portfolio_sandbox::Semester::FirstEighth,
+            Self::SecondEighth => portfolio_sandbox::Semester::SecondEighth,
+            Self::FirstNinth => portfolio_sandbox::Semester::FirstNinth,
+            Self::SecondNinth => portfolio_sandbox::Semester::SecondNinth,
+        }
+    }
+
+    pub fn from_sandbox(s: portfolio_sandbox::Semester) -> Self {
+        match s {
+            portfolio_sandbox::Semester::FirstEighth => Self::FirstEighth,
+            portfolio_sandbox::Semester::SecondEighth => Self::SecondEighth,
+            portfolio_sandbox::Semester::FirstNinth => Self::FirstNinth,
+            portfolio_sandbox::Semester::SecondNinth => Self::SecondNinth,
+        }
+    }
 }
 #[derive(Debug, Clone, Serialize, Deserialize, Validate, PartialEq, Eq)]
 pub struct Grade {
@@ -54,6 +72,22 @@ impl Grade {
     pub fn validate_self(&self) -> Result<(), ServiceError> {
         self.validate()
             .map_err(ServiceError::ValidationError)
+    }
+
+    pub fn to_sandbox(self) -> portfolio_sandbox::Grade {
+        portfolio_sandbox::Grade{
+            subject: self.subject,
+            semester: self.semester.to_sandbox(),
+            value: self.value,
+        }
+    }
+
+    pub fn from_sandbox(g: portfolio_sandbox::Grade) -> Self {
+        Self {
+            subject: g.subject,
+            semester: Semester::from_sandbox(g.semester),
+            value: g.value,
+        }
     }
 }
 
