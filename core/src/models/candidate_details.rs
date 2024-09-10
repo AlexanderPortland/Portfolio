@@ -162,18 +162,19 @@ fn naive_date_str_caller(date: BBox<NaiveDate, AnyPolicy>, format: bool) -> BBox
 // }
 
 fn serde_grade_sandbox_caller(t: BBox<GradeList, AnyPolicy>) -> BBox<String, AnyPolicy> {
-    t.into_ppr(PrivacyPureRegion::new(|t|{
-        serde_grade_sandbox(t)
-    }))
+    let s: BBox<portfolio_sandbox::GradeList, AnyPolicy> = t.into_ppr(PrivacyPureRegion::new(|s: GradeList|{
+        s.to_sandbox()
+    }));
+    execute_sandbox::<portfolio_sandbox::serde_from_grade, _, _>(s)
 
     // execute_sandbox::<portfolio_sandbox::serde_from_grade, _, _>(t)
 }
 
 // FIXME: this will go in SANDBOX lib
 // drafted
-fn serde_grade_sandbox(t: GradeList) -> String {
-    serde_json::to_string(&t).unwrap()
-}
+// fn serde_grade_sandbox(t: GradeList) -> String {
+//     serde_json::to_string(&t).unwrap()
+// }
 
 fn serde_school_sandbox_caller(t: BBox<School, AnyPolicy>) -> BBox<String, AnyPolicy> {
     // t.into_ppr(PrivacyPureRegion::new(|t|{

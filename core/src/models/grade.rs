@@ -1,3 +1,4 @@
+use alohomora::sandbox::execute_sandbox;
 use alohomora::{bbox::BBox};
 use alohomora::policy::Policy;
 use alohomora::pure::PrivacyPureRegion;
@@ -100,15 +101,17 @@ impl ResponseBBoxJson for GradeList {
     }
 }
 
-pub fn serde_to_grade_caller<P: Policy>(t: BBox<String, P>) -> BBox<GradeList, P> {
-    t.into_ppr(PrivacyPureRegion::new(|t|{
-        serde_to_grade_sandbox(t)
+pub fn serde_to_grade_caller<P: Policy + Clone + 'static>(t: BBox<String, P>) -> BBox<GradeList, P> {
+    let s: BBox<portfolio_sandbox::GradeList, P> = execute_sandbox::<portfolio_sandbox::serde_to_grade, _, _>(t).specialize_policy().unwrap();
+
+    s.into_ppr(PrivacyPureRegion::new(|gl: portfolio_sandbox::GradeList|{
+        GradeList::from_sandbox(gl)
     }))
 }
 
-fn serde_to_grade_sandbox(t: String) -> GradeList {
-    serde_json::from_str(t.as_str()).unwrap()
-}
+// fn serde_to_grade_sandbox(t: String) -> GradeList {
+//     serde_json::from_str(t.as_str()).unwrap()
+// }
 
 impl GradeList {
     pub fn validate_self(&self) -> Result<(), ServiceError> {
@@ -144,6 +147,20 @@ impl GradeList {
         Ok(
             (first_semester, second_semester, third_semester, fourth_semester)
         )
+    }
+
+    pub fn to_sandbox(self) -> portfolio_sandbox::GradeList {
+        let l = self.0.into_iter().map(|g|{
+            g.to_sandbox()
+        }).collect::<Vec<portfolio_sandbox::Grade>>();
+        portfolio_sandbox::GradeList(l)
+    }
+
+    pub fn from_sandbox(gl: portfolio_sandbox::GradeList) -> Self {
+        let l = gl.0.into_iter().map(|g|{
+            Grade::from_sandbox(g)
+        }).collect::<Vec<Grade>>();
+        GradeList(l)
     }
 }
 

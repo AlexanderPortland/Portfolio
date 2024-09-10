@@ -51,7 +51,7 @@ pub struct School {
 // ************** NEEDED FOR grade sandboxes **************
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct GradeList(Vec<Grade>);
+pub struct GradeList(pub Vec<Grade>);
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Grade {
