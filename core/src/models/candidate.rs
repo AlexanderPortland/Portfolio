@@ -21,15 +21,10 @@ pub enum FieldOfStudy {
     KB,
 }
 
-fn from_option<P: Policy>(o: Option<BBox<FieldOfStudy, P>>) -> Option<BBox<portfolio_sandbox::FieldOfStudy, P>>{
+fn from_option(o: Option<FieldOfStudy>) -> Option<portfolio_sandbox::FieldOfStudy>{
     match o {
         None => None,
-        Some(b) => {
-            let f = b.into_ppr(PrivacyPureRegion::new(|f: FieldOfStudy|{
-                f.into()
-            }));
-            Some(f)
-        }
+        Some(b) => { Some(b.into()) }
     }
 }
 
@@ -214,11 +209,8 @@ pub enum FieldsCombination {
     ItKb,
 }
 
-fn from_combo<P: Policy>(b: BBox<FieldsCombination, P>) -> BBox<portfolio_sandbox::FieldsCombination, P>{
-    let f = b.into_ppr(PrivacyPureRegion::new(|f: FieldsCombination|{
-        f.into()
-    }));
-    f
+fn from_combo(b: FieldsCombination) -> portfolio_sandbox::FieldsCombination{
+    b.into()
 }
 
 // convert to sandbox equivalent
@@ -287,8 +279,8 @@ pub struct CandidateRow {
     pub parent_telephone: Option<BBox<String, AnyPolicy>>,
 }
 
-impl From<CandidateRow> for portfolio_sandbox::CandidateRow {
-    fn from(value: CandidateRow) -> Self {
+impl From<CandidateRowOut> for portfolio_sandbox::CandidateRow {
+    fn from(value: CandidateRowOut) -> Self {
         portfolio_sandbox::CandidateRow { id: value.id, first_application: value.first_application, second_application: value.second_application, personal_id_number: value.personal_id_number, first_day_admissions: value.first_day_admissions, second_day_admissions: value.second_day_admissions, first_day_field: from_option(value.first_day_field), second_day_field: from_option(value.second_day_field), fields_combination: from_combo(value.fields_combination), first_school: value.first_school, first_school_field: value.first_school_field, second_school: value.second_school, second_school_field: value.second_school_field, fields_match: value.fields_match, name: value.name, surname: value.surname, email: value.email, telephone: value.telephone, parent_email: value.parent_email, parent_telephone: value.parent_telephone }
     }
 }

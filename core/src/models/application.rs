@@ -143,8 +143,8 @@ pub struct ApplicationRow {
     pub second_parent_email: Option<BBox<String, AnyPolicy>>,
 }
 
-impl From<ApplicationRow> for portfolio_sandbox::ApplicationRow {
-    fn from(value: ApplicationRow) -> Self {
+impl From<ApplicationRowOut> for portfolio_sandbox::ApplicationRow {
+    fn from(value: ApplicationRowOut) -> Self {
         portfolio_sandbox::ApplicationRow { application: value.application, name: value.name, surname: value.surname, birth_surname: value.birth_surname, birthplace: value.birthplace, birthdate: value.birthdate, address: value.address, letter_address: value.letter_address, telephone: value.telephone, citizenship: value.citizenship, email: value.email, sex: value.sex, personal_identification_number: value.personal_identification_number, school_name: value.school_name, health_insurance: value.health_insurance, diploma_1_8: value.diploma_1_8, diploma_2_8: value.diploma_2_8, diploma_1_9: value.diploma_1_9, diploma_2_9: value.diploma_2_9, first_school_name: value.first_school_name, first_school_field: value.first_school_field, second_school_name: value.second_school_name, second_school_field: value.second_school_field, parent_name: value.parent_name, parent_surname: value.parent_surname, parent_telephone: value.parent_telephone, parent_email: value.parent_email, second_parent_name: value.second_parent_name, second_parent_surname: value.second_parent_surname, second_parent_telephone: value.second_parent_telephone, second_parent_email: value.second_parent_email }
     }
 }

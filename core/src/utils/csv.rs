@@ -1,10 +1,9 @@
+use std::any::Any;
+
 use alohomora::{bbox::BBox, fold::fold, policy::AnyPolicy, pure::{execute_pure, PrivacyPureRegion}, sandbox::{self, execute_sandbox}, AlohomoraType};
 use portfolio_sandbox::serde_from_tuple;
 use crate::{
-    error::ServiceError,
-    models::candidate_details::EncryptedApplicationDetails,
-    models::{application::ApplicationRow, candidate::ApplicationDetails},
-    Query, services::application_service::ApplicationService,
+    error::ServiceError, models::{application::{ApplicationRow, ApplicationRowOut}, candidate::{ApplicationDetails, CandidateRowOut}, candidate_details::EncryptedApplicationDetails}, services::application_service::ApplicationService, Query
 };
 use alohomora::{context::Context, pcr::PrivacyCriticalRegion, policy::NoPolicy};
 use sea_orm::DbConn;
@@ -88,27 +87,31 @@ impl TryFrom<(BBox<i32, FakePolicy>, ApplicationDetails)> for ApplicationRow {
 
 pub fn error_map(err: portfolio_sandbox::ServiceError) -> ServiceError { err.into() }
 
-// pub fn serialize_cand_row_caller(rows: Vec<CandidateRow>) -> Result<BBox<Vec<u8>, AnyPolicy>, ServiceError> {
-//     let sandbox_rows = rows.into_iter().map(|row|{
-//         row.into()
-//     }).collect::<Vec<portfolio_sandbox::CandidateRow>>();
+pub fn serialize_cand_row_caller(rows: Vec<CandidateRow>) -> Result<BBox<Vec<u8>, AnyPolicy>, ServiceError> {
+    let sandbox_rows = rows.into_iter().map(|row|{
+        execute_pure(row, PrivacyPureRegion::new(|row: CandidateRowOut|{
+            row.into()
+        })).unwrap()
+    }).collect::<Vec<BBox<portfolio_sandbox::CandidateRow, AnyPolicy>>>();
 
-//     let b: Result<BBox<Vec<u8>, AnyPolicy>, ServiceError> = execute_pure(sandbox_rows, PrivacyPureRegion::new(|rows|{
-//         portfolio_sandbox::serialize_cand_row(rows).map_err(error_map)
-//     })).unwrap().transpose();
-//     b
-// }
+    let b: Result<BBox<Vec<u8>, AnyPolicy>, ServiceError> = execute_pure(sandbox_rows, PrivacyPureRegion::new(|rows|{
+        portfolio_sandbox::serialize_cand_row(rows).map_err(error_map)
+    })).unwrap().transpose();
+    b
+}
 
-// pub fn serialize_app_row_caller(rows: Vec<ApplicationRow>) -> Result<BBox<Vec<u8>, AnyPolicy>, ServiceError> {
-//     let sandbox_rows = rows.into_iter().map(|row|{
-//         row.into()
-//     }).collect::<Vec<portfolio_sandbox::ApplicationRow>>();
+pub fn serialize_app_row_caller(rows: Vec<ApplicationRow>) -> Result<BBox<Vec<u8>, AnyPolicy>, ServiceError> {
+    let sandbox_rows = rows.into_iter().map(|row|{
+        execute_pure(row, PrivacyPureRegion::new(|row: ApplicationRowOut|{
+            row.into()
+        })).unwrap()
+    }).collect::<Vec<BBox<portfolio_sandbox::ApplicationRow, AnyPolicy>>>();
 
-//     let b: Result<BBox<Vec<u8>, AnyPolicy>, ServiceError> = execute_pure(sandbox_rows, PrivacyPureRegion::new(|rows|{
-//         portfolio_sandbox::serialize_app_row(rows).map_err(error_map)
-//     })).unwrap().transpose();
-//     b
-// }
+    let b: Result<BBox<Vec<u8>, AnyPolicy>, ServiceError> = execute_pure(sandbox_rows, PrivacyPureRegion::new(|rows|{
+        portfolio_sandbox::serialize_app_row(rows).map_err(error_map)
+    })).unwrap().transpose();
+    b
+}
 
 // This should be a Sandboxed region.
 pub fn serialize_in_sandbox<T: AlohomoraType>(rows: Vec<T>) -> Result<BBox<Vec<u8>, AnyPolicy>, ServiceError> where T::Out: Serialize {
