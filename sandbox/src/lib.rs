@@ -1,7 +1,7 @@
 // use alohomora::{bbox::BBox, policy::AnyPolicy, AlohomoraType};
 // use alohomora::sandbox::AlohomoraSandbox;
 use alohomora_derive::AlohomoraSandbox;
-use serde::{Deserialize, Serialize};
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
 // extern crate alohomora;
 // extern crate chrono;
@@ -54,6 +54,7 @@ pub fn serde_from_tuple((t, i): (Tup, u8)) -> String {
     }
 }
 
+#[AlohomoraSandbox()]
 pub fn serialize_app_row(rows: Vec<ApplicationRow>) -> Result<Vec<u8>, ServiceError> {
     let mut wtr = csv::Writer::from_writer(vec![]);
     for row in rows {
@@ -62,6 +63,7 @@ pub fn serialize_app_row(rows: Vec<ApplicationRow>) -> Result<Vec<u8>, ServiceEr
     wtr.into_inner().map_err(|_| ServiceError::CsvIntoInnerError)
 }
 
+#[AlohomoraSandbox()]
 pub fn serialize_cand_row(rows: Vec<CandidateRow>) -> Result<Vec<u8>, ServiceError> {
     let mut wtr = csv::Writer::from_writer(vec![]);
     for row in rows {
@@ -73,12 +75,13 @@ pub fn serialize_cand_row(rows: Vec<CandidateRow>) -> Result<Vec<u8>, ServiceErr
 // // *********** NEEDED FOR serialization sandboxes ***********
 
 // service error
+#[derive(Serialize, Deserialize)]
 pub enum ServiceError {
     CsvIntoInnerError, // we only need this one error bc its the only one we can throw from in the sandbox
 }
 
 // application row
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 pub struct ApplicationRow {
     ////#[serde(rename = "Ev. č. přihlášky")]
     pub application: i32,
@@ -149,7 +152,7 @@ pub struct ApplicationRow {
 }
 
 // candidate row
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 pub struct CandidateRow {
     pub id: i32,
     pub first_application: i32,
@@ -173,14 +176,14 @@ pub struct CandidateRow {
     pub parent_telephone: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum FieldOfStudy {
     G,
     IT,
     KB,
 }
 
-#[derive(Debug, Serialize, PartialEq, Clone)]
+#[derive(Debug, Serialize, PartialEq, Clone, Deserialize)]
 pub enum FieldsCombination {
     #[serde(rename = "Žádný obor na SSPŠ")]
     Unknown,

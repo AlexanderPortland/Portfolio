@@ -35,6 +35,6 @@ sandboxes = [
   "serde_to_school",
   "serde_to_grade",
   "serde_from_tuple",
-  # "serialize_app_row",
-  # "serialize_cand_row",
+  "serialize_app_row",
+  "serialize_cand_row",
 ]
