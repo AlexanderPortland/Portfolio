@@ -1,9 +1,9 @@
-use alohomora::{bbox::BBox, fold::fold, policy::AnyPolicy, pure::{execute_pure, PrivacyPureRegion}, AlohomoraType};
+use std::any::Any;
+
+use alohomora::{bbox::BBox, fold::fold, policy::AnyPolicy, pure::{execute_pure, PrivacyPureRegion}, sandbox::{self, execute_sandbox}, AlohomoraType};
+use portfolio_sandbox::serde_from_tuple;
 use crate::{
-    error::ServiceError,
-    models::candidate_details::EncryptedApplicationDetails,
-    models::{application::ApplicationRow, candidate::ApplicationDetails},
-    Query, services::application_service::ApplicationService,
+    error::ServiceError, models::{application::{ApplicationRow, ApplicationRowOut}, candidate::{ApplicationDetails, CandidateRowOut}, candidate_details::EncryptedApplicationDetails}, services::application_service::ApplicationService, Query
 };
 use alohomora::{context::Context, pcr::PrivacyCriticalRegion, policy::NoPolicy};
 use sea_orm::DbConn;
@@ -26,13 +26,20 @@ impl TryFrom<(BBox<i32, FakePolicy>, ApplicationDetails)> for ApplicationRow {
             grades.group_by_semester()
         })).transpose()?;
 
-        // FIXME: figure out some sandbox folding here
-        let diploma_1_8 = diplomas.clone().into_ppr(PrivacyPureRegion::new(|d: Tup| d.0.to_string()));
-        let diploma_2_8 = diplomas.clone().into_ppr(PrivacyPureRegion::new(|d: Tup| d.1.to_string()));
-        let diploma_1_9 = diplomas.clone().into_ppr(PrivacyPureRegion::new(|d: Tup| d.2.to_string()));
-        let diploma_2_9 = diplomas.into_ppr(PrivacyPureRegion::new(|d: Tup| d.3.to_string()));
+        pub fn serde_from_tuple_caller(d: BBox<Tup, AnyPolicy>, i: u8) -> BBox<String, AnyPolicy> {
+            let t = d.into_ppr(PrivacyPureRegion::new(|d: (GradeList, GradeList, GradeList, GradeList)|{
+                (d.0.to_sandbox(), d.1.to_sandbox(), d.2.to_sandbox(), d.3.to_sandbox())
+            }));
+            execute_sandbox::<serde_from_tuple, _, _>((t, i))
+        }
 
-        // FIXME: also here
+        // FIXME: figure out some sandbox folding here
+        let diploma_1_8 = serde_from_tuple_caller(diplomas.clone(), 0);
+        let diploma_2_8 = serde_from_tuple_caller(diplomas.clone(), 1);
+        let diploma_1_9 = serde_from_tuple_caller(diplomas.clone(), 2);
+        let diploma_2_9 = serde_from_tuple_caller(diplomas, 3);
+
+
         let first_school_name = c.firstSchool.clone().into_ppr(PrivacyPureRegion::new(|s: School| s.name().to_string()));
         let first_school_field = c.firstSchool.clone().into_ppr(PrivacyPureRegion::new(|s: School| s.field().to_string()));
         let second_school_name = c.secondSchool.clone().into_ppr(PrivacyPureRegion::new(|s: School| s.name().to_string()));
@@ -44,7 +51,7 @@ impl TryFrom<(BBox<i32, FakePolicy>, ApplicationDetails)> for ApplicationRow {
             surname: Some(c.surname),
             birth_surname: Some(c.birthSurname),
             birthplace: Some(c.birthplace),
-            birthdate: Some(c.birthdate.into_ppr(PrivacyPureRegion::new(|b: NaiveDate| b.to_string()))),
+            birthdate: Some(crate::models::candidate_details::naive_date_str_caller(c.birthdate, false)),
             address: Some(c.address),
             letter_address: Some(c.letterAddress),
             telephone: Some(c.telephone),
@@ -76,6 +83,34 @@ impl TryFrom<(BBox<i32, FakePolicy>, ApplicationDetails)> for ApplicationRow {
             second_parent_email: d.parents.get(1).map(|p| p.email.clone()),
         })
     }
+}
+
+pub fn error_map(err: portfolio_sandbox::ServiceError) -> ServiceError { err.into() }
+
+pub fn serialize_cand_row_caller(rows: Vec<CandidateRow>) -> Result<BBox<Vec<u8>, AnyPolicy>, ServiceError> {
+    let sandbox_rows = rows.into_iter().map(|row|{
+        execute_pure(row, PrivacyPureRegion::new(|row: CandidateRowOut|{
+            row.into()
+        })).unwrap()
+    }).collect::<Vec<BBox<portfolio_sandbox::CandidateRow, AnyPolicy>>>();
+
+    let b: Result<BBox<Vec<u8>, AnyPolicy>, ServiceError> = execute_pure(sandbox_rows, PrivacyPureRegion::new(|rows|{
+        portfolio_sandbox::serialize_cand_row(rows).map_err(error_map)
+    })).unwrap().transpose();
+    b
+}
+
+pub fn serialize_app_row_caller(rows: Vec<ApplicationRow>) -> Result<BBox<Vec<u8>, AnyPolicy>, ServiceError> {
+    let sandbox_rows = rows.into_iter().map(|row|{
+        execute_pure(row, PrivacyPureRegion::new(|row: ApplicationRowOut|{
+            row.into()
+        })).unwrap()
+    }).collect::<Vec<BBox<portfolio_sandbox::ApplicationRow, AnyPolicy>>>();
+
+    let b: Result<BBox<Vec<u8>, AnyPolicy>, ServiceError> = execute_pure(sandbox_rows, PrivacyPureRegion::new(|rows|{
+        portfolio_sandbox::serialize_app_row(rows).map_err(error_map)
+    })).unwrap().transpose();
+    b
 }
 
 // This should be a Sandboxed region.

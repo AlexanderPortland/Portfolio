@@ -10,7 +10,7 @@ check: check-api
 	
 backend:
 	export PORTFOLIO_DATABASE_URL=mysql://root:@127.0.0.1/; \
-	cargo run
+	cargo run --release
 
 frontend:
 	rustup default nightly-2022-09-24

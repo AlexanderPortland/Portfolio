@@ -1,3 +1,4 @@
+use alohomora::sandbox::execute_sandbox;
 use alohomora::{bbox::BBox};
 use alohomora::policy::Policy;
 use alohomora::pure::PrivacyPureRegion;
@@ -39,6 +40,24 @@ impl Semester {
             Semester::SecondNinth => "2/9",
         }
     }
+
+    pub fn to_sandbox(self) -> portfolio_sandbox::Semester {
+        match self {
+            Self::FirstEighth => portfolio_sandbox::Semester::FirstEighth,
+            Self::SecondEighth => portfolio_sandbox::Semester::SecondEighth,
+            Self::FirstNinth => portfolio_sandbox::Semester::FirstNinth,
+            Self::SecondNinth => portfolio_sandbox::Semester::SecondNinth,
+        }
+    }
+
+    pub fn from_sandbox(s: portfolio_sandbox::Semester) -> Self {
+        match s {
+            portfolio_sandbox::Semester::FirstEighth => Self::FirstEighth,
+            portfolio_sandbox::Semester::SecondEighth => Self::SecondEighth,
+            portfolio_sandbox::Semester::FirstNinth => Self::FirstNinth,
+            portfolio_sandbox::Semester::SecondNinth => Self::SecondNinth,
+        }
+    }
 }
 #[derive(Debug, Clone, Serialize, Deserialize, Validate, PartialEq, Eq)]
 pub struct Grade {
@@ -55,6 +74,22 @@ impl Grade {
         self.validate()
             .map_err(ServiceError::ValidationError)
     }
+
+    pub fn to_sandbox(self) -> portfolio_sandbox::Grade {
+        portfolio_sandbox::Grade{
+            subject: self.subject,
+            semester: self.semester.to_sandbox(),
+            value: self.value,
+        }
+    }
+
+    pub fn from_sandbox(g: portfolio_sandbox::Grade) -> Self {
+        Self {
+            subject: g.subject,
+            semester: Semester::from_sandbox(g.semester),
+            value: g.value,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -66,17 +101,17 @@ impl ResponseBBoxJson for GradeList {
     }
 }
 
-// this will be gen-ed by macro
-pub fn serde_from_sandbox_caller<'a, T: serde::de::DeserializeOwned, P: Policy>(t: BBox<String, P>) -> BBox<T, P> {
-    t.into_ppr(PrivacyPureRegion::new(|t|{
-        serde_from_sandbox(t)
+pub fn serde_to_grade_caller<P: Policy + Clone + 'static>(t: BBox<String, P>) -> BBox<GradeList, P> {
+    let s: BBox<portfolio_sandbox::GradeList, P> = execute_sandbox::<portfolio_sandbox::serde_to_grade, _, _>(t).specialize_policy().unwrap();
+
+    s.into_ppr(PrivacyPureRegion::new(|gl: portfolio_sandbox::GradeList|{
+        GradeList::from_sandbox(gl)
     }))
 }
 
-// FIXME: this will also go in SANDBOX lib
-fn serde_from_sandbox<'a, T: serde::de::DeserializeOwned>(t: String) -> T {
-    serde_json::from_str(t.as_str()).unwrap()
-}
+// fn serde_to_grade_sandbox(t: String) -> GradeList {
+//     serde_json::from_str(t.as_str()).unwrap()
+// }
 
 impl GradeList {
     pub fn validate_self(&self) -> Result<(), ServiceError> {
@@ -89,7 +124,7 @@ impl GradeList {
     pub fn from_opt_str<P: Policy + Clone + 'static>(grades: Option<BBox<String, P>>) -> Option<BBox<Self, P>> {
         match grades {
             None => None,
-            Some(grades) => Some(serde_from_sandbox_caller(grades)),
+            Some(grades) => Some(serde_to_grade_caller(grades)),
         }
     }
 
@@ -112,6 +147,20 @@ impl GradeList {
         Ok(
             (first_semester, second_semester, third_semester, fourth_semester)
         )
+    }
+
+    pub fn to_sandbox(self) -> portfolio_sandbox::GradeList {
+        let l = self.0.into_iter().map(|g|{
+            g.to_sandbox()
+        }).collect::<Vec<portfolio_sandbox::Grade>>();
+        portfolio_sandbox::GradeList(l)
+    }
+
+    pub fn from_sandbox(gl: portfolio_sandbox::GradeList) -> Self {
+        let l = gl.0.into_iter().map(|g|{
+            Grade::from_sandbox(g)
+        }).collect::<Vec<Grade>>();
+        GradeList(l)
     }
 }
 

@@ -1,12 +1,12 @@
 use std::collections::HashMap;
+use alohomora::policy::AnyPolicy;
+use alohomora::sandbox::execute_sandbox;
 use alohomora::{bbox::BBox, policy::Policy};
 use alohomora::pure::PrivacyPureRegion;
 use serde::{Serialize, Deserialize};
 use validator::Validate;
 
 use crate::error::ServiceError;
-
-use super::grade::serde_from_sandbox_caller;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Validate, PartialEq, Eq, alohomora_derive::ResponseBBoxJson)]
 pub struct School {
@@ -16,11 +16,23 @@ pub struct School {
     field: String,
 }
 
+pub fn serde_to_school_caller<P: Policy + Clone + 'static>(t: BBox<String, P>) -> BBox<School, P> {
+    let s: BBox<portfolio_sandbox::School, P> = execute_sandbox::<portfolio_sandbox::serde_to_school, _, _>(t).specialize_policy().unwrap();
+
+    s.into_ppr(PrivacyPureRegion::new(|s: portfolio_sandbox::School|{
+        School::from_sandbox(s)
+    }))
+}
+
+// fn serde_to_school_sandbox(t: String) -> School {
+//     serde_json::from_str(t.as_str()).unwrap()
+// }
+
 impl School {
-    pub fn from_opt_str<P: Policy>(school: Option<BBox<String, P>>) -> Option<BBox<Self, P>> {
+    pub fn from_opt_str<P: Policy + Clone + 'static>(school: Option<BBox<String, P>>) -> Option<BBox<Self, P>> {
         match school {
             None => None,
-            Some(school) => Some(serde_from_sandbox_caller(school)),
+            Some(school) => Some(serde_to_school_caller(school)),
         }
     }
 
@@ -35,6 +47,20 @@ impl School {
 
     pub fn field(&self) -> &str {
         &self.field
+    }
+
+    pub fn to_sandbox(self) -> portfolio_sandbox::School {
+        portfolio_sandbox::School {
+            name: self.name,
+            field: self.field,
+        }
+    }
+
+    pub fn from_sandbox(s: portfolio_sandbox::School) -> Self {
+        School {
+            name: s.name,
+            field: s.field,
+        }
     }
 }
 
