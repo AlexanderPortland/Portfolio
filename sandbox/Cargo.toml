@@ -32,6 +32,5 @@ sandboxes = [
   "serde_from_school",
   "serde_to_school",
   "serde_to_grade",
-  "serde_from_school_field",
   "serde_from_tuple",
 ]

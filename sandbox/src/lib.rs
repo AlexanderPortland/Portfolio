@@ -40,16 +40,6 @@ fn serde_to_grade(t: String) -> GradeList {
     serde_json::from_str(t.as_str()).unwrap()
 }
 
-#[AlohomoraSandbox()]
-fn serde_from_school_field((s, f): (School, u8)) -> String {
-    println!("in da sandbox for from school field");
-    match f {
-        0 => s.name().to_string(),
-        1 => s.field().to_string(),
-        _ => panic!("invalid field"),
-    }
-}
-
 type Tup = (GradeList, GradeList, GradeList, GradeList);
 #[AlohomoraSandbox()]
 pub fn serde_from_tuple((t, i): (Tup, u8)) -> String {
