@@ -10,6 +10,8 @@ build = "build.rs"
 chrono = { version = "0.4.0", features = ["serde"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
+csv = "^1.2"
+alohomora = { path = "../../alohomora/alohomora" }
 alohomora_derive = { path = "../../alohomora/alohomora_derive" }
 alohomora_sandbox = { path = "../../alohomora/alohomora_sandbox" }
 # don't need everything below here
@@ -33,4 +35,6 @@ sandboxes = [
   "serde_to_school",
   "serde_to_grade",
   "serde_from_tuple",
+  # "serialize_app_row",
+  # "serialize_cand_row",
 ]

@@ -87,6 +87,14 @@ pub enum ServiceError {
     InvalidFieldOfStudy,
 }
 
+impl From<portfolio_sandbox::ServiceError> for ServiceError {
+    fn from(value: portfolio_sandbox::ServiceError) -> Self {
+        match value {
+            portfolio_sandbox::ServiceError::CsvIntoInnerError => Self::CsvIntoInnerError
+        }
+    }
+}
+
 impl ServiceError {
     pub fn code(&self) -> u16 {
         match self {

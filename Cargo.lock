@@ -3768,10 +3768,12 @@ dependencies = [
 name = "portfolio_sandbox"
 version = "0.1.0"
 dependencies = [
+ "alohomora",
  "alohomora_build",
  "alohomora_derive",
  "alohomora_sandbox",
  "chrono",
+ "csv",
  "linfa",
  "linfa-linear",
  "ndarray",
