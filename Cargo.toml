@@ -14,7 +14,12 @@ portfolio-api = { path = "api" }
 portfolio_sandbox = { path = "sandbox" }
 alohomora = { path = "../alohomora/alohomora" }
 alohomora_derive = { path = "../alohomora/alohomora_derive" }
-# alohomora_build = { path = "../alohomora/alohomora_build" }
+
+[workspace.metadata.dylint]
+libraries = [
+    { path = "../alohomora/alohomora_lints" },
+]
+
 
 [build-dependencies]
 alohomora_build = { path = "../alohomora/alohomora_build" }
