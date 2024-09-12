@@ -3649,11 +3649,7 @@ dependencies = [
 name = "portfolio"
 version = "2.0.0"
 dependencies = [
- "alohomora",
- "alohomora_build",
- "alohomora_derive",
  "portfolio-api",
- "portfolio_sandbox",
  "sea-orm-rocket",
 ]
 
@@ -3689,6 +3685,7 @@ dependencies = [
  "aes-gcm-siv",
  "age",
  "alohomora",
+ "alohomora_build",
  "alohomora_derive",
  "argon2",
  "async-compat",

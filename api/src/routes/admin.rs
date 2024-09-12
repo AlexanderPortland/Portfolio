@@ -7,7 +7,6 @@ use requests::{AdminLoginRequest, RegisterRequest};
 use rocket::http::Status;
 
 
-use portfolio_policies::context::ContextDataType;
 use alohomora::{bbox::BBox, context::Context, orm::Connection, pure::{execute_pure, PrivacyPureRegion}, rocket::{BBoxCookie, BBoxCookieJar, BBoxJson, ContextResponse, get, JsonResponse, post, route}};
 use alohomora::policy::{AnyPolicy, NoPolicy};
 
@@ -15,7 +14,7 @@ use portfolio_core::utils::csv::{ApplicationCsv, CandidateCsv, CsvExporter};
 use portfolio_core::utils::response::MyResult;
 use portfolio_policies::FakePolicy;
 
-use crate::{guards::request::auth::AdminAuth, pool::Db, requests};
+use crate::{guards::request::auth::AdminAuth, pool::{ContextDataType, Db}, requests};
 
 use super::to_custom_error;
 

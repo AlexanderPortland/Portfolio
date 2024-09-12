@@ -50,12 +50,15 @@ log = "^0.4"
 fern = "^0.6"
 
 # alohomora
-alohomora = { path = "../../alohomora/alohomora" }
+alohomora = { path = "../../alohomora/alohomora", features = ["default", "orm"] }
 alohomora_derive = { path = "../../alohomora/alohomora_derive" }
 portfolio-policies = { path = "../policies" }
 portfolio_sandbox ={ path = "../sandbox" }
 
 rocket = { git = "https://github.com/KinanBab/Rocket.git", branch = "main" }
+
+[build-dependencies]
+alohomora_build = { path = "../../alohomora/alohomora_build" }
 
 [dependencies.sea-orm]
 git = "https://github.com/KinanBab/sea-orm.git"

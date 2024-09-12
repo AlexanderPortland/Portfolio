@@ -1,5 +1,6 @@
 use async_trait::async_trait;
 use portfolio_core::sea_orm::{self};
+use portfolio_policies::context::RealContextDataType;
 #[cfg(not(test))]
 use sea_orm::ConnectOptions;
 use alohomora::orm::Database;
@@ -144,3 +145,5 @@ impl alohomora::orm::Pool for SeaOrmPool {
         &self.conn
     }
 }
+
+pub type ContextDataType = RealContextDataType<Db>;

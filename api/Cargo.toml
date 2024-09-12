@@ -32,7 +32,7 @@ portfolio-migration = { path = "../migration" }
 portfolio-core = { path = "../core" }
 portfolio-policies = { path = "../policies" }
 
-alohomora = { path = "../../alohomora/alohomora" }
+alohomora = { path = "../../alohomora/alohomora", features = ["default", "orm"]}
 alohomora_derive = { path = "../../alohomora/alohomora_derive" }
 
 [dependencies.sea-orm-migration]
