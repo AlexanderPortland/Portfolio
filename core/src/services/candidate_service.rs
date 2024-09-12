@@ -69,7 +69,7 @@ impl CandidateService {
 pub mod tests {
     use alohomora::bbox::BBox;
     use alohomora::context::Context;
-    use alohomora::pcr::{execute_pcr, PrivacyCriticalRegion};
+    use alohomora::pcr::{execute_pcr, PrivacyCriticalRegion, Signature};
     use alohomora::policy::NoPolicy;
     use alohomora::testing::TestContextData;
     use portfolio_policies::context::ContextDataType;
@@ -102,7 +102,10 @@ pub mod tests {
         let private_key = execute_pcr(admin.private_key, 
             PrivacyCriticalRegion::new(|private_key: String, _, _| {
                 crypto::decrypt_password(private_key, "admin".to_string())
-            }), ()).unwrap().await.unwrap();
+            },
+            Signature{username: "AlexanderPortland", signature: ""}, 
+            Signature{username: "AlexanderPortland", signature: ""}, 
+            Signature{username: "AlexanderPortland", signature: ""}), ()).unwrap().await.unwrap();
         //let private_key = crypto::decrypt_password(admin.private_key.discard_box(), "admin".to_string()).await.unwrap();
         let private_key = BBox::new(private_key, FakePolicy::new());
         let candidates = ApplicationService::list_applications(&private_key, &db, None, None, None).await.unwrap();
@@ -161,7 +164,10 @@ pub mod tests {
         let dec_priv_key = execute_pcr(application.private_key, 
             PrivacyCriticalRegion::new(|private_key: String, _, _| {
                 crypto::decrypt_password(private_key, password)
-            }), ()).unwrap().await.unwrap();
+            },
+            Signature{username: "AlexanderPortland", signature: ""}, 
+            Signature{username: "AlexanderPortland", signature: ""}, 
+            Signature{username: "AlexanderPortland", signature: ""}), ()).unwrap().await.unwrap();
         // let dec_priv_key = crypto::decrypt_password(application.private_key.clone().discard_box(), password)
         //     .await
         //     .unwrap();

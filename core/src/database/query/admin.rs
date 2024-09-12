@@ -43,7 +43,7 @@ impl Query {
 #[cfg(test)]
 mod tests {
     use alohomora::bbox::BBox;
-    use alohomora::pcr::{execute_pcr, PrivacyCriticalRegion};
+    use alohomora::pcr::{execute_pcr, PrivacyCriticalRegion, Signature};
     use entity::admin;
     use sea_orm::{ActiveModelTrait, Set};
     use portfolio_policies::FakePolicy;
@@ -100,7 +100,10 @@ mod tests {
         for index in 1..5 {
             let pk_contains_key = PrivacyCriticalRegion::new(|(index, pks): (i32, Vec<String>), _, _|{
                 pks.contains(&format!("valid_public_key_{}", index))
-            });
+            },
+            Signature{username: "AlexanderPortland", signature: ""}, 
+            Signature{username: "AlexanderPortland", signature: ""}, 
+            Signature{username: "AlexanderPortland", signature: ""});
             let contains_this_index = execute_pcr((index, public_keys.clone()), pk_contains_key, ()).unwrap();
             //assert!(public_keys.contains(&format!("valid_public_key_{}", index)));
             assert!(contains_this_index);

@@ -54,7 +54,7 @@ impl ParentService {
 mod tests {
     use std::sync::Mutex;
 
-    use alohomora::{bbox::BBox, context::Context, pcr::{execute_pcr, PrivacyCriticalRegion}, policy::{AnyPolicy, NoPolicy}, testing::TestContextData};
+    use alohomora::{bbox::BBox, context::Context, pcr::{execute_pcr, PrivacyCriticalRegion, Signature}, policy::{AnyPolicy, NoPolicy}, testing::TestContextData};
     use once_cell::sync::Lazy;
     use portfolio_policies::{context::ContextDataType, FakePolicy};
 
@@ -129,7 +129,10 @@ mod tests {
         let priv_key = execute_pcr(application.private_key, 
             PrivacyCriticalRegion::new(|private_key: String, _, _| {
                 crypto::decrypt_password(private_key, plain_text_password)
-            }), ()).unwrap().await.unwrap();
+            },
+            Signature{username: "AlexanderPortland", signature: ""}, 
+            Signature{username: "AlexanderPortland", signature: ""}, 
+            Signature{username: "AlexanderPortland", signature: ""}), ()).unwrap().await.unwrap();
         let priv_key = BBox::new(
             priv_key, FakePolicy::new());
         let dec_details = EncryptedApplicationDetails::try_from((&candidate, &parents))

@@ -2,7 +2,7 @@ use std::path::Path;
 use age::decryptor::RecipientsDecryptor;
 use alohomora::bbox::BBox;
 use alohomora::context::Context;
-use alohomora::pcr::{execute_pcr, PrivacyCriticalRegion};
+use alohomora::pcr::{execute_pcr, PrivacyCriticalRegion, Signature};
 use alohomora::policy::{AnyPolicy, Policy, PolicyAnd};
 use alohomora::pure::{execute_pure, PrivacyPureRegion};
 use alohomora::testing::TestContextData;
@@ -15,7 +15,10 @@ pub async fn my_hash_password<P: Policy + Clone + 'static>(password_plain_text: 
     let hash_res = execute_pcr(password_plain_text.clone(), 
         PrivacyCriticalRegion::new(|plain_text, _, _|{
             crate::crypto::hash_password(plain_text)
-        }), ()).unwrap().await;
+        }, 
+        Signature{username: "AlexanderPortland", signature: ""}, 
+        Signature{username: "AlexanderPortland", signature: ""}, 
+        Signature{username: "AlexanderPortland", signature: ""}), ()).unwrap().await;
 
     match hash_res {
         Ok(hash) => Ok(BBox::new(hash, password_plain_text.policy().clone())),
@@ -30,7 +33,10 @@ pub async fn my_encrypt_password<P: Policy + Clone + 'static>(
     let enc_res = execute_pcr(key.clone(), 
         PrivacyCriticalRegion::new(|key, _, _|{
             crate::crypto::encrypt_password(password_plain_text, key)
-        }), ()).unwrap().await;
+        },
+        Signature{username: "AlexanderPortland", signature: ""}, 
+        Signature{username: "AlexanderPortland", signature: ""}, 
+        Signature{username: "AlexanderPortland", signature: ""}), ()).unwrap().await;
 
     match enc_res {
         Ok(enc) => Ok(BBox::new(enc, key.policy().clone())),
@@ -44,7 +50,10 @@ pub async fn my_decrypt_password<P1: Policy + Clone + 'static, P2: Policy + Clon
     let dec_res = execute_pcr((ciphertext.clone(), key.clone()), 
         PrivacyCriticalRegion::new(|(ciphertext, key), _, _|{
             crate::crypto::decrypt_password(ciphertext, key)
-        }), ()).unwrap().await;
+        },
+        Signature{username: "AlexanderPortland", signature: ""}, 
+        Signature{username: "AlexanderPortland", signature: ""}, 
+        Signature{username: "AlexanderPortland", signature: ""}), ()).unwrap().await;
 
     match dec_res {
         Ok(dec) => {
@@ -67,7 +76,10 @@ pub async fn my_encrypt_password_with_recipients<P: Policy + Clone + 'static, P2
     let (unboxed_password_plain_text, unboxed_recipients): (String, Vec<String>) = execute_pcr((password_plain_text.clone(), recipients.clone()), 
     PrivacyCriticalRegion::new(|(plaintext, recipients): (String, Vec<String>), _, _|{
         (plaintext, recipients)
-    }), ()).unwrap();
+    },
+    Signature{username: "AlexanderPortland", signature: ""}, 
+    Signature{username: "AlexanderPortland", signature: ""}, 
+    Signature{username: "AlexanderPortland", signature: ""}), ()).unwrap();
 
     let recipients_ref = unboxed_recipients.iter().map(|s|s.as_str()).collect::<Vec<&str>>();
 
@@ -93,7 +105,10 @@ pub async fn my_decrypt_password_with_private_key<P1: Policy + Clone + 'static, 
     let (unboxed_password_encrypted, unboxed_key): (String, String) = execute_pcr((password_encrypted.clone(), key.clone()), 
     PrivacyCriticalRegion::new(|(ciphertext, key): (String, String), _, _|{
         (ciphertext, key)
-    }), ()).unwrap();
+    },
+    Signature{username: "AlexanderPortland", signature: ""}, 
+    Signature{username: "AlexanderPortland", signature: ""}, 
+    Signature{username: "AlexanderPortland", signature: ""}), ()).unwrap();
     let dec_res = crate::crypto::decrypt_password_with_private_key(&unboxed_password_encrypted, &unboxed_key).await;
 
     match dec_res {
@@ -117,7 +132,10 @@ pub async fn my_verify_password<P1: Policy + Clone + 'static, P2: Policy + Clone
     let (unboxed_password_plain, unboxed_hash): (String, String) = execute_pcr((password_plain_text.clone(), hash.clone()), 
     PrivacyCriticalRegion::new(|(a, b): (String, String), _, _|{
         (a, b)
-    }), ()).unwrap();
+    },
+    Signature{username: "AlexanderPortland", signature: ""}, 
+    Signature{username: "AlexanderPortland", signature: ""}, 
+    Signature{username: "AlexanderPortland", signature: ""}), ()).unwrap();
     let dec_res = crate::crypto::verify_password(unboxed_password_plain, unboxed_hash).await;
 
     dec_res
