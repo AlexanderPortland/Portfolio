@@ -5,7 +5,7 @@ use ::rocket::http::Status;
 use alohomora::rocket::{BBoxRequest, BBoxRequestOutcome, FromBBoxRequest};
 use ::rocket::outcome::IntoOutcome;
 
-#[derive(Clone)]
+// #[derive(Clone)]
 pub struct RealContextDataType<Db: sea_orm_rocket::Database>  {
     pub session_id: Option<BBox<String, NoPolicy>>,
     pub key: Option<BBox<String, NoPolicy>>,
@@ -13,6 +13,23 @@ pub struct RealContextDataType<Db: sea_orm_rocket::Database>  {
     pub phantom: PhantomData<Db>,
     //pub db: Arc<Mutex<BBoxConn>>,
 }
+
+impl<Db: sea_orm_rocket::Database> Clone for RealContextDataType<Db> {
+    fn clone(&self) -> Self {
+        RealContextDataType{
+            session_id: self.session_id.clone(),
+            key: self.key.clone(),
+            conn: self.conn,
+            phantom: self.phantom,
+        }
+    }
+}
+
+// impl<Db> Clone for RealContextDataType<Db> {
+//     fn clone(&self) -> Self {
+//         todo!()
+//     }
+// }
 
 pub struct ContextDataTypeOut {
     pub session_id: Option<String>,

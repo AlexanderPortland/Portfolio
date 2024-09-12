@@ -6,7 +6,7 @@ use alohomora::{bbox::BBox, context::Context, orm::Connection, pure::{execute_pu
 use alohomora_derive::{RequestBBoxJson, ResponseBBoxJson};
 use chrono::NaiveDate;
 use entity::application;
-use portfolio_policies::context::ContextDataType;
+use crate::pool::ContextDataType;
 use portfolio_core::utils::response::MyResult;
 use portfolio_core::Query;
 use portfolio_core::error::ServiceError;

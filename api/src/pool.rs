@@ -146,4 +146,5 @@ impl alohomora::orm::Pool for SeaOrmPool {
     }
 }
 
+// #[derive(Clone)]
 pub type ContextDataType = RealContextDataType<Db>;
