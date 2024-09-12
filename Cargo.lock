@@ -3701,6 +3701,7 @@ dependencies = [
  "infer",
  "log",
  "once_cell",
+ "portfolio-api",
  "portfolio-entity",
  "portfolio-policies",
  "portfolio_sandbox",

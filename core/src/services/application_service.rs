@@ -518,7 +518,8 @@ impl AuthenticableTrait for ApplicationService {
 #[cfg(test)]
 mod application_tests {
     use alohomora::{bbox::BBox, context::Context, pcr::{execute_pcr, PrivacyCriticalRegion, Signature}, policy::NoPolicy, pure::{execute_pure, PrivacyPureRegion}, testing::TestContextData};
-    use portfolio_policies::{context::ContextDataType, FakePolicy};
+    use portfolio_policies::FakePolicy;
+    use portfolio_api::pool::ContextDataType;
     use rocket::figment::util;
     //use sea_orm::sea_query::private;
 
@@ -540,6 +541,8 @@ mod application_tests {
         Context::test(ContextDataType{
             session_id: Some(BBox::new(utils::db::TESTING_ADMIN_COOKIE.to_string(), NoPolicy::new())),
             key: Some(BBox::new(utils::db::TESTING_ADMIN_KEY.to_string(), NoPolicy::new())),
+            conn: todo!(),
+            phantom: std::marker::PhantomData,
         })
     }
 

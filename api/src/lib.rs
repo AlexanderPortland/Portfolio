@@ -17,7 +17,7 @@ pub use entity::candidate;
 pub use entity::candidate::Entity as Candidate;
 
 mod guards;
-mod pool;
+pub mod pool;
 mod requests;
 mod routes;
 mod logging;

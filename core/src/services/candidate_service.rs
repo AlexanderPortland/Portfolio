@@ -72,7 +72,8 @@ pub mod tests {
     use alohomora::pcr::{execute_pcr, PrivacyCriticalRegion, Signature};
     use alohomora::policy::NoPolicy;
     use alohomora::testing::TestContextData;
-    use portfolio_policies::context::ContextDataType;
+    use portfolio_policies::FakePolicy;
+    use portfolio_api::pool::ContextDataType;
     use sea_orm::DbConn;
 
     use crate::models::candidate_details::tests::assert_all_application_details;
@@ -82,7 +83,6 @@ pub mod tests {
 
     use crate::models::candidate_details::EncryptedApplicationDetails;
     use entity::{application, candidate, parent};
-    use portfolio_policies::FakePolicy;
 
     use crate::services::application_service::ApplicationService;
 
@@ -92,6 +92,8 @@ pub mod tests {
         Context::test(ContextDataType{
             session_id: Some(BBox::new(utils::db::TESTING_ADMIN_COOKIE.to_string(), NoPolicy::new())),
             key: Some(BBox::new(utils::db::TESTING_ADMIN_KEY.to_string(), NoPolicy::new())),
+            conn: todo!(),
+            phantom: std::marker::PhantomData,
         })
     }
 

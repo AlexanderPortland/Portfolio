@@ -46,7 +46,8 @@ mod tests {
     use sea_orm::{
         prelude::Uuid,
     };
-    use portfolio_policies::{context::ContextDataType, FakePolicy};
+    use portfolio_policies::FakePolicy;
+    use portfolio_api::pool::ContextDataType;
 
     use crate::{
         crypto, models::auth::AuthenticableTrait, services::application_service::ApplicationService, utils::{self, db::get_memory_sqlite_connection}
@@ -57,6 +58,8 @@ mod tests {
         Context::test(ContextDataType{
             session_id: Some(BBox::new(utils::db::TESTING_ADMIN_COOKIE.to_string(), NoPolicy::new())),
             key: Some(BBox::new(utils::db::TESTING_ADMIN_KEY.to_string(), NoPolicy::new())),
+            conn: todo!(),
+            phantom: std::marker::PhantomData,
         })
     }
 

@@ -2,7 +2,8 @@
 pub mod tests {
     use crate::rocket;
     use alohomora::{bbox::BBox, context::Context, policy::NoPolicy, testing::{BBoxClient, TestContextData}};
-    use portfolio_policies::{context::ContextDataType, FakePolicy};
+    use portfolio_policies::FakePolicy;
+    use crate::pool::ContextDataType;
     use entity::admin;
     use once_cell::sync::OnceCell;
     use portfolio_core::{
@@ -11,7 +12,7 @@ pub mod tests {
         services::application_service::ApplicationService,
     };
     
-    use std::sync::Mutex;
+    use std::{marker::PhantomData, sync::Mutex};
 
     pub const ADMIN_ID: i32 = 1;
     pub const ADMIN_PASSWORD: &'static str = "test";
@@ -26,6 +27,8 @@ pub mod tests {
         Context::test(ContextDataType{
             session_id: Some(BBox::new(TESTING_ADMIN_COOKIE.to_string(), NoPolicy::new())),
             key: Some(BBox::new(TESTING_ADMIN_KEY.to_string(), NoPolicy::new())),
+            conn: todo!(),
+            phantom: PhantomData,
         })
     }
 

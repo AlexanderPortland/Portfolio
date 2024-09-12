@@ -56,7 +56,8 @@ mod tests {
 
     use alohomora::{bbox::BBox, context::Context, pcr::{execute_pcr, PrivacyCriticalRegion, Signature}, policy::{AnyPolicy, NoPolicy}, testing::TestContextData};
     use once_cell::sync::Lazy;
-    use portfolio_policies::{context::ContextDataType, FakePolicy};
+    use portfolio_policies::FakePolicy;
+    use portfolio_api::pool::ContextDataType;
 
     use crate::{crypto, models::{candidate::{ApplicationDetails, CandidateDetails, ParentDetails}, candidate_details::EncryptedApplicationDetails, grade::GradeList, school::School}, services::{application_service::ApplicationService, candidate_service::{tests::put_user_data, CandidateService}, parent_service::ParentService}, utils::{self, db::get_memory_sqlite_connection}};
 
@@ -64,6 +65,8 @@ mod tests {
         Context::test(ContextDataType{
             session_id: Some(BBox::new(utils::db::TESTING_ADMIN_COOKIE.to_string(), NoPolicy::new())),
             key: Some(BBox::new(utils::db::TESTING_ADMIN_KEY.to_string(), NoPolicy::new())),
+            conn: todo!(),
+            phantom: std::marker::PhantomData,
         })
     }
 
