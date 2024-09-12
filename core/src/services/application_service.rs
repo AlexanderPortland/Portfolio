@@ -517,7 +517,7 @@ impl AuthenticableTrait for ApplicationService {
 
 #[cfg(test)]
 mod application_tests {
-    use alohomora::{bbox::BBox, context::Context, pcr::{execute_pcr, PrivacyCriticalRegion}, policy::NoPolicy, pure::{execute_pure, PrivacyPureRegion}, testing::TestContextData};
+    use alohomora::{bbox::BBox, context::Context, pcr::{execute_pcr, PrivacyCriticalRegion, Signature}, policy::NoPolicy, pure::{execute_pure, PrivacyPureRegion}, testing::TestContextData};
     use portfolio_policies::{context::ContextDataType, FakePolicy};
     use rocket::figment::util;
     //use sea_orm::sea_query::private;
@@ -553,7 +553,10 @@ mod application_tests {
         let private_key = execute_pcr(admin.private_key, 
             PrivacyCriticalRegion::new(|private_key, _, _|{
                 crypto::decrypt_password(private_key, "admin".to_string())
-            }),
+            },
+            Signature{username: "AlexanderPortland", signature: ""}, 
+            Signature{username: "AlexanderPortland", signature: ""}, 
+            Signature{username: "AlexanderPortland", signature: ""}),
         ()).unwrap().await.unwrap();
 
         // The ip and password for the login happens with.
@@ -599,7 +602,10 @@ mod application_tests {
         let public_key = execute_pcr(application.public_key, 
             PrivacyCriticalRegion::new(|public_key: String, _, _| {
                 public_key
-            }), ()).unwrap();
+            },
+            Signature{username: "AlexanderPortland", signature: ""}, 
+            Signature{username: "AlexanderPortland", signature: ""}, 
+            Signature{username: "AlexanderPortland", signature: ""}), ()).unwrap();
 
         // ideally we'd do things this way but we cant await outside pcr bc public_key doesn't live long enough
         // and we need it to stick around
@@ -613,12 +619,18 @@ mod application_tests {
         let private_key_plain_text = execute_pcr(application.private_key.clone(), 
             PrivacyCriticalRegion::new(|private_key: String, _, _| {
                 crypto::decrypt_password(private_key, plain_text_password.clone())
-            }), ()).unwrap().await.unwrap();
+            },
+            Signature{username: "AlexanderPortland", signature: ""}, 
+            Signature{username: "AlexanderPortland", signature: ""}, 
+            Signature{username: "AlexanderPortland", signature: ""}), ()).unwrap().await.unwrap();
 
         let decrypted_message = execute_pcr(application.private_key, 
             PrivacyCriticalRegion::new(|private_key: String, _, _| {
                 crypto::decrypt_password_with_private_key(&encrypted_message, &private_key_plain_text)
-            }), ()).unwrap().await.unwrap();
+            },
+            Signature{username: "AlexanderPortland", signature: ""}, 
+            Signature{username: "AlexanderPortland", signature: ""}, 
+            Signature{username: "AlexanderPortland", signature: ""}), ()).unwrap().await.unwrap();
 
         assert_eq!(secret_message, decrypted_message);
     }

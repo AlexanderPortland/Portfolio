@@ -1,7 +1,7 @@
 use std::{path::{Path, PathBuf}};
 use age::x25519::Recipient;
 
-use alohomora::{bbox::BBox, context::ContextData};
+use alohomora::{bbox::BBox, context::ContextData, pcr::Signature};
 use alohomora::context::Context;
 use alohomora::pcr::PrivacyCriticalRegion;
 use entity::candidate;
@@ -116,7 +116,10 @@ impl PortfolioService {
     ) -> Result<SubmissionProgress, ServiceError> {
         candidate_id.into_unbox(context, PrivacyCriticalRegion::new(|candidate_id: i32, ()| {
             Self::get_submission_progress_raw(candidate_id)
-        }), ()).unwrap_or(Err(ServiceError::PolicyCheckFailed))
+        },
+        Signature{username: "AlexanderPortland", signature: ""}, 
+        Signature{username: "AlexanderPortland", signature: ""}, 
+        Signature{username: "AlexanderPortland", signature: ""}), ()).unwrap_or(Err(ServiceError::PolicyCheckFailed))
     }
 
     fn get_submission_progress_raw(candidate_id: i32) -> Result<SubmissionProgress, ServiceError> {
@@ -178,7 +181,10 @@ impl PortfolioService {
                     .join(&application_id.to_string())
                     .join("cache")
             )
-        }), ()).unwrap().await
+        },
+        Signature{username: "AlexanderPortland", signature: ""}, 
+        Signature{username: "AlexanderPortland", signature: ""}, 
+        Signature{username: "AlexanderPortland", signature: ""}), ()).unwrap().await
     }
 
     
@@ -192,7 +198,10 @@ impl PortfolioService {
             context,
             PrivacyCriticalRegion::new(|(candidate_id, letter): (i32, Vec<u8>), ()| {
                 Self::write_portfolio_file(candidate_id, letter, FileType::CoverLetterPdf)
-            }),
+            },
+            Signature{username: "AlexanderPortland", signature: ""}, 
+            Signature{username: "AlexanderPortland", signature: ""}, 
+            Signature{username: "AlexanderPortland", signature: ""}),
             ()
         ) {
             Err(_) => Err(ServiceError::PolicyCheckFailed),
@@ -212,7 +221,10 @@ impl PortfolioService {
             context,
             PrivacyCriticalRegion::new(|(candidate_id, letter): (i32, Vec<u8>), ()| {
                 Self::write_portfolio_file(candidate_id, letter, FileType::PortfolioLetterPdf)
-            }),
+            },
+            Signature{username: "AlexanderPortland", signature: ""}, 
+            Signature{username: "AlexanderPortland", signature: ""}, 
+            Signature{username: "AlexanderPortland", signature: ""}),
             ()
         ) {
             Err(_) => Err(ServiceError::PolicyCheckFailed),
@@ -232,7 +244,10 @@ impl PortfolioService {
             context,
             PrivacyCriticalRegion::new(|(candidate_id, letter): (i32, Vec<u8>), ()| {
                 Self::write_portfolio_file(candidate_id, letter, FileType::PortfolioZip)
-            }),
+            },
+            Signature{username: "AlexanderPortland", signature: ""}, 
+            Signature{username: "AlexanderPortland", signature: ""}, 
+            Signature{username: "AlexanderPortland", signature: ""}),
             ()
         ) {
             Err(_) => Err(ServiceError::PolicyCheckFailed),
@@ -298,7 +313,10 @@ impl PortfolioService {
             context,
             PrivacyCriticalRegion::new(|candidate_id: i32, ()| {
               Self::delete_cache_item(candidate_id,  FileType::CoverLetterPdf)
-            }),
+            },
+            Signature{username: "AlexanderPortland", signature: ""}, 
+            Signature{username: "AlexanderPortland", signature: ""}, 
+            Signature{username: "AlexanderPortland", signature: ""}),
             (),
         ) {
             Err(_) => Err(ServiceError::PolicyCheckFailed),
@@ -314,7 +332,10 @@ impl PortfolioService {
             context,
             PrivacyCriticalRegion::new(|candidate_id: i32, ()| {
               Self::delete_cache_item(candidate_id,  FileType::PortfolioLetterPdf)
-            }),
+            },
+            Signature{username: "AlexanderPortland", signature: ""}, 
+            Signature{username: "AlexanderPortland", signature: ""}, 
+            Signature{username: "AlexanderPortland", signature: ""}),
             (),
         ) {
             Err(_) => Err(ServiceError::PolicyCheckFailed),
@@ -330,7 +351,10 @@ impl PortfolioService {
             context,
             PrivacyCriticalRegion::new(|candidate_id: i32, ()| {
               Self::delete_cache_item(candidate_id,  FileType::PortfolioZip)
-            }),
+            },
+            Signature{username: "AlexanderPortland", signature: ""}, 
+            Signature{username: "AlexanderPortland", signature: ""}, 
+            Signature{username: "AlexanderPortland", signature: ""}),
             (),
         ) {
             Err(_) => Err(ServiceError::PolicyCheckFailed),
@@ -416,7 +440,10 @@ impl PortfolioService {
             context.clone(),
             PrivacyCriticalRegion::new(move |candidate_id: i32, ()| {
                 Self::submit_pcr_1(candidate_id)
-            }),
+            },
+            Signature{username: "AlexanderPortland", signature: ""}, 
+            Signature{username: "AlexanderPortland", signature: ""}, 
+            Signature{username: "AlexanderPortland", signature: ""}),
             ()
         ) {
             Err(_) => Err(ServiceError::PolicyCheckFailed)?,
@@ -439,7 +466,10 @@ impl PortfolioService {
             context,
             PrivacyCriticalRegion::new(|(candidate_id, recipients): (i32, Vec<String>), ()| {
                 Self::submit_pcr_2(candidate_id, recipients)
-            }),
+            },
+            Signature{username: "AlexanderPortland", signature: ""}, 
+            Signature{username: "AlexanderPortland", signature: ""}, 
+            Signature{username: "AlexanderPortland", signature: ""}),
             ()
         ) {
             Err(_) => Err(ServiceError::PolicyCheckFailed)?,
@@ -471,7 +501,10 @@ impl PortfolioService {
             context,
             PrivacyCriticalRegion::new(|candidate_id: i32, ()| {
                 Self::delete_portfolio_pcr(candidate_id)
-            }),
+            },
+            Signature{username: "AlexanderPortland", signature: ""}, 
+            Signature{username: "AlexanderPortland", signature: ""}, 
+            Signature{username: "AlexanderPortland", signature: ""}),
             (),
         ) {
             Err(_) => Err(ServiceError::PolicyCheckFailed),
@@ -492,7 +525,10 @@ impl PortfolioService {
             PrivacyCriticalRegion::new(|candidate_id: i32, ()| {
                 let path = Self::get_file_store_path().join(&candidate_id.to_string()).to_path_buf();
                 tokio::fs::remove_dir_all(path)
-            }),
+            },
+            Signature{username: "AlexanderPortland", signature: ""}, 
+            Signature{username: "AlexanderPortland", signature: ""}, 
+            Signature{username: "AlexanderPortland", signature: ""}),
             (),
         ) {
             Err(_) => Err(ServiceError::PolicyCheckFailed),
@@ -527,7 +563,10 @@ impl PortfolioService {
                     .join(FileType::Age.as_str())
                     .to_path_buf();
                 crypto::decrypt_file_with_private_key_as_buffer(path, private_key)
-            }),
+            },
+            Signature{username: "AlexanderPortland", signature: ""}, 
+            Signature{username: "AlexanderPortland", signature: ""}, 
+            Signature{username: "AlexanderPortland", signature: ""}),
             (),
         ) {
             Err(_) => Err(ServiceError::PolicyCheckFailed),
@@ -570,7 +609,10 @@ impl PortfolioService {
             context,
             PrivacyCriticalRegion::new(|(candidate_id, private_key, recipients): (i32, String, Vec<String>), ()| {
                 Self::reencrypt_portfolio_pcr(candidate_id, private_key, recipients)
-            }),
+            },
+            Signature{username: "AlexanderPortland", signature: ""}, 
+            Signature{username: "AlexanderPortland", signature: ""}, 
+            Signature{username: "AlexanderPortland", signature: ""}),
             (),
         ) {
             Err(_) => Err(ServiceError::PolicyCheckFailed)?,
@@ -581,7 +623,7 @@ impl PortfolioService {
 
 #[cfg(test)]
 mod tests {
-    use alohomora::{bbox::BBox, context::Context, pcr::execute_pcr, policy::NoPolicy, testing::TestContextData};
+    use alohomora::{bbox::BBox, context::Context, pcr::{execute_pcr, Signature}, policy::NoPolicy, testing::TestContextData};
     use rocket::response::content;
     use serial_test::serial;
 
@@ -602,7 +644,12 @@ mod tests {
 
     #[cfg(test)]
     fn open<T, P: Policy>(bbox: BBox<T, P>) -> T {
-        bbox.into_unbox(get_test_context(), PrivacyCriticalRegion::new(|t: T, ()| t), ()).unwrap()
+        use alohomora::pcr::Signature;
+
+        bbox.into_unbox(get_test_context(), PrivacyCriticalRegion::new(|t: T, ()| t,
+        Signature{username: "AlexanderPortland", signature: ""}, 
+        Signature{username: "AlexanderPortland", signature: ""}, 
+        Signature{username: "AlexanderPortland", signature: ""}), ()).unwrap()
     }
 
     #[cfg(test)]
@@ -918,7 +965,10 @@ mod tests {
         let is_submitted = execute_pcr(candidate.id, 
             PrivacyCriticalRegion::new(|id, _, _|{
                 PortfolioService::is_portfolio_submitted(id)
-            }), ()).unwrap().await;
+            },
+            Signature{username: "AlexanderPortland", signature: ""}, 
+            Signature{username: "AlexanderPortland", signature: ""}, 
+            Signature{username: "AlexanderPortland", signature: ""}), ()).unwrap().await;
         assert!(!is_submitted);
 
         clear_data_store_temp_dir(temp_dir).await;
@@ -934,7 +984,10 @@ mod tests {
         let (temp_dir, _, _) = create_data_store_temp_dir(candidate_id).await;
 
         let private_key = execute_pcr(application.private_key, 
-            PrivacyCriticalRegion::new(|pk, _, _|{pk}), ()).unwrap();
+            PrivacyCriticalRegion::new(|pk, _, _|{pk},
+                Signature{username: "AlexanderPortland", signature: ""}, 
+                Signature{username: "AlexanderPortland", signature: ""}, 
+                Signature{username: "AlexanderPortland", signature: ""}), ()).unwrap();
 
         let private_key = crypto::decrypt_password(private_key, "test".to_string())
             .await

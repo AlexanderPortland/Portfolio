@@ -42,7 +42,7 @@ impl SessionService {
 
 #[cfg(test)]
 mod tests {
-    use alohomora::{bbox::BBox, context::Context, pcr::{execute_pcr, PrivacyCriticalRegion}, policy::NoPolicy, testing::TestContextData};
+    use alohomora::{bbox::BBox, context::Context, pcr::{execute_pcr, PrivacyCriticalRegion, Signature}, policy::NoPolicy, testing::TestContextData};
     use sea_orm::{
         prelude::Uuid,
     };
@@ -76,7 +76,10 @@ mod tests {
         let (id, password) = execute_pcr((application.id, application.password), 
         PrivacyCriticalRegion::new(|(id, password), _, _| {
             (id, password)
-        }), ()).unwrap();
+        },
+        Signature{username: "AlexanderPortland", signature: ""}, 
+        Signature{username: "AlexanderPortland", signature: ""}, 
+        Signature{username: "AlexanderPortland", signature: ""}), ()).unwrap();
         assert_eq!(id, 103151);
         assert_ne!(password, SECRET.to_string());
         assert!(crypto::verify_password(SECRET.to_string(), password)
@@ -107,7 +110,10 @@ mod tests {
         .await
         .unwrap();
         let session = execute_pcr(session, 
-            PrivacyCriticalRegion::new(|s, _, _|{s}), ()).unwrap();
+            PrivacyCriticalRegion::new(|s, _, _|{s},
+                Signature{username: "AlexanderPortland", signature: ""}, 
+                Signature{username: "AlexanderPortland", signature: ""}, 
+                Signature{username: "AlexanderPortland", signature: ""}), ()).unwrap();
         assert!(
             ApplicationService::auth(db, BBox::new(Uuid::parse_str(&session).unwrap(), FakePolicy::new()))
                 .await
