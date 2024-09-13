@@ -432,33 +432,33 @@ pub mod tests {
         assert_eq!(response.password.len(), 12);
     }
 
-    // #[test]
-    // // Added by aportlan for additional Sesame testing
-    // fn test_create_list_candidates() {
-    //     let client = test_client().lock().unwrap();
-    //     let to_create = vec![(1013132, "4"), (1013133, "1"), (1024193, "2"), (1015678, "9"), (1013456, "12"), (1021234, "23")];
+    #[test]
+    // Added by aportlan for additional Sesame testing
+    fn test_create_list_candidates() {
+        let client = test_client().lock().unwrap();
+        let to_create = vec![(1013132, "4"), (1013133, "1"), (1024193, "2"), (1015678, "9"), (1013456, "12"), (1021234, "23")];
         
-    //     // add all candidates to system
-    //     for (app_id, pid) in to_create.clone() {
-    //         let cookies = admin_login(&client);
+        // add all candidates to system
+        for (app_id, pid) in to_create.clone() {
+            let cookies = admin_login(&client);
 
-    //         let response = create_candidate(&client, cookies.clone(), app_id, pid.to_string());
-    //         assert_eq!(response.password.len(), 12);
-    //     }
+            let response = create_candidate(&client, cookies.clone(), app_id, pid.to_string());
+            assert_eq!(response.password.len(), 12);
+        }
 
-    //     // get a list of candidates
-    //     let cookies = admin_login(&client);
-    //     let response = list_candidates(&client, cookies);
+        // get a list of candidates
+        let cookies = admin_login(&client);
+        let response = list_candidates(&client, cookies);
 
-    //     // assert_eq!(response.len(), 0);
-    //     // make sure they all show up in system
-    //     for (app_id, pid) in to_create {
-    //         let matches = response.iter().filter(|app|{
-    //             app.personal_id_number == pid && app.application_id == app_id
-    //         }).count();
-    //         assert!(matches >= 1);
-    //     }
-    // }
+        // assert_eq!(response.len(), 0);
+        // make sure they all show up in system
+        for (app_id, pid) in to_create {
+            let matches = response.iter().filter(|app|{
+                app.personal_id_number == pid && app.application_id == app_id
+            }).count();
+            assert!(matches >= 1);
+        }
+    }
 
     #[test]
     // Added by aportlan for additional Sesame testing
