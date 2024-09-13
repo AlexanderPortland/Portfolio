@@ -61,11 +61,22 @@ mod tests {
 
     use crate::{crypto, models::{candidate::{ApplicationDetails, CandidateDetails, ParentDetails}, candidate_details::EncryptedApplicationDetails, grade::GradeList, school::School}, services::{application_service::ApplicationService, candidate_service::{tests::put_user_data, CandidateService}, parent_service::ParentService}, utils::{self, db::get_memory_sqlite_connection}};
 
-    fn get_test_context() -> Context<TestContextData<ContextDataType>> {
+    static DB: std::sync::OnceLock<sea_orm::DatabaseConnection> = std::sync::OnceLock::new();
+
+    async fn get_test_context() -> Context<TestContextData<ContextDataType>> {
+        let conn = match DB.get() {
+            None => {
+                let conn = get_memory_sqlite_connection().await;
+                DB.set(conn).unwrap();
+                &DB.get().unwrap()
+            },
+            Some(conn) => conn
+        };
+
         Context::test(ContextDataType{
             session_id: Some(BBox::new(utils::db::TESTING_ADMIN_COOKIE.to_string(), NoPolicy::new())),
             key: Some(BBox::new(utils::db::TESTING_ADMIN_KEY.to_string(), NoPolicy::new())),
-            conn: todo!(),
+            conn: conn,
             phantom: std::marker::PhantomData,
         })
     }
@@ -110,7 +121,7 @@ mod tests {
     #[tokio::test]
     async fn create_parent_test() {
         let db = get_memory_sqlite_connection().await;
-        let candidate = CandidateService::create(get_test_context(), &db, BBox::new("".to_string(), FakePolicy::new())).await.unwrap();
+        let candidate = CandidateService::create(get_test_context().await, &db, BBox::new("".to_string(), FakePolicy::new())).await.unwrap();
         super::ParentService::create(&db, candidate.id.clone()).await.unwrap();
         super::ParentService::create(&db, candidate.id).await.unwrap();
     }

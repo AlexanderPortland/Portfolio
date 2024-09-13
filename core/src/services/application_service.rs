@@ -537,11 +537,22 @@ mod application_tests {
         assert!(!ApplicationService::is_application_id_valid(101));
     }
 
-    fn get_test_context() -> Context<TestContextData<ContextDataType>> {
+    static DB: std::sync::OnceLock<sea_orm::DatabaseConnection> = std::sync::OnceLock::new();
+
+    async fn get_test_context() -> Context<TestContextData<ContextDataType>> {
+        let conn = match DB.get() {
+            None => {
+                let conn = get_memory_sqlite_connection().await;
+                DB.set(conn).unwrap();
+                &DB.get().unwrap()
+            },
+            Some(conn) => conn
+        };
+
         Context::test(ContextDataType{
             session_id: Some(BBox::new(utils::db::TESTING_ADMIN_COOKIE.to_string(), NoPolicy::new())),
             key: Some(BBox::new(utils::db::TESTING_ADMIN_KEY.to_string(), NoPolicy::new())),
-            conn: todo!(),
+            conn: conn,
             phantom: std::marker::PhantomData,
         })
     }
@@ -570,7 +581,7 @@ mod application_tests {
         );
 
         let new_password = ApplicationService::reset_password(
-            get_test_context(),
+            get_test_context().await,
             BBox::new(private_key, FakePolicy::new()),
             &db,
             application.id.clone()
@@ -594,7 +605,7 @@ mod application_tests {
         let secret_message = "trnka".to_string();
 
         let application = ApplicationService::create(
-            get_test_context(),
+            get_test_context().await,
             &BBox::new("".to_string(), FakePolicy::new()),
             &db,
             BBox::new(103100, FakePolicy::new()),

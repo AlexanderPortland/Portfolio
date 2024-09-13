@@ -3699,6 +3699,7 @@ dependencies = [
  "fern",
  "futures",
  "infer",
+ "lazy_static",
  "log",
  "once_cell",
  "portfolio-api",

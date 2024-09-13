@@ -9,7 +9,7 @@ pub mod tests {
     use portfolio_core::{
         crypto,
         sea_orm::{ActiveModelTrait, DbConn, Set},
-        services::application_service::ApplicationService,
+        services::application_service::ApplicationService, utils::db::get_memory_sqlite_connection,
     };
     
     use std::{marker::PhantomData, sync::Mutex};
@@ -23,11 +23,23 @@ pub mod tests {
 
     use portfolio_core::utils::db::{TESTING_ADMIN_COOKIE, TESTING_ADMIN_KEY};
 
-    pub fn get_test_context() -> Context<TestContextData<ContextDataType>> {
+    
+    static DB: std::sync::OnceLock<migration::sea_orm::DatabaseConnection> = std::sync::OnceLock::new();
+
+    async fn get_test_context() -> Context<TestContextData<ContextDataType>> {
+        let conn = match DB.get() {
+            None => {
+                let conn = get_memory_sqlite_connection().await;
+                DB.set(conn).unwrap();
+                &DB.get().unwrap()
+            },
+            Some(conn) => conn
+        };
+
         Context::test(ContextDataType{
             session_id: Some(BBox::new(TESTING_ADMIN_COOKIE.to_string(), NoPolicy::new())),
             key: Some(BBox::new(TESTING_ADMIN_KEY.to_string(), NoPolicy::new())),
-            conn: todo!(),
+            conn,
             phantom: PhantomData,
         })
     }
@@ -55,7 +67,7 @@ pub mod tests {
         .unwrap();
 
         ApplicationService::create(
-            get_test_context(),
+            get_test_context().await,
             &BBox::new("".to_string(), FakePolicy::new()),
             db,
             BBox::new(APPLICATION_ID, FakePolicy::new()),
