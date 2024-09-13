@@ -653,7 +653,7 @@ mod tests {
         Context::test(ContextDataType{
             session_id: Some(BBox::new(utils::db::TESTING_ADMIN_COOKIE.to_string(), NoPolicy::new())),
             key: Some(BBox::new(utils::db::TESTING_ADMIN_KEY.to_string(), NoPolicy::new())),
-            conn: None,
+            conn: conn,
             phantom: std::marker::PhantomData,
         })
     }

@@ -9,7 +9,7 @@ use ::rocket::outcome::IntoOutcome;
 pub struct RealContextDataType<Db: sea_orm_rocket::Database>  {
     pub session_id: Option<BBox<String, NoPolicy>>,
     pub key: Option<BBox<String, NoPolicy>>,
-    pub conn: Option<&'static sea_orm::DatabaseConnection>,  // sea_orm::DatabaseConnection,
+    pub conn: &'static sea_orm::DatabaseConnection,  // sea_orm::DatabaseConnection,
     pub phantom: PhantomData<Db>,
     //pub db: Arc<Mutex<BBoxConn>>,
 }
@@ -34,7 +34,7 @@ impl<Db: sea_orm_rocket::Database> Clone for RealContextDataType<Db> {
 pub struct ContextDataTypeOut {
     pub session_id: Option<String>,
     pub key: Option<String>,
-    pub conn: Option<&'static sea_orm::DatabaseConnection>,
+    pub conn: &'static sea_orm::DatabaseConnection,
 }
 
 impl<Db: sea_orm_rocket::Database> AlohomoraType for RealContextDataType<Db> {
@@ -90,14 +90,14 @@ impl<'a, 'r, P: sea_orm_rocket::Pool<Connection = sea_orm::DatabaseConnection>, 
             BBoxRequestOutcome::Forward(f) => { return BBoxRequestOutcome::Forward(f); },
         };
         
-        let _y: &sea_orm::DatabaseConnection  = conn.into_inner();
-        //let conn: &'static sea_orm::DatabaseConnection = unsafe { std::mem::transmute(y) };
+        let y: &sea_orm::DatabaseConnection  = conn.into_inner();
+        let conn: &'static sea_orm::DatabaseConnection = unsafe { std::mem::transmute(y) };
 
         request.route().and_then(|_|{
             Some(RealContextDataType{
                 key,
                 session_id,
-                conn: None,
+                conn,
                 phantom: PhantomData,
                 //conn,
                 //db: todo!()

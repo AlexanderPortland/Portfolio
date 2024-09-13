@@ -25,11 +25,11 @@ pub mod tests {
     // use portfolio_core::utils::db::get_test_context;
     use portfolio_core::utils::db::{TESTING_ADMIN_COOKIE, TESTING_ADMIN_KEY};
 
-    pub async fn get_test_context(db: &DbConn) -> Context<TestContextData<ContextDataType>> {
+    pub async fn get_test_context(conn: &DbConn) -> Context<TestContextData<ContextDataType>> {
         Context::test(ContextDataType{
             session_id: Some(BBox::new(TESTING_ADMIN_COOKIE.to_string(), NoPolicy::new())),
             key: Some(BBox::new(TESTING_ADMIN_KEY.to_string(), NoPolicy::new())),
-            conn: None,
+            conn: unsafe{ std::mem::transmute(conn)},
             phantom: PhantomData,
         })
     }

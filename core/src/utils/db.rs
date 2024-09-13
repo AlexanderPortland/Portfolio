@@ -99,7 +99,7 @@ pub async fn get_test_context(db: &DbConn) -> Context<TestContextData<ContextDat
     Context::test(ContextDataType{
         session_id: Some(BBox::new(TESTING_ADMIN_COOKIE.to_string(), NoPolicy::new())),
         key: Some(BBox::new(TESTING_ADMIN_KEY.to_string(), NoPolicy::new())),
-        conn: None,
+        conn: unsafe{ std::mem::transmute(db)},
         phantom: PhantomData,
     })
 }
