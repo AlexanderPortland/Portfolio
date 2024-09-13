@@ -54,18 +54,32 @@ impl ParentService {
 mod tests {
     use std::sync::Mutex;
 
-    use alohomora::{bbox::BBox, context::Context, pcr::{execute_pcr, PrivacyCriticalRegion}, policy::{AnyPolicy, NoPolicy}, testing::TestContextData};
+    use alohomora::{bbox::BBox, context::Context, pcr::{execute_pcr, PrivacyCriticalRegion, Signature}, policy::{AnyPolicy, NoPolicy}, testing::TestContextData};
     use once_cell::sync::Lazy;
-    use portfolio_policies::{context::ContextDataType, FakePolicy};
+    use portfolio_policies::FakePolicy;
+    use portfolio_api::pool::ContextDataType;
 
     use crate::{crypto, models::{candidate::{ApplicationDetails, CandidateDetails, ParentDetails}, candidate_details::EncryptedApplicationDetails, grade::GradeList, school::School}, services::{application_service::ApplicationService, candidate_service::{tests::put_user_data, CandidateService}, parent_service::ParentService}, utils::{self, db::get_memory_sqlite_connection}};
 
-    fn get_test_context() -> Context<TestContextData<ContextDataType>> {
-        Context::test(ContextDataType{
-            session_id: Some(BBox::new(utils::db::TESTING_ADMIN_COOKIE.to_string(), NoPolicy::new())),
-            key: Some(BBox::new(utils::db::TESTING_ADMIN_KEY.to_string(), NoPolicy::new())),
-        })
-    }
+    // static DB: std::sync::OnceLock<sea_orm::DatabaseConnection> = std::sync::OnceLock::new();
+
+    // async fn get_test_context() -> Context<TestContextData<ContextDataType>> {
+    //     let conn = match DB.get() {
+    //         None => {
+    //             let conn = get_memory_sqlite_connection().await;
+    //             DB.set(conn).unwrap();
+    //             &DB.get().unwrap()
+    //         },
+    //         Some(conn) => conn
+    //     };
+
+    //     Context::test(ContextDataType{
+    //         session_id: Some(BBox::new(utils::db::TESTING_ADMIN_COOKIE.to_string(), NoPolicy::new())),
+    //         key: Some(BBox::new(utils::db::TESTING_ADMIN_KEY.to_string(), NoPolicy::new())),
+    //         conn: None,
+    //         phantom: std::marker::PhantomData,
+    //     })
+    // }
 
     pub static APPLICATION_DETAILS_TWO_PARENTS: Lazy<Mutex<ApplicationDetails>> = Lazy::new(|| 
         Mutex::new(ApplicationDetails {
@@ -107,7 +121,7 @@ mod tests {
     #[tokio::test]
     async fn create_parent_test() {
         let db = get_memory_sqlite_connection().await;
-        let candidate = CandidateService::create(get_test_context(), &db, BBox::new("".to_string(), FakePolicy::new())).await.unwrap();
+        let candidate = CandidateService::create(crate::utils::db::get_test_context(&db).await, &db, BBox::new("".to_string(), FakePolicy::new())).await.unwrap();
         super::ParentService::create(&db, candidate.id.clone()).await.unwrap();
         super::ParentService::create(&db, candidate.id).await.unwrap();
     }
@@ -129,7 +143,10 @@ mod tests {
         let priv_key = execute_pcr(application.private_key, 
             PrivacyCriticalRegion::new(|private_key: String, _, _| {
                 crypto::decrypt_password(private_key, plain_text_password)
-            }), ()).unwrap().await.unwrap();
+            },
+            Signature{username: "AlexanderPortland", signature: ""}, 
+            Signature{username: "AlexanderPortland", signature: ""}, 
+            Signature{username: "AlexanderPortland", signature: ""}), ()).unwrap().await.unwrap();
         let priv_key = BBox::new(
             priv_key, FakePolicy::new());
         let dec_details = EncryptedApplicationDetails::try_from((&candidate, &parents))

@@ -1,7 +1,7 @@
 use std::{path::{Path, PathBuf}};
 use age::x25519::Recipient;
 
-use alohomora::{bbox::BBox, context::ContextData};
+use alohomora::{bbox::BBox, context::ContextData, pcr::Signature};
 use alohomora::context::Context;
 use alohomora::pcr::PrivacyCriticalRegion;
 use entity::candidate;
@@ -15,7 +15,7 @@ use portfolio_policies::FakePolicy;
 
 use crate::{error::ServiceError, Query, crypto};
 //use crate::crypto_helpers::get_context;
-use portfolio_policies::context::ContextDataType;
+// use portfolio_policies::context::ContextDataType;
 
 #[derive(Debug, PartialEq)]
 pub enum SubmissionProgress {
@@ -116,7 +116,10 @@ impl PortfolioService {
     ) -> Result<SubmissionProgress, ServiceError> {
         candidate_id.into_unbox(context, PrivacyCriticalRegion::new(|candidate_id: i32, ()| {
             Self::get_submission_progress_raw(candidate_id)
-        }), ()).unwrap_or(Err(ServiceError::PolicyCheckFailed))
+        },
+        Signature{username: "AlexanderPortland", signature: ""}, 
+        Signature{username: "AlexanderPortland", signature: ""}, 
+        Signature{username: "AlexanderPortland", signature: ""}), ()).unwrap_or(Err(ServiceError::PolicyCheckFailed))
     }
 
     fn get_submission_progress_raw(candidate_id: i32) -> Result<SubmissionProgress, ServiceError> {
@@ -178,7 +181,10 @@ impl PortfolioService {
                     .join(&application_id.to_string())
                     .join("cache")
             )
-        }), ()).unwrap().await
+        },
+        Signature{username: "AlexanderPortland", signature: ""}, 
+        Signature{username: "AlexanderPortland", signature: ""}, 
+        Signature{username: "AlexanderPortland", signature: ""}), ()).unwrap().await
     }
 
     
@@ -192,7 +198,10 @@ impl PortfolioService {
             context,
             PrivacyCriticalRegion::new(|(candidate_id, letter): (i32, Vec<u8>), ()| {
                 Self::write_portfolio_file(candidate_id, letter, FileType::CoverLetterPdf)
-            }),
+            },
+            Signature{username: "AlexanderPortland", signature: ""}, 
+            Signature{username: "AlexanderPortland", signature: ""}, 
+            Signature{username: "AlexanderPortland", signature: ""}),
             ()
         ) {
             Err(_) => Err(ServiceError::PolicyCheckFailed),
@@ -212,7 +221,10 @@ impl PortfolioService {
             context,
             PrivacyCriticalRegion::new(|(candidate_id, letter): (i32, Vec<u8>), ()| {
                 Self::write_portfolio_file(candidate_id, letter, FileType::PortfolioLetterPdf)
-            }),
+            },
+            Signature{username: "AlexanderPortland", signature: ""}, 
+            Signature{username: "AlexanderPortland", signature: ""}, 
+            Signature{username: "AlexanderPortland", signature: ""}),
             ()
         ) {
             Err(_) => Err(ServiceError::PolicyCheckFailed),
@@ -232,7 +244,10 @@ impl PortfolioService {
             context,
             PrivacyCriticalRegion::new(|(candidate_id, letter): (i32, Vec<u8>), ()| {
                 Self::write_portfolio_file(candidate_id, letter, FileType::PortfolioZip)
-            }),
+            },
+            Signature{username: "AlexanderPortland", signature: ""}, 
+            Signature{username: "AlexanderPortland", signature: ""}, 
+            Signature{username: "AlexanderPortland", signature: ""}),
             ()
         ) {
             Err(_) => Err(ServiceError::PolicyCheckFailed),
@@ -298,7 +313,10 @@ impl PortfolioService {
             context,
             PrivacyCriticalRegion::new(|candidate_id: i32, ()| {
               Self::delete_cache_item(candidate_id,  FileType::CoverLetterPdf)
-            }),
+            },
+            Signature{username: "AlexanderPortland", signature: ""}, 
+            Signature{username: "AlexanderPortland", signature: ""}, 
+            Signature{username: "AlexanderPortland", signature: ""}),
             (),
         ) {
             Err(_) => Err(ServiceError::PolicyCheckFailed),
@@ -314,7 +332,10 @@ impl PortfolioService {
             context,
             PrivacyCriticalRegion::new(|candidate_id: i32, ()| {
               Self::delete_cache_item(candidate_id,  FileType::PortfolioLetterPdf)
-            }),
+            },
+            Signature{username: "AlexanderPortland", signature: ""}, 
+            Signature{username: "AlexanderPortland", signature: ""}, 
+            Signature{username: "AlexanderPortland", signature: ""}),
             (),
         ) {
             Err(_) => Err(ServiceError::PolicyCheckFailed),
@@ -330,7 +351,10 @@ impl PortfolioService {
             context,
             PrivacyCriticalRegion::new(|candidate_id: i32, ()| {
               Self::delete_cache_item(candidate_id,  FileType::PortfolioZip)
-            }),
+            },
+            Signature{username: "AlexanderPortland", signature: ""}, 
+            Signature{username: "AlexanderPortland", signature: ""}, 
+            Signature{username: "AlexanderPortland", signature: ""}),
             (),
         ) {
             Err(_) => Err(ServiceError::PolicyCheckFailed),
@@ -416,7 +440,10 @@ impl PortfolioService {
             context.clone(),
             PrivacyCriticalRegion::new(move |candidate_id: i32, ()| {
                 Self::submit_pcr_1(candidate_id)
-            }),
+            },
+            Signature{username: "AlexanderPortland", signature: ""}, 
+            Signature{username: "AlexanderPortland", signature: ""}, 
+            Signature{username: "AlexanderPortland", signature: ""}),
             ()
         ) {
             Err(_) => Err(ServiceError::PolicyCheckFailed)?,
@@ -439,7 +466,10 @@ impl PortfolioService {
             context,
             PrivacyCriticalRegion::new(|(candidate_id, recipients): (i32, Vec<String>), ()| {
                 Self::submit_pcr_2(candidate_id, recipients)
-            }),
+            },
+            Signature{username: "AlexanderPortland", signature: ""}, 
+            Signature{username: "AlexanderPortland", signature: ""}, 
+            Signature{username: "AlexanderPortland", signature: ""}),
             ()
         ) {
             Err(_) => Err(ServiceError::PolicyCheckFailed)?,
@@ -471,7 +501,10 @@ impl PortfolioService {
             context,
             PrivacyCriticalRegion::new(|candidate_id: i32, ()| {
                 Self::delete_portfolio_pcr(candidate_id)
-            }),
+            },
+            Signature{username: "AlexanderPortland", signature: ""}, 
+            Signature{username: "AlexanderPortland", signature: ""}, 
+            Signature{username: "AlexanderPortland", signature: ""}),
             (),
         ) {
             Err(_) => Err(ServiceError::PolicyCheckFailed),
@@ -492,7 +525,10 @@ impl PortfolioService {
             PrivacyCriticalRegion::new(|candidate_id: i32, ()| {
                 let path = Self::get_file_store_path().join(&candidate_id.to_string()).to_path_buf();
                 tokio::fs::remove_dir_all(path)
-            }),
+            },
+            Signature{username: "AlexanderPortland", signature: ""}, 
+            Signature{username: "AlexanderPortland", signature: ""}, 
+            Signature{username: "AlexanderPortland", signature: ""}),
             (),
         ) {
             Err(_) => Err(ServiceError::PolicyCheckFailed),
@@ -527,7 +563,10 @@ impl PortfolioService {
                     .join(FileType::Age.as_str())
                     .to_path_buf();
                 crypto::decrypt_file_with_private_key_as_buffer(path, private_key)
-            }),
+            },
+            Signature{username: "AlexanderPortland", signature: ""}, 
+            Signature{username: "AlexanderPortland", signature: ""}, 
+            Signature{username: "AlexanderPortland", signature: ""}),
             (),
         ) {
             Err(_) => Err(ServiceError::PolicyCheckFailed),
@@ -570,7 +609,10 @@ impl PortfolioService {
             context,
             PrivacyCriticalRegion::new(|(candidate_id, private_key, recipients): (i32, String, Vec<String>), ()| {
                 Self::reencrypt_portfolio_pcr(candidate_id, private_key, recipients)
-            }),
+            },
+            Signature{username: "AlexanderPortland", signature: ""}, 
+            Signature{username: "AlexanderPortland", signature: ""}, 
+            Signature{username: "AlexanderPortland", signature: ""}),
             (),
         ) {
             Err(_) => Err(ServiceError::PolicyCheckFailed)?,
@@ -581,7 +623,7 @@ impl PortfolioService {
 
 #[cfg(test)]
 mod tests {
-    use alohomora::{bbox::BBox, context::Context, pcr::execute_pcr, policy::NoPolicy, testing::TestContextData};
+    use alohomora::{bbox::BBox, context::Context, pcr::{execute_pcr, Signature}, policy::NoPolicy, testing::TestContextData};
     use rocket::response::content;
     use serial_test::serial;
 
@@ -589,20 +631,43 @@ mod tests {
     use std::path::PathBuf;
     use alohomora::pcr::PrivacyCriticalRegion;
     use alohomora::policy::Policy;
-    use portfolio_policies::{context::ContextDataType, FakePolicy};
+    use portfolio_policies::FakePolicy;
+    use portfolio_api::pool::ContextDataType;
 
     const APPLICATION_ID: i32 = 103151;
 
-    fn get_test_context() -> Context<TestContextData<ContextDataType>> {
+    static DB: std::sync::OnceLock<sea_orm::DatabaseConnection> = std::sync::OnceLock::new();
+
+    // NOTE: ONLY USE WHEN THIS IS THE *ONLY CONNECTION* to the DB for a given test
+    // otherwise, will wipe db and mess things up
+    async fn get_test_context_direct() -> Context<TestContextData<ContextDataType>> {
+        let conn = match DB.get() {
+            None => {
+                let conn = get_memory_sqlite_connection().await;
+                DB.set(conn).unwrap();
+                &DB.get().unwrap()
+            },
+            Some(conn) => conn
+        };
+
         Context::test(ContextDataType{
             session_id: Some(BBox::new(utils::db::TESTING_ADMIN_COOKIE.to_string(), NoPolicy::new())),
             key: Some(BBox::new(utils::db::TESTING_ADMIN_KEY.to_string(), NoPolicy::new())),
+            conn: conn,
+            phantom: std::marker::PhantomData,
         })
     }
 
     #[cfg(test)]
-    fn open<T, P: Policy>(bbox: BBox<T, P>) -> T {
-        bbox.into_unbox(get_test_context(), PrivacyCriticalRegion::new(|t: T, ()| t), ()).unwrap()
+    async fn open<T, P: Policy>(bbox: BBox<T, P>, db: &sea_orm::DatabaseConnection) -> T {
+        use alohomora::pcr::Signature;
+        use sea_orm::DatabaseConnection;
+
+        // TODO: add fake context here bc PCR is just for unboxing
+        bbox.into_unbox(crate::utils::db::get_test_context(&db).await, PrivacyCriticalRegion::new(|t: T, ()| t,
+        Signature{username: "AlexanderPortland", signature: ""}, 
+        Signature{username: "AlexanderPortland", signature: ""}, 
+        Signature{username: "AlexanderPortland", signature: ""}), ()).unwrap()
     }
 
     #[cfg(test)]
@@ -635,12 +700,12 @@ mod tests {
         let temp_dir = std::env::temp_dir().join("portfolio_test_tempdir").join("create_folder");
         std::env::set_var("PORTFOLIO_STORE_PATH", temp_dir.to_str().unwrap());
 
-        let candidate = CandidateService::create(get_test_context(), &db, BBox::new("".to_string(), FakePolicy::new()))
+        let candidate = CandidateService::create(crate::utils::db::get_test_context(&db).await, &db, BBox::new("".to_string(), FakePolicy::new()))
             .await
             .ok()
             .unwrap();
 
-        let candidate_id = open(candidate.id.clone());
+        let candidate_id = open(candidate.id.clone(), &db).await;
         assert!(tokio::fs::metadata(temp_dir.join(candidate_id.to_string())).await.is_ok());
         assert!(tokio::fs::metadata(temp_dir.join(candidate_id.to_string()).join("cache")).await.is_ok());
 
@@ -664,7 +729,7 @@ mod tests {
     async fn test_add_cover_letter_to_cache() {
         let (temp_dir, _, application_cache_dir) = create_data_store_temp_dir(APPLICATION_ID).await;
 
-        PortfolioService::add_cover_letter_to_cache(get_test_context(), BBox::new(APPLICATION_ID, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
+        PortfolioService::add_cover_letter_to_cache(get_test_context_direct().await, BBox::new(APPLICATION_ID, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
         
         assert!(tokio::fs::metadata(application_cache_dir.join("MOTIVACNI_DOPIS.pdf")).await.is_ok());
 
@@ -676,7 +741,7 @@ mod tests {
     async fn test_delete_cover_letter_from_cache() {
         let (temp_dir, _, application_cache_dir) = create_data_store_temp_dir(APPLICATION_ID).await;
 
-        let context = get_test_context();
+        let context = get_test_context_direct().await;
 
         PortfolioService::add_cover_letter_to_cache(context.clone(), BBox::new(APPLICATION_ID, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
         
@@ -692,7 +757,7 @@ mod tests {
     async fn test_is_cover_letter() {
         let (temp_dir, _, _) = create_data_store_temp_dir(APPLICATION_ID).await;
 
-        PortfolioService::add_cover_letter_to_cache(get_test_context(), BBox::new(APPLICATION_ID, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
+        PortfolioService::add_cover_letter_to_cache(get_test_context_direct().await, BBox::new(APPLICATION_ID, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
         
         assert!(PortfolioService::is_cover_letter(APPLICATION_ID).await);
 
@@ -704,7 +769,7 @@ mod tests {
     async fn test_delete_cache_item() {
         let (temp_dir, _, application_cache_dir) = create_data_store_temp_dir(APPLICATION_ID).await;
 
-        PortfolioService::add_cover_letter_to_cache(get_test_context(), BBox::new(APPLICATION_ID, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
+        PortfolioService::add_cover_letter_to_cache(get_test_context_direct().await, BBox::new(APPLICATION_ID, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
 
         PortfolioService::delete_cache_item(APPLICATION_ID, FileType::CoverLetterPdf).await.unwrap();
 
@@ -719,7 +784,7 @@ mod tests {
     async fn test_add_portfolio_letter_to_cache() {
         let (temp_dir, _, application_cache_dir) = create_data_store_temp_dir(APPLICATION_ID).await;
         
-        PortfolioService::add_portfolio_letter_to_cache(get_test_context(), BBox::new(APPLICATION_ID, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
+        PortfolioService::add_portfolio_letter_to_cache(get_test_context_direct().await, BBox::new(APPLICATION_ID, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
         
         assert!(tokio::fs::metadata(application_cache_dir.join("PORTFOLIO.pdf")).await.is_ok());
 
@@ -731,7 +796,7 @@ mod tests {
     async fn test_delete_portfolio_letter_from_cache() {
         let (temp_dir, _, application_cache_dir) = create_data_store_temp_dir(APPLICATION_ID).await;
 
-        let context = get_test_context();
+        let context = get_test_context_direct().await;
 
         PortfolioService::add_portfolio_letter_to_cache(context.clone(), BBox::new(APPLICATION_ID, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
         
@@ -747,7 +812,7 @@ mod tests {
     async fn test_is_portfolio_letter() {
         let (temp_dir, _, _) = create_data_store_temp_dir(APPLICATION_ID).await;
 
-        PortfolioService::add_portfolio_letter_to_cache(get_test_context(), BBox::new(APPLICATION_ID, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
+        PortfolioService::add_portfolio_letter_to_cache(get_test_context_direct().await, BBox::new(APPLICATION_ID, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
         
         assert!(PortfolioService::is_portfolio_letter(APPLICATION_ID).await);
 
@@ -759,7 +824,7 @@ mod tests {
     async fn test_add_portfolio_zip_to_cache() {
         let (temp_dir, _, application_cache_dir) = create_data_store_temp_dir(APPLICATION_ID).await;
 
-        PortfolioService::add_portfolio_zip_to_cache(get_test_context(), BBox::new(APPLICATION_ID, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
+        PortfolioService::add_portfolio_zip_to_cache(get_test_context_direct().await, BBox::new(APPLICATION_ID, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
         
         assert!(tokio::fs::metadata(application_cache_dir.join("PORTFOLIO.zip")).await.is_ok());
 
@@ -771,7 +836,7 @@ mod tests {
     async fn test_delete_portfolio_zip_from_cache() {
         let (temp_dir, _, application_cache_dir) = create_data_store_temp_dir(APPLICATION_ID).await;
 
-        let context = get_test_context();
+        let context = get_test_context_direct().await;
 
         PortfolioService::add_portfolio_zip_to_cache(context.clone(), BBox::new(APPLICATION_ID, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
         
@@ -787,7 +852,7 @@ mod tests {
     async fn test_is_portfolio_zip() {
         let (temp_dir, _, _) = create_data_store_temp_dir(APPLICATION_ID).await;
 
-        PortfolioService::add_portfolio_zip_to_cache(get_test_context(), BBox::new(APPLICATION_ID, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
+        PortfolioService::add_portfolio_zip_to_cache(get_test_context_direct().await, BBox::new(APPLICATION_ID, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
         
         assert!(PortfolioService::is_portfolio_zip(APPLICATION_ID).await);
 
@@ -799,7 +864,7 @@ mod tests {
     async fn test_is_portfolio_prepared() {
         let (temp_dir, _, _) = create_data_store_temp_dir(APPLICATION_ID).await;
 
-        let context = get_test_context();
+        let context = get_test_context_direct().await;
         PortfolioService::add_cover_letter_to_cache(context.clone(),  BBox::new(APPLICATION_ID, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
         PortfolioService::add_portfolio_letter_to_cache(context.clone(), BBox::new(APPLICATION_ID, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
         PortfolioService::add_portfolio_zip_to_cache(context.clone(), BBox::new(APPLICATION_ID, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
@@ -824,7 +889,7 @@ mod tests {
     async fn test_delete_cache() {
         let (temp_dir, _, _) = create_data_store_temp_dir(APPLICATION_ID).await;
 
-        PortfolioService::add_portfolio_zip_to_cache(get_test_context(), BBox::new(APPLICATION_ID, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
+        PortfolioService::add_portfolio_zip_to_cache(get_test_context_direct().await, BBox::new(APPLICATION_ID, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
         
         assert!(PortfolioService::is_portfolio_zip(APPLICATION_ID).await);
 
@@ -840,11 +905,11 @@ mod tests {
     async fn test_add_portfolio() {
         let db = get_memory_sqlite_connection().await;
         let (_, candidate, _) = put_user_data(&db).await;
-        let candidate_id = open(candidate.id.clone());
+        let candidate_id = open(candidate.id.clone(), &db).await;
 
         let (temp_dir, application_dir, _) = create_data_store_temp_dir(candidate_id).await;
 
-        let context = get_test_context();
+        let context = crate::utils::db::get_test_context(&db).await;
 
         PortfolioService::add_cover_letter_to_cache(context.clone(),  BBox::new(candidate_id, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
         PortfolioService::add_portfolio_letter_to_cache(context.clone(), BBox::new(candidate_id, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
@@ -862,11 +927,11 @@ mod tests {
     async fn test_delete_portfolio() {
         let db = get_memory_sqlite_connection().await;
         let (_, candidate, _) = put_user_data(&db).await;
-        let candidate_id = open(candidate.id.clone());
+        let candidate_id = open(candidate.id.clone(), &db).await;
 
         let (temp_dir, application_dir, _) = create_data_store_temp_dir(candidate_id).await;
 
-        let context = get_test_context();
+        let context = crate::utils::db::get_test_context(&db).await;
 
         PortfolioService::add_cover_letter_to_cache(context.clone(),  BBox::new(candidate_id, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
         PortfolioService::add_portfolio_letter_to_cache(context.clone(), BBox::new(candidate_id, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
@@ -889,11 +954,11 @@ mod tests {
         let db = get_memory_sqlite_connection().await;
 
         let (_, candidate, _) = put_user_data(&db).await;
-        let candidate_id = open(candidate.id.clone());
+        let candidate_id = open(candidate.id.clone(), &db).await;
 
         let (temp_dir, _, _) = create_data_store_temp_dir(candidate_id).await;
 
-        let context = get_test_context();
+        let context = crate::utils::db::get_test_context(&db).await;
 
         PortfolioService::add_cover_letter_to_cache(context.clone(),  BBox::new(candidate_id, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
         PortfolioService::add_portfolio_letter_to_cache(context.clone(), BBox::new(candidate_id, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
@@ -918,7 +983,10 @@ mod tests {
         let is_submitted = execute_pcr(candidate.id, 
             PrivacyCriticalRegion::new(|id, _, _|{
                 PortfolioService::is_portfolio_submitted(id)
-            }), ()).unwrap().await;
+            },
+            Signature{username: "AlexanderPortland", signature: ""}, 
+            Signature{username: "AlexanderPortland", signature: ""}, 
+            Signature{username: "AlexanderPortland", signature: ""}), ()).unwrap().await;
         assert!(!is_submitted);
 
         clear_data_store_temp_dir(temp_dir).await;
@@ -929,18 +997,21 @@ mod tests {
     async fn test_get_portfolio() {
         let db = get_memory_sqlite_connection().await;
         let (application, candidate, _parent) = put_user_data(&db).await;
-        let candidate_id = open(candidate.id.clone());
+        let candidate_id = open(candidate.id.clone(), &db).await;
 
         let (temp_dir, _, _) = create_data_store_temp_dir(candidate_id).await;
 
         let private_key = execute_pcr(application.private_key, 
-            PrivacyCriticalRegion::new(|pk, _, _|{pk}), ()).unwrap();
+            PrivacyCriticalRegion::new(|pk, _, _|{pk},
+                Signature{username: "AlexanderPortland", signature: ""}, 
+                Signature{username: "AlexanderPortland", signature: ""}, 
+                Signature{username: "AlexanderPortland", signature: ""}), ()).unwrap();
 
         let private_key = crypto::decrypt_password(private_key, "test".to_string())
             .await
             .unwrap();
 
-        let context = get_test_context();
+        let context = crate::utils::db::get_test_context(&db).await;
 
         PortfolioService::add_cover_letter_to_cache(context.clone(), BBox::new(candidate_id, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new()))
             .await

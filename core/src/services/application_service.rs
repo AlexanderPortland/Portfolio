@@ -4,7 +4,7 @@ use alohomora::context::{Context, ContextData};
 use async_trait::async_trait;
 use chrono::{Duration, NaiveDateTime};
 use entity::{candidate, parent, application, session};
-use portfolio_policies::context::ContextDataType;
+// use portfolio_policies::context::ContextDataType;
 use sea_orm::{DbConn, prelude::Uuid, IntoActiveModel};
 use alohomora::bbox::BBox;
 use alohomora::policy::AnyPolicy;
@@ -262,14 +262,20 @@ impl ApplicationService {
         db: &DbConn,
         application: &application::Model,
     ) -> Result<ApplicationDetails, ServiceError>  {
+        println!("potato");
         let candidate = ApplicationService::find_related_candidate(db, application).await?;
-
+        println!("potáto");
         let parents = Query::find_candidate_parents(db, &candidate).await?;
+        println!("tomato");
         let enc_details = EncryptedApplicationDetails::from((&candidate, &parents));
-
+        println!("tomáto");
         if enc_details.is_filled() {
-            enc_details.decrypt(private_key).await
+            println!("shomato {:?}", private_key);
+            let a = enc_details.decrypt(private_key).await;
+            println!("shomáto {:?}", a);
+            a
         } else {
+            println!("incomplete");
             Err(ServiceError::IncompletePortfolio)
         }
     }
@@ -517,8 +523,9 @@ impl AuthenticableTrait for ApplicationService {
 
 #[cfg(test)]
 mod application_tests {
-    use alohomora::{bbox::BBox, context::Context, pcr::{execute_pcr, PrivacyCriticalRegion}, policy::NoPolicy, pure::{execute_pure, PrivacyPureRegion}, testing::TestContextData};
-    use portfolio_policies::{context::ContextDataType, FakePolicy};
+    use alohomora::{bbox::BBox, context::Context, pcr::{execute_pcr, PrivacyCriticalRegion, Signature}, policy::NoPolicy, pure::{execute_pure, PrivacyPureRegion}, testing::TestContextData};
+    use portfolio_policies::FakePolicy;
+    use portfolio_api::pool::ContextDataType;
     use rocket::figment::util;
     //use sea_orm::sea_query::private;
 
@@ -536,12 +543,25 @@ mod application_tests {
         assert!(!ApplicationService::is_application_id_valid(101));
     }
 
-    fn get_test_context() -> Context<TestContextData<ContextDataType>> {
-        Context::test(ContextDataType{
-            session_id: Some(BBox::new(utils::db::TESTING_ADMIN_COOKIE.to_string(), NoPolicy::new())),
-            key: Some(BBox::new(utils::db::TESTING_ADMIN_KEY.to_string(), NoPolicy::new())),
-        })
-    }
+    // static DB: std::sync::OnceLock<sea_orm::DatabaseConnection> = std::sync::OnceLock::new();
+
+    // // async fn get_test_context() -> Context<TestContextData<ContextDataType>> {
+    // //     let conn = match DB.get() {
+    // //         None => {
+    // //             let conn = get_memory_sqlite_connection().await;
+    // //             DB.set(conn).unwrap();
+    // //             &DB.get().unwrap()
+    // //         },
+    // //         Some(conn) => conn
+    // //     };
+
+    // //     Context::test(ContextDataType{
+    // //         session_id: Some(BBox::new(utils::db::TESTING_ADMIN_COOKIE.to_string(), NoPolicy::new())),
+    // //         key: Some(BBox::new(utils::db::TESTING_ADMIN_KEY.to_string(), NoPolicy::new())),
+    // //         conn: None,
+    // //         phantom: std::marker::PhantomData,
+    // //     })
+    // // }
 
     #[tokio::test]
     async fn test_password_reset() {
@@ -553,7 +573,10 @@ mod application_tests {
         let private_key = execute_pcr(admin.private_key, 
             PrivacyCriticalRegion::new(|private_key, _, _|{
                 crypto::decrypt_password(private_key, "admin".to_string())
-            }),
+            },
+            Signature{username: "AlexanderPortland", signature: ""}, 
+            Signature{username: "AlexanderPortland", signature: ""}, 
+            Signature{username: "AlexanderPortland", signature: ""}),
         ()).unwrap().await.unwrap();
 
         // The ip and password for the login happens with.
@@ -564,7 +587,7 @@ mod application_tests {
         );
 
         let new_password = ApplicationService::reset_password(
-            get_test_context(),
+            crate::utils::db::get_test_context(&db).await,
             BBox::new(private_key, FakePolicy::new()),
             &db,
             application.id.clone()
@@ -588,7 +611,7 @@ mod application_tests {
         let secret_message = "trnka".to_string();
 
         let application = ApplicationService::create(
-            get_test_context(),
+            crate::utils::db::get_test_context(&db).await,
             &BBox::new("".to_string(), FakePolicy::new()),
             &db,
             BBox::new(103100, FakePolicy::new()),
@@ -599,7 +622,10 @@ mod application_tests {
         let public_key = execute_pcr(application.public_key, 
             PrivacyCriticalRegion::new(|public_key: String, _, _| {
                 public_key
-            }), ()).unwrap();
+            },
+            Signature{username: "AlexanderPortland", signature: ""}, 
+            Signature{username: "AlexanderPortland", signature: ""}, 
+            Signature{username: "AlexanderPortland", signature: ""}), ()).unwrap();
 
         // ideally we'd do things this way but we cant await outside pcr bc public_key doesn't live long enough
         // and we need it to stick around
@@ -613,12 +639,18 @@ mod application_tests {
         let private_key_plain_text = execute_pcr(application.private_key.clone(), 
             PrivacyCriticalRegion::new(|private_key: String, _, _| {
                 crypto::decrypt_password(private_key, plain_text_password.clone())
-            }), ()).unwrap().await.unwrap();
+            },
+            Signature{username: "AlexanderPortland", signature: ""}, 
+            Signature{username: "AlexanderPortland", signature: ""}, 
+            Signature{username: "AlexanderPortland", signature: ""}), ()).unwrap().await.unwrap();
 
         let decrypted_message = execute_pcr(application.private_key, 
             PrivacyCriticalRegion::new(|private_key: String, _, _| {
                 crypto::decrypt_password_with_private_key(&encrypted_message, &private_key_plain_text)
-            }), ()).unwrap().await.unwrap();
+            },
+            Signature{username: "AlexanderPortland", signature: ""}, 
+            Signature{username: "AlexanderPortland", signature: ""}, 
+            Signature{username: "AlexanderPortland", signature: ""}), ()).unwrap().await.unwrap();
 
         assert_eq!(secret_message, decrypted_message);
     }

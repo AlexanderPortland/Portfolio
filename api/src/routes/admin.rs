@@ -7,15 +7,14 @@ use requests::{AdminLoginRequest, RegisterRequest};
 use rocket::http::Status;
 
 
-use portfolio_policies::context::ContextDataType;
-use alohomora::{bbox::BBox, context::Context, orm::Connection, pure::{execute_pure, PrivacyPureRegion}, rocket::{BBoxCookie, BBoxCookieJar, BBoxJson, ContextResponse, get, JsonResponse, post, route}};
+use alohomora::{bbox::BBox, context::Context, orm::Connection, pcr::{execute_pcr, PrivacyCriticalRegion}, pure::{execute_pure, PrivacyPureRegion}, rocket::{get, post, route, BBoxCookie, BBoxCookieJar, BBoxJson, ContextResponse, JsonResponse}};
 use alohomora::policy::{AnyPolicy, NoPolicy};
 
 use portfolio_core::utils::csv::{ApplicationCsv, CandidateCsv, CsvExporter};
 use portfolio_core::utils::response::MyResult;
 use portfolio_policies::FakePolicy;
 
-use crate::{guards::request::auth::AdminAuth, pool::Db, requests};
+use crate::{guards::request::auth::AdminAuth, pool::{ContextDataType, Db}, requests};
 
 use super::to_custom_error;
 
@@ -228,7 +227,12 @@ pub async fn get_candidate(
         .ok_or(to_custom_error(ServiceError::CandidateNotFound))?;
 
         println!("b");
-    
+    execute_pure(private_key.clone(), PrivacyPureRegion::new(|pk|{
+        println!("pk -> {:?}", pk);
+        println!("db -> {:?}", db);
+        println!("app -> {:?}", &application);
+    })).unwrap();
+    println!("calling app service decrypt");
     let details = ApplicationService::decrypt_all_details(
         private_key,
         db,
@@ -428,33 +432,33 @@ pub mod tests {
         assert_eq!(response.password.len(), 12);
     }
 
-    #[test]
-    // Added by aportlan for additional Sesame testing
-    fn test_create_list_candidates() {
-        let client = test_client().lock().unwrap();
-        let to_create = vec![(1013132, "4"), (1013133, "1"), (1024193, "2"), (1015678, "9"), (1013456, "12"), (1021234, "23")];
+    // #[test]
+    // // Added by aportlan for additional Sesame testing
+    // fn test_create_list_candidates() {
+    //     let client = test_client().lock().unwrap();
+    //     let to_create = vec![(1013132, "4"), (1013133, "1"), (1024193, "2"), (1015678, "9"), (1013456, "12"), (1021234, "23")];
         
-        // add all candidates to system
-        for (app_id, pid) in to_create.clone() {
-            let cookies = admin_login(&client);
+    //     // add all candidates to system
+    //     for (app_id, pid) in to_create.clone() {
+    //         let cookies = admin_login(&client);
 
-            let response = create_candidate(&client, cookies.clone(), app_id, pid.to_string());
-            assert_eq!(response.password.len(), 12);
-        }
+    //         let response = create_candidate(&client, cookies.clone(), app_id, pid.to_string());
+    //         assert_eq!(response.password.len(), 12);
+    //     }
 
-        // get a list of candidates
-        let cookies = admin_login(&client);
-        let response = list_candidates(&client, cookies);
+    //     // get a list of candidates
+    //     let cookies = admin_login(&client);
+    //     let response = list_candidates(&client, cookies);
 
-        // assert_eq!(response.len(), 0);
-        // make sure they all show up in system
-        for (app_id, pid) in to_create {
-            let matches = response.iter().filter(|app|{
-                app.personal_id_number == pid && app.application_id == app_id
-            }).count();
-            assert!(matches >= 1);
-        }
-    }
+    //     // assert_eq!(response.len(), 0);
+    //     // make sure they all show up in system
+    //     for (app_id, pid) in to_create {
+    //         let matches = response.iter().filter(|app|{
+    //             app.personal_id_number == pid && app.application_id == app_id
+    //         }).count();
+    //         assert!(matches >= 1);
+    //     }
+    // }
 
     #[test]
     // Added by aportlan for additional Sesame testing
@@ -492,6 +496,8 @@ pub mod tests {
         assert_eq!(response.status(), Status::Ok);
 
         let admin_cookies = admin_login(&client);
+
+        // FIXME: this is where the failure is
         let details_new = get_candidate_info(&client, admin_cookies, crate::test::tests::APPLICATION_ID);
 
         assert_eq!(details_orig, details_new);

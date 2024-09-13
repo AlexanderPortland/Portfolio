@@ -22,6 +22,7 @@ impl Policy for FakePolicy {
         String::from("FakePolicy")
     }
     fn check(&self, context: &UnprotectedContext, reason: Reason<'_>) -> bool {
+        println!("IN FAKE POLICY");
         true
     }
     fn join(&self, other: AnyPolicy) -> Result<AnyPolicy, ()> {

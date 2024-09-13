@@ -55,6 +55,7 @@ impl CandidateService {
         encrypted_by: BBox<i32, FakePolicy>,
     ) -> Result<entity::candidate::Model, ServiceError> {
         let enc_details = EncryptedCandidateDetails::new(&details, recipients).await?;
+        println!("encrypted details as {:?}", enc_details);
         let model = Mutation::update_candidate_opt_details(
             db,
             candidate,
@@ -69,10 +70,11 @@ impl CandidateService {
 pub mod tests {
     use alohomora::bbox::BBox;
     use alohomora::context::Context;
-    use alohomora::pcr::{execute_pcr, PrivacyCriticalRegion};
+    use alohomora::pcr::{execute_pcr, PrivacyCriticalRegion, Signature};
     use alohomora::policy::NoPolicy;
     use alohomora::testing::TestContextData;
-    use portfolio_policies::context::ContextDataType;
+    use portfolio_policies::FakePolicy;
+    use portfolio_api::pool::ContextDataType;
     use sea_orm::DbConn;
 
     use crate::models::candidate_details::tests::assert_all_application_details;
@@ -82,18 +84,30 @@ pub mod tests {
 
     use crate::models::candidate_details::EncryptedApplicationDetails;
     use entity::{application, candidate, parent};
-    use portfolio_policies::FakePolicy;
 
     use crate::services::application_service::ApplicationService;
 
     const APPLICATION_ID: i32 = 103151;
 
-    fn get_test_context() -> Context<TestContextData<ContextDataType>> {
-        Context::test(ContextDataType{
-            session_id: Some(BBox::new(utils::db::TESTING_ADMIN_COOKIE.to_string(), NoPolicy::new())),
-            key: Some(BBox::new(utils::db::TESTING_ADMIN_KEY.to_string(), NoPolicy::new())),
-        })
-    }
+    // static DB: std::sync::OnceLock<sea_orm::DatabaseConnection> = std::sync::OnceLock::new();
+
+    // async fn get_test_context() -> Context<TestContextData<ContextDataType>> {
+    //     let conn = match DB.get() {
+    //         None => {
+    //             let conn = get_memory_sqlite_connection().await;
+    //             DB.set(conn).unwrap();
+    //             &DB.get().unwrap()
+    //         },
+    //         Some(conn) => conn
+    //     };
+
+    //     Context::test(ContextDataType{
+    //         session_id: Some(BBox::new(utils::db::TESTING_ADMIN_COOKIE.to_string(), NoPolicy::new())),
+    //         key: Some(BBox::new(utils::db::TESTING_ADMIN_KEY.to_string(), NoPolicy::new())),
+    //         conn: None,
+    //         phantom: std::marker::PhantomData,
+    //     })
+    // }
 
     #[tokio::test]
     async fn test_list_applications() {
@@ -102,7 +116,10 @@ pub mod tests {
         let private_key = execute_pcr(admin.private_key, 
             PrivacyCriticalRegion::new(|private_key: String, _, _| {
                 crypto::decrypt_password(private_key, "admin".to_string())
-            }), ()).unwrap().await.unwrap();
+            },
+            Signature{username: "AlexanderPortland", signature: ""}, 
+            Signature{username: "AlexanderPortland", signature: ""}, 
+            Signature{username: "AlexanderPortland", signature: ""}), ()).unwrap().await.unwrap();
         //let private_key = crypto::decrypt_password(admin.private_key.discard_box(), "admin".to_string()).await.unwrap();
         let private_key = BBox::new(private_key, FakePolicy::new());
         let candidates = ApplicationService::list_applications(&private_key, &db, None, None, None).await.unwrap();
@@ -120,7 +137,7 @@ pub mod tests {
 
         let plain_text_password = "test".to_string();
         let application = ApplicationService::create(
-            get_test_context(),
+            crate::utils::db::get_test_context(&db).await,
             &BBox::new("".to_string(), FakePolicy::new()),
             db,
             BBox::new(APPLICATION_ID, FakePolicy::new()),
@@ -161,7 +178,10 @@ pub mod tests {
         let dec_priv_key = execute_pcr(application.private_key, 
             PrivacyCriticalRegion::new(|private_key: String, _, _| {
                 crypto::decrypt_password(private_key, password)
-            }), ()).unwrap().await.unwrap();
+            },
+            Signature{username: "AlexanderPortland", signature: ""}, 
+            Signature{username: "AlexanderPortland", signature: ""}, 
+            Signature{username: "AlexanderPortland", signature: ""}), ()).unwrap().await.unwrap();
         // let dec_priv_key = crypto::decrypt_password(application.private_key.clone().discard_box(), password)
         //     .await
         //     .unwrap();

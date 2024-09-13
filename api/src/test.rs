@@ -2,16 +2,17 @@
 pub mod tests {
     use crate::rocket;
     use alohomora::{bbox::BBox, context::Context, policy::NoPolicy, testing::{BBoxClient, TestContextData}};
-    use portfolio_policies::{context::ContextDataType, FakePolicy};
+    use portfolio_policies::FakePolicy;
+    use crate::pool::ContextDataType;
     use entity::admin;
     use once_cell::sync::OnceCell;
     use portfolio_core::{
         crypto,
         sea_orm::{ActiveModelTrait, DbConn, Set},
-        services::application_service::ApplicationService,
+        services::application_service::ApplicationService, utils::db::get_memory_sqlite_connection,
     };
     
-    use std::sync::Mutex;
+    use std::{marker::PhantomData, sync::Mutex};
 
     pub const ADMIN_ID: i32 = 1;
     pub const ADMIN_PASSWORD: &'static str = "test";
@@ -20,12 +21,16 @@ pub mod tests {
     pub const CANDIDATE_PASSWORD: &'static str = "test";
     pub const PERSONAL_ID_NUMBER: &'static str = "0101010000";
 
+    // #[cfg(test)]
+    // use portfolio_core::utils::db::get_test_context;
     use portfolio_core::utils::db::{TESTING_ADMIN_COOKIE, TESTING_ADMIN_KEY};
 
-    pub fn get_test_context() -> Context<TestContextData<ContextDataType>> {
+    pub async fn get_test_context(conn: &DbConn) -> Context<TestContextData<ContextDataType>> {
         Context::test(ContextDataType{
             session_id: Some(BBox::new(TESTING_ADMIN_COOKIE.to_string(), NoPolicy::new())),
             key: Some(BBox::new(TESTING_ADMIN_KEY.to_string(), NoPolicy::new())),
+            conn: unsafe{ std::mem::transmute(conn)},
+            phantom: PhantomData,
         })
     }
 
@@ -52,7 +57,7 @@ pub mod tests {
         .unwrap();
 
         ApplicationService::create(
-            get_test_context(),
+            get_test_context(db).await,
             &BBox::new("".to_string(), FakePolicy::new()),
             db,
             BBox::new(APPLICATION_ID, FakePolicy::new()),

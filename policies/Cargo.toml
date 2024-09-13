@@ -7,7 +7,7 @@ publish = false
 [dependencies]
 rocket = { git = "https://github.com/KinanBab/Rocket.git", branch = "main" }
 async-trait = { version = "^0.1" }
-alohomora = { path = "../../alohomora/alohomora" }
+alohomora = { path = "../../alohomora/alohomora", features = ["default", "orm"] }
 alohomora_derive = { path = "../../alohomora/alohomora_derive" }
 #portfolio-entity = { path = "../entity" }
 

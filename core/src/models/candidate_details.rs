@@ -413,13 +413,24 @@ impl EncryptedApplicationDetails {
     }
 
     pub async fn decrypt(self, private_key: BBox<String, FakePolicy>) -> Result<ApplicationDetails, ServiceError> {
+        println!("in decrypt w/ enc details {:?}", self.candidate);
         let decrypted_candidate = self.candidate.decrypt(&private_key).await?;
+        println!("got cand details {:?}", decrypted_candidate);
 
         let decrypted_parents = future::try_join_all(
             self.parents
                 .iter()
-                .map(|d| d.decrypt(&private_key))
+                .map(|d| {
+                    d.decrypt(&private_key)
+                    // match d.decrypt(&private_key).await {
+                    //     Ok(o) => {Ok(o)},
+                    //     Err(e) => {Err(e)},
+                    // }
+                    
+                })
         ).await?;
+
+        println!("everything in the map worked");
 
         Ok(ApplicationDetails {
             candidate: decrypted_candidate,
@@ -453,7 +464,7 @@ pub mod tests {
     use std::sync::Mutex;
 
     use portfolio_policies::FakePolicy;
-    use alohomora::{bbox::BBox, pcr::{execute_pcr, PrivacyCriticalRegion}, policy::AnyPolicy, pure::PrivacyPureRegion};
+    use alohomora::{bbox::BBox, pcr::{execute_pcr, PrivacyCriticalRegion, Signature}, policy::AnyPolicy, pure::PrivacyPureRegion};
     use chrono::Local;
     use entity::admin;
     use once_cell::sync::Lazy;
@@ -552,7 +563,10 @@ pub mod tests {
                 encrypted_details.candidate.sex.unwrap().0), 
             PrivacyCriticalRegion::new(|(name, email, sex), _, _|{
                 (name, email, sex)
-            }), ()).unwrap();
+            },
+            Signature{username: "AlexanderPortland", signature: ""}, 
+            Signature{username: "AlexanderPortland", signature: ""}, 
+            Signature{username: "AlexanderPortland", signature: ""}), ()).unwrap();
 
         assert_eq!(crypto::decrypt_password_with_private_key(&name, PRIVATE_KEY).await.unwrap(), "name");
         assert_eq!(crypto::decrypt_password_with_private_key(&email, PRIVATE_KEY).await.unwrap(), "email");
@@ -603,7 +617,10 @@ pub mod tests {
         let enc_password = execute_pcr(encrypted.0, 
             PrivacyCriticalRegion::new(|enc_password: String, _, _|{
             enc_password
-        }), ()).unwrap();
+        },
+        Signature{username: "AlexanderPortland", signature: ""}, 
+        Signature{username: "AlexanderPortland", signature: ""}, 
+        Signature{username: "AlexanderPortland", signature: ""}), ()).unwrap();
 
         assert_eq!(
             crypto::decrypt_password_with_private_key(&enc_password, PRIVATE_KEY).await.unwrap(),

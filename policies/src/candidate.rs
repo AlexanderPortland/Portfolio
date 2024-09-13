@@ -3,7 +3,7 @@ use rocket::data;
 use serde::Serialize;
 use mysql::prelude::Queryable;
 
-use crate::context::ContextDataType;
+use crate::context::ContextDataTypeOut;
 
 
 #[derive(Clone, Serialize, Debug)]
@@ -32,8 +32,8 @@ impl Policy for CandidateDataPolicy {
     }
 
     fn check(&self, context: &alohomora::context::UnprotectedContext, reason: alohomora::policy::Reason<'_>) -> bool {
-        type ContextDataOut = <ContextDataType as AlohomoraType>::Out;
-        let context: &ContextDataOut = context.downcast_ref().unwrap();
+        let context: &ContextDataTypeOut = context.downcast_ref().unwrap();
+        // context.conn
 
         return true;
         

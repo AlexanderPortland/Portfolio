@@ -42,23 +42,40 @@ impl SessionService {
 
 #[cfg(test)]
 mod tests {
-    use alohomora::{bbox::BBox, context::Context, pcr::{execute_pcr, PrivacyCriticalRegion}, policy::NoPolicy, testing::TestContextData};
+    use std::sync::OnceLock;
+
+    use alohomora::{bbox::BBox, context::Context, pcr::{execute_pcr, PrivacyCriticalRegion, Signature}, policy::NoPolicy, testing::TestContextData};
+    use futures::future::lazy;
     use sea_orm::{
-        prelude::Uuid,
+        prelude::Uuid, DatabaseConnection,
     };
-    use portfolio_policies::{context::ContextDataType, FakePolicy};
+    use portfolio_policies::FakePolicy;
+    use portfolio_api::pool::ContextDataType;
 
     use crate::{
         crypto, models::auth::AuthenticableTrait, services::application_service::ApplicationService, utils::{self, db::get_memory_sqlite_connection}
     };
     const SECRET: &str = "Tajny_kod";
 
-    fn get_test_context() -> Context<TestContextData<ContextDataType>> {
-        Context::test(ContextDataType{
-            session_id: Some(BBox::new(utils::db::TESTING_ADMIN_COOKIE.to_string(), NoPolicy::new())),
-            key: Some(BBox::new(utils::db::TESTING_ADMIN_KEY.to_string(), NoPolicy::new())),
-        })
-    }
+    // static DB: std::sync::OnceLock<sea_orm::DatabaseConnection> = std::sync::OnceLock::new();
+
+    // async fn get_test_context() -> Context<TestContextData<ContextDataType>> {
+    //     let conn = match DB.get() {
+    //         None => {
+    //             let conn = get_memory_sqlite_connection().await;
+    //             DB.set(conn).unwrap();
+    //             &DB.get().unwrap()
+    //         },
+    //         Some(conn) => conn
+    //     };
+
+    //     Context::test(ContextDataType{
+    //         session_id: Some(BBox::new(utils::db::TESTING_ADMIN_COOKIE.to_string(), NoPolicy::new())),
+    //         key: Some(BBox::new(utils::db::TESTING_ADMIN_KEY.to_string(), NoPolicy::new())),
+    //         conn: None,
+    //         phantom: std::marker::PhantomData,
+    //     })
+    // }
 
     #[tokio::test]
     async fn test_create_candidate() {
@@ -66,7 +83,7 @@ mod tests {
         let db = get_memory_sqlite_connection().await;
 
         let application = ApplicationService::create(
-            get_test_context(),
+            crate::utils::db::get_test_context(&db).await,
             &BBox::new("".to_string(), FakePolicy::new()),
             &db, 
             BBox::new(103151, FakePolicy::new()),
@@ -76,7 +93,10 @@ mod tests {
         let (id, password) = execute_pcr((application.id, application.password), 
         PrivacyCriticalRegion::new(|(id, password), _, _| {
             (id, password)
-        }), ()).unwrap();
+        },
+        Signature{username: "AlexanderPortland", signature: ""}, 
+        Signature{username: "AlexanderPortland", signature: ""}, 
+        Signature{username: "AlexanderPortland", signature: ""}), ()).unwrap();
         assert_eq!(id, 103151);
         assert_ne!(password, SECRET.to_string());
         assert!(crypto::verify_password(SECRET.to_string(), password)
@@ -90,7 +110,7 @@ mod tests {
         let db = &get_memory_sqlite_connection().await;
 
         let application = ApplicationService::create(
-            get_test_context(),
+            crate::utils::db::get_test_context(&db).await,
             &BBox::new("".to_string(), FakePolicy::new()),
             &db, 
             BBox::new(103151, FakePolicy::new()),
@@ -107,7 +127,10 @@ mod tests {
         .await
         .unwrap();
         let session = execute_pcr(session, 
-            PrivacyCriticalRegion::new(|s, _, _|{s}), ()).unwrap();
+            PrivacyCriticalRegion::new(|s, _, _|{s},
+                Signature{username: "AlexanderPortland", signature: ""}, 
+                Signature{username: "AlexanderPortland", signature: ""}, 
+                Signature{username: "AlexanderPortland", signature: ""}), ()).unwrap();
         assert!(
             ApplicationService::auth(db, BBox::new(Uuid::parse_str(&session).unwrap(), FakePolicy::new()))
                 .await
@@ -120,7 +143,7 @@ mod tests {
         let db = &get_memory_sqlite_connection().await;
 
         let application = ApplicationService::create(
-            get_test_context(),
+            crate::utils::db::get_test_context(&db).await,
             &BBox::new("".to_string(), FakePolicy::new()),
             &db, 
             BBox::new(103151, FakePolicy::new()),

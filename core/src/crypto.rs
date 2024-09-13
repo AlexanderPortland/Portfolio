@@ -1,5 +1,6 @@
 use aes_gcm_siv::aead::Aead;
 use aes_gcm_siv::KeyInit;
+use alohomora::pcr::PrivacyCriticalRegion;
 use argon2::{
     Argon2, PasswordHasher as ArgonPasswordHasher, PasswordVerifier as ArgonPasswordVerifier,
 };
@@ -40,6 +41,7 @@ fn is_usable_char(c: &char) -> bool {
     ['@', '#', '$', '%'].contains(c)
 }
 
+// #[PrivacyCriticalRegion("alexanderportland1@gmail.com")]
 pub async fn hash_password(password_plain_text: String) -> Result<String, ServiceError> {
     let argon_config = Argon2::new(
         argon2::Algorithm::Argon2i,

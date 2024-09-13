@@ -1,12 +1,12 @@
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 
-use alohomora::pcr::{execute_pcr, PrivacyCriticalRegion};
+use alohomora::pcr::{execute_pcr, PrivacyCriticalRegion, Signature};
 use alohomora::rocket::{ContextResponse, JsonResponse};
 use alohomora::{bbox::BBox, context::Context, orm::Connection, pure::{execute_pure, PrivacyPureRegion}, rocket::{get, post, route, BBoxCookie, BBoxCookieJar, BBoxJson}};
 use alohomora_derive::{RequestBBoxJson, ResponseBBoxJson};
 use chrono::NaiveDate;
 use entity::application;
-use portfolio_policies::context::ContextDataType;
+use crate::pool::ContextDataType;
 use portfolio_core::utils::response::MyResult;
 use portfolio_core::Query;
 use portfolio_core::error::ServiceError;
@@ -253,7 +253,10 @@ pub async fn upload_cover_letter(
     let a: BBox<Vec<u8>, FakePolicy> = letter.into();
     execute_pcr(a.clone(), PrivacyCriticalRegion::new(|v, _, _|{
         println!("{:?}", v);
-    }), ()).unwrap();
+    },
+    Signature{username: "AlexanderPortland", signature: ""}, 
+    Signature{username: "AlexanderPortland", signature: ""}, 
+    Signature{username: "AlexanderPortland", signature: ""}), ()).unwrap();
 
     PortfolioService::add_cover_letter_to_cache(context, application.candidate_id, a)
         .await
