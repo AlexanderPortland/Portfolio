@@ -7,7 +7,7 @@ use requests::{AdminLoginRequest, RegisterRequest};
 use rocket::http::Status;
 
 
-use alohomora::{bbox::BBox, context::Context, orm::Connection, pure::{execute_pure, PrivacyPureRegion}, rocket::{BBoxCookie, BBoxCookieJar, BBoxJson, ContextResponse, get, JsonResponse, post, route}};
+use alohomora::{bbox::BBox, context::Context, orm::Connection, pcr::{execute_pcr, PrivacyCriticalRegion}, pure::{execute_pure, PrivacyPureRegion}, rocket::{get, post, route, BBoxCookie, BBoxCookieJar, BBoxJson, ContextResponse, JsonResponse}};
 use alohomora::policy::{AnyPolicy, NoPolicy};
 
 use portfolio_core::utils::csv::{ApplicationCsv, CandidateCsv, CsvExporter};
@@ -227,7 +227,11 @@ pub async fn get_candidate(
         .ok_or(to_custom_error(ServiceError::CandidateNotFound))?;
 
         println!("b");
-    
+    execute_pure(private_key.clone(), PrivacyPureRegion::new(|pk|{
+        println!("pk -> {:?}", pk);
+        println!("db -> {:?}", db);
+        println!("app -> {:?}", &application);
+    })).unwrap();
     let details = ApplicationService::decrypt_all_details(
         private_key,
         db,
@@ -491,6 +495,8 @@ pub mod tests {
         assert_eq!(response.status(), Status::Ok);
 
         let admin_cookies = admin_login(&client);
+
+        // FIXME: this is where the failure is
         let details_new = get_candidate_info(&client, admin_cookies, crate::test::tests::APPLICATION_ID);
 
         assert_eq!(details_orig, details_new);
