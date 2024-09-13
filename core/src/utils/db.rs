@@ -104,11 +104,6 @@ pub async fn get_test_context(db: &DbConn) -> Context<TestContextData<ContextDat
     })
 }
 
-#[cfg(not(test))]
-pub async fn get_test_context<T: ContextData>(_db: &DbConn) -> Context<TestContextData<T>> {
-    todo!()
-}
-
 #[cfg(test)]
 mod tests {
     use super::get_memory_sqlite_connection;

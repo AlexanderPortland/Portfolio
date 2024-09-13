@@ -25,6 +25,15 @@ pub mod tests {
     // use portfolio_core::utils::db::get_test_context;
     use portfolio_core::utils::db::{TESTING_ADMIN_COOKIE, TESTING_ADMIN_KEY};
 
+    pub async fn get_test_context(db: &DbConn) -> Context<TestContextData<ContextDataType>> {
+        Context::test(ContextDataType{
+            session_id: Some(BBox::new(TESTING_ADMIN_COOKIE.to_string(), NoPolicy::new())),
+            key: Some(BBox::new(TESTING_ADMIN_KEY.to_string(), NoPolicy::new())),
+            conn: None,
+            phantom: PhantomData,
+        })
+    }
+
     pub async fn run_test_migrations(db: &DbConn) {
         let (pubkey, priv_key) = crypto::create_identity();
         let priv_key = crypto::encrypt_password(priv_key, ADMIN_PASSWORD.to_string())
@@ -48,7 +57,7 @@ pub mod tests {
         .unwrap();
 
         ApplicationService::create(
-            portfolio_core::utils::db::get_test_context::<ContextDataType>(db).await,
+            get_test_context(db).await,
             &BBox::new("".to_string(), FakePolicy::new()),
             db,
             BBox::new(APPLICATION_ID, FakePolicy::new()),
