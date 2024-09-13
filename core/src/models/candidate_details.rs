@@ -413,13 +413,24 @@ impl EncryptedApplicationDetails {
     }
 
     pub async fn decrypt(self, private_key: BBox<String, FakePolicy>) -> Result<ApplicationDetails, ServiceError> {
+        println!("in decrypt w/ enc details {:?}", self.candidate);
         let decrypted_candidate = self.candidate.decrypt(&private_key).await?;
+        println!("got cand details {:?}", decrypted_candidate);
 
         let decrypted_parents = future::try_join_all(
             self.parents
                 .iter()
-                .map(|d| d.decrypt(&private_key))
+                .map(|d| {
+                    d.decrypt(&private_key)
+                    // match d.decrypt(&private_key).await {
+                    //     Ok(o) => {Ok(o)},
+                    //     Err(e) => {Err(e)},
+                    // }
+                    
+                })
         ).await?;
+
+        println!("everything in the map worked");
 
         Ok(ApplicationDetails {
             candidate: decrypted_candidate,

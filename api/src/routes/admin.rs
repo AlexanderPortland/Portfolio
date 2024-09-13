@@ -232,6 +232,7 @@ pub async fn get_candidate(
         println!("db -> {:?}", db);
         println!("app -> {:?}", &application);
     })).unwrap();
+    println!("calling app service decrypt");
     let details = ApplicationService::decrypt_all_details(
         private_key,
         db,

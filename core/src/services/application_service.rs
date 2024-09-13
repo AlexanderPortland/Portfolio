@@ -262,14 +262,20 @@ impl ApplicationService {
         db: &DbConn,
         application: &application::Model,
     ) -> Result<ApplicationDetails, ServiceError>  {
+        println!("potato");
         let candidate = ApplicationService::find_related_candidate(db, application).await?;
-
+        println!("potáto");
         let parents = Query::find_candidate_parents(db, &candidate).await?;
+        println!("tomato");
         let enc_details = EncryptedApplicationDetails::from((&candidate, &parents));
-
+        println!("tomáto");
         if enc_details.is_filled() {
-            enc_details.decrypt(private_key).await
+            println!("shomato {:?}", private_key);
+            let a = enc_details.decrypt(private_key).await;
+            println!("shomáto {:?}", a);
+            a
         } else {
+            println!("incomplete");
             Err(ServiceError::IncompletePortfolio)
         }
     }
@@ -552,7 +558,7 @@ mod application_tests {
         Context::test(ContextDataType{
             session_id: Some(BBox::new(utils::db::TESTING_ADMIN_COOKIE.to_string(), NoPolicy::new())),
             key: Some(BBox::new(utils::db::TESTING_ADMIN_KEY.to_string(), NoPolicy::new())),
-            conn: conn,
+            conn: None,
             phantom: std::marker::PhantomData,
         })
     }

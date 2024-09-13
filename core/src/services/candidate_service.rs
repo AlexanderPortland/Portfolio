@@ -55,6 +55,7 @@ impl CandidateService {
         encrypted_by: BBox<i32, FakePolicy>,
     ) -> Result<entity::candidate::Model, ServiceError> {
         let enc_details = EncryptedCandidateDetails::new(&details, recipients).await?;
+        println!("encrypted details as {:?}", enc_details);
         let model = Mutation::update_candidate_opt_details(
             db,
             candidate,
@@ -103,7 +104,7 @@ pub mod tests {
         Context::test(ContextDataType{
             session_id: Some(BBox::new(utils::db::TESTING_ADMIN_COOKIE.to_string(), NoPolicy::new())),
             key: Some(BBox::new(utils::db::TESTING_ADMIN_KEY.to_string(), NoPolicy::new())),
-            conn,
+            conn: None,
             phantom: std::marker::PhantomData,
         })
     }

@@ -85,6 +85,11 @@ pub async fn get_memory_sqlite_connection() -> sea_orm::DbConn {
 }
 
 #[cfg(test)]
+fn get_text_context() {
+    // ..
+}
+
+#[cfg(test)]
 mod tests {
     use super::get_memory_sqlite_connection;
 

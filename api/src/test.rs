@@ -26,20 +26,11 @@ pub mod tests {
     
     static DB: std::sync::OnceLock<migration::sea_orm::DatabaseConnection> = std::sync::OnceLock::new();
 
-    async fn get_test_context() -> Context<TestContextData<ContextDataType>> {
-        let conn = match DB.get() {
-            None => {
-                let conn = get_memory_sqlite_connection().await;
-                DB.set(conn).unwrap();
-                &DB.get().unwrap()
-            },
-            Some(conn) => conn
-        };
-
+    async fn get_test_context(db: &DbConn) -> Context<TestContextData<ContextDataType>> {
         Context::test(ContextDataType{
             session_id: Some(BBox::new(TESTING_ADMIN_COOKIE.to_string(), NoPolicy::new())),
             key: Some(BBox::new(TESTING_ADMIN_KEY.to_string(), NoPolicy::new())),
-            conn,
+            conn: None,
             phantom: PhantomData,
         })
     }
@@ -67,7 +58,7 @@ pub mod tests {
         .unwrap();
 
         ApplicationService::create(
-            get_test_context().await,
+            get_test_context(db).await,
             &BBox::new("".to_string(), FakePolicy::new()),
             db,
             BBox::new(APPLICATION_ID, FakePolicy::new()),
