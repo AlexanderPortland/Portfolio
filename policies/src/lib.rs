@@ -7,6 +7,7 @@ use sea_orm_migration::sea_orm::QueryResult;
 
 pub mod candidate;
 pub mod context;
+pub mod key;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct FakePolicy {}
@@ -53,53 +54,6 @@ impl ORMPolicy for FakePolicy {
 impl Default for FakePolicy {
     fn default() -> Self {
         FakePolicy {}
-    }
-}
-
-#[derive(Clone, Debug, PartialEq)]
-pub struct KeyPolicy {}
-
-impl KeyPolicy {
-    pub fn new() -> Self {
-        Self {}
-    }
-}
-
-impl Policy for KeyPolicy {
-    fn name(&self) -> String {
-        String::from("KeyPolicy")
-    }
-    fn check(&self, context: &UnprotectedContext, reason: Reason<'_>) -> bool {
-        true
-    }
-    fn join(&self, other: AnyPolicy) -> Result<AnyPolicy, ()> {
-        Ok(AnyPolicy::new(KeyPolicy {}))
-    }
-    fn join_logic(&self, other: Self) -> Result<Self, ()> where Self: Sized {
-        Ok(KeyPolicy {})
-    }
-}
-
-impl FrontendPolicy for KeyPolicy {
-    fn from_request<'a, 'r>(request: &'a Request<'r>) -> Self where Self: Sized {
-        KeyPolicy {}
-    }
-
-    fn from_cookie<'a, 'r>(name: &str, cookie: &'a Cookie<'static>, request: &'a Request<'r>) -> Self where Self: Sized {
-        KeyPolicy {}
-    }
-}
-
-impl ORMPolicy for KeyPolicy {
-    fn from_result(result: &QueryResult) -> Self where Self: Sized {
-        KeyPolicy {}
-    }
-    fn empty() -> Self where Self: Sized { KeyPolicy {} }
-}
-
-impl Default for KeyPolicy {
-    fn default() -> Self {
-        KeyPolicy {}
     }
 }
 

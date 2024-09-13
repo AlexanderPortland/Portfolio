@@ -463,7 +463,7 @@ impl From<(&candidate::Model, &Vec<parent::Model>)> for EncryptedApplicationDeta
 pub mod tests {
     use std::sync::Mutex;
 
-    use portfolio_policies::FakePolicy;
+    use portfolio_policies::{key::KeyPolicy, FakePolicy};
     use alohomora::{bbox::BBox, pcr::{execute_pcr, PrivacyCriticalRegion, Signature}, policy::AnyPolicy, pure::PrivacyPureRegion};
     use chrono::Local;
     use entity::admin;
@@ -532,7 +532,7 @@ pub mod tests {
             name: Set(BBox::new("Admin".to_owned(), FakePolicy::new())),
             public_key: Set(BBox::new("age1u889gp407hsz309wn09kxx9anl6uns30m27lfwnctfyq9tq4qpus8tzmq5".to_owned(), FakePolicy::new())),
             // AGE-SECRET-KEY-14QG24502DMUUQDT2SPMX2YXPSES0X8UD6NT0PCTDAT6RH8V5Q3GQGSRXPS
-            private_key: Set(BBox::new("5KCEGk0ueWVGnu5Xo3rmpLoilcVZ2ZWmwIcdZEJ8rrBNW7jwzZU/XTcTXtk/xyy/zjF8s+YnuVpOklQvX3EC/Sn+ZwyPY3jokM2RNwnZZlnqdehOEV1SMm/Y".to_owned(), FakePolicy::new())),
+            private_key: Set(BBox::new("5KCEGk0ueWVGnu5Xo3rmpLoilcVZ2ZWmwIcdZEJ8rrBNW7jwzZU/XTcTXtk/xyy/zjF8s+YnuVpOklQvX3EC/Sn+ZwyPY3jokM2RNwnZZlnqdehOEV1SMm/Y".to_owned(), KeyPolicy::new(None))),
             // test
             password: Set(BBox::new("$argon2i$v=19$m=6000,t=3,p=10$WE9xCQmmWdBK82R4SEjoqA$TZSc6PuLd4aWK2x2WAb+Lm9sLySqjK3KLbNyqyQmzPQ".to_owned(), FakePolicy::new())),
             created_at: Set(BBox::new(Local::now().naive_local(), FakePolicy::new())),

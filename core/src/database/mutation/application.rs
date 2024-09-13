@@ -1,9 +1,10 @@
-use alohomora::bbox::BBox;
+use alohomora::{bbox::BBox, policy::AnyPolicy};
 use alohomora::pure::PrivacyPureRegion;
 use ::entity::application;
 use log::{info, warn};
+use rocket::form::name::Key;
 use sea_orm::{DbConn, DbErr, Set, ActiveModelTrait, IntoActiveModel, DeleteResult, ModelTrait};
-use portfolio_policies::FakePolicy;
+use portfolio_policies::{key::KeyPolicy, FakePolicy};
 
 use crate::{Mutation, models::candidate::FieldOfStudy};
 
@@ -15,7 +16,7 @@ impl Mutation {
         hashed_password: BBox<String, FakePolicy>,
         enc_personal_id_number: BBox<String, FakePolicy>,
         public_key: BBox<String, FakePolicy>,
-        encrypted_private_key: BBox<String, FakePolicy>,
+        encrypted_private_key: BBox<String, KeyPolicy>,
     ) -> Result<application::Model, DbErr> {
         let field_of_study = application_id.clone().into_ppr(
             PrivacyPureRegion::new(|application_id| {
@@ -53,7 +54,7 @@ impl Mutation {
         application: application::Model,
         new_password_hash: BBox<String, FakePolicy>,
         public_key: BBox<String, FakePolicy>,
-        private_key_encrypted: BBox<String, FakePolicy>
+        private_key_encrypted: BBox<String, KeyPolicy>
     ) -> Result<application::Model, DbErr> {
         let mut application =  application.into_active_model();
         application.password = Set(new_password_hash);

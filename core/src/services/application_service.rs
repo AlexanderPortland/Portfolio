@@ -4,6 +4,7 @@ use alohomora::context::{Context, ContextData};
 use async_trait::async_trait;
 use chrono::{Duration, NaiveDateTime};
 use entity::{candidate, parent, application, session};
+use portfolio_policies::key::KeyPolicy;
 // use portfolio_policies::context::ContextDataType;
 use sea_orm::{DbConn, prelude::Uuid, IntoActiveModel};
 use alohomora::bbox::BBox;
@@ -55,8 +56,10 @@ impl ApplicationService {
         let hashed_password = my_hash_password(plain_text_password.to_owned()).await?;
         let (pubkey, priv_key_plain_text) = crypto::create_identity();
         let pubkey = BBox::new(pubkey, FakePolicy::new());
-        let encrypted_priv_key = my_encrypt_password(
-            priv_key_plain_text,
+        let bbox = BBox::new(priv_key_plain_text, KeyPolicy::new(None));
+        // TODO: (aportlan) switch the args here
+        let encrypted_priv_key: BBox<String, KeyPolicy> = my_encrypt_password(
+            bbox,
             plain_text_password.to_owned(),
         ).await?;
 
@@ -357,7 +360,7 @@ impl ApplicationService {
         ).await?;
 
         let pubkey = BBox::new(pubkey, FakePolicy::new());
-        let encrypted_priv_key = BBox::new(encrypted_priv_key, FakePolicy::new());
+        let encrypted_priv_key = BBox::new(encrypted_priv_key, KeyPolicy::new(None));
 
         Self::delete_old_sessions(db, &application, 0).await?;
         let application = Mutation::update_application_password_and_keys(db,
@@ -452,7 +455,7 @@ impl AuthenticableTrait for ApplicationService {
         application_id: BBox<i32, FakePolicy>,
         password: BBox<String, FakePolicy>,
         ip_addr: BBox<String, FakePolicy>,
-    ) -> Result<(BBox<String, FakePolicy>, BBox<String, FakePolicy>), ServiceError> {
+    ) -> Result<(BBox<String, FakePolicy>, BBox<String, AnyPolicy>), ServiceError> {
         let application = Query::find_application_by_id(db, application_id)
             .await?
             .ok_or(ServiceError::CandidateNotFound)?;
@@ -460,7 +463,7 @@ impl AuthenticableTrait for ApplicationService {
         let session_id = Self::new_session(db, &application, password.clone(), ip_addr).await?;
         let private_key = Self::decrypt_private_key(application, password).await?;
 
-        Ok((session_id, private_key))
+        Ok((session_id, private_key.into_any_policy()))
     }
 
     async fn auth(db: &DbConn, session_uuid: BBox<Uuid, FakePolicy>) -> Result<application::Model, ServiceError> {

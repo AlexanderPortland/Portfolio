@@ -89,7 +89,7 @@ pub async fn logout(
 }
 
 #[get("/whoami")]
-pub async fn whoami(conn: Connection<'_, Db>, 
+pub async fn whoami(conn: Connection<'_, Db>, x
     session: ApplicationAuth, 
     context: Context<ContextDataType>
 ) -> MyResult<JsonResponse<NewCandidateResponse, ContextDataType>, (rocket::http::Status, String)> {

@@ -4,6 +4,7 @@ use entity::application::Model as Application;
 use portfolio_core::models::auth::AuthenticableTrait;
 use portfolio_core::sea_orm::prelude::Uuid;
 use portfolio_core::services::application_service::ApplicationService;
+use portfolio_policies::key::KeyPolicy;
 use rocket::http::Status;
 use rocket::outcome::Outcome;
 
@@ -14,7 +15,7 @@ use portfolio_policies::FakePolicy;
 
 use crate::pool::Db;
 
-pub struct ApplicationAuth(Application, BBox<String, FakePolicy>);
+pub struct ApplicationAuth(Application, BBox<String, KeyPolicy>);
 
 impl Into<Application> for ApplicationAuth {
     fn into(self) -> Application {
@@ -23,7 +24,7 @@ impl Into<Application> for ApplicationAuth {
 }
 
 impl ApplicationAuth {
-    pub fn get_private_key(&self) -> BBox<String, FakePolicy> {
+    pub fn get_private_key(&self) -> BBox<String, KeyPolicy> {
         self.1.clone()
     }
 }

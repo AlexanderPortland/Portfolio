@@ -1,3 +1,4 @@
+use alohomora::policy::AnyPolicy;
 use async_trait::async_trait;
 use entity::{admin, admin_session};
 use sea_orm::{prelude::Uuid, DbConn, IntoActiveModel};
@@ -17,7 +18,7 @@ impl AdminService {
         db: &DbConn,
         admin_id: BBox<i32, FakePolicy>,
         password: BBox<String, FakePolicy>,
-    ) -> Result<BBox<String, FakePolicy>, ServiceError> {
+    ) -> Result<BBox<String, AnyPolicy>, ServiceError> {
         let admin = Query::find_admin_by_id(db, admin_id).await?.ok_or(ServiceError::InvalidCredentials)?;
         let private_key_encrypted = admin.private_key;
 
@@ -38,7 +39,7 @@ impl AuthenticableTrait for AdminService {
         admin_id: BBox<i32, FakePolicy>,
         password: BBox<String, FakePolicy>,
         ip_addr: BBox<String, FakePolicy>,
-    ) -> Result<(BBox<String, FakePolicy>, BBox<String, FakePolicy>), ServiceError> {
+    ) -> Result<(BBox<String, FakePolicy>, BBox<String, AnyPolicy>), ServiceError> {
         let admin = Query::find_admin_by_id(db, admin_id).await?.ok_or(ServiceError::InvalidCredentials)?;
         let session_id = Self::new_session(db,
             &admin,

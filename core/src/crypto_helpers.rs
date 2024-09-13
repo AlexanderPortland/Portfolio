@@ -9,6 +9,7 @@ use alohomora::testing::TestContextData;
 use alohomora::unbox;
 use argon2::Argon2;
 use futures::channel::mpsc::Receiver;
+use portfolio_policies::key::KeyPolicy;
 use crate::error::ServiceError;
 
 pub async fn my_hash_password<P: Policy + Clone + 'static>(password_plain_text: BBox<String, P>) -> Result<BBox<String, P>, ServiceError> {
@@ -27,19 +28,19 @@ pub async fn my_hash_password<P: Policy + Clone + 'static>(password_plain_text: 
 }
 
 pub async fn my_encrypt_password<P: Policy + Clone + 'static>(
-    password_plain_text: String,
+    password_plain_text: BBox<String, KeyPolicy>,
     key: BBox<String, P>
-) -> Result<BBox<String, P>, ServiceError> {
-    let enc_res = execute_pcr(key.clone(), 
-        PrivacyCriticalRegion::new(|key, _, _|{
-            crate::crypto::encrypt_password(password_plain_text, key)
+) -> Result<BBox<String, KeyPolicy>, ServiceError> {
+    let enc_res = execute_pcr((key.clone(), password_plain_text.clone()), 
+        PrivacyCriticalRegion::new(|(key, password), _, _|{
+            crate::crypto::encrypt_password(password, key)
         },
         Signature{username: "AlexanderPortland", signature: ""}, 
         Signature{username: "AlexanderPortland", signature: ""}, 
         Signature{username: "AlexanderPortland", signature: ""}), ()).unwrap().await;
 
     match enc_res {
-        Ok(enc) => Ok(BBox::new(enc, key.policy().clone())),
+        Ok(enc) => Ok(BBox::new(enc, password_plain_text.policy().to_owned())),
         Err(e) => Err(e),
     }
 }
@@ -98,31 +99,26 @@ pub async fn my_encrypt_password_with_recipients<P: Policy + Clone + 'static, P2
     }
 }
 
+async fn dumb_helper<P: Policy>(password_encrypted: String, unboxed_key: String, combined_policy: P) -> Result<BBox<String, P>, ServiceError> {
+    let dec = crate::crypto::decrypt_password_with_private_key(&password_encrypted, &unboxed_key).await?;
+    Ok(BBox::new(dec, combined_policy))
+}
+
 pub async fn my_decrypt_password_with_private_key<P1: Policy + Clone + 'static, P2: Policy + Clone + 'static>(
     password_encrypted: BBox<String, P1>,
     key: BBox<String, P2>,
-) -> Result<BBox<String, AnyPolicy>, ServiceError> {
-    let (unboxed_password_encrypted, unboxed_key): (String, String) = execute_pcr((password_encrypted.clone(), key.clone()), 
-    PrivacyCriticalRegion::new(|(ciphertext, key): (String, String), _, _|{
-        (ciphertext, key)
-    },
-    Signature{username: "AlexanderPortland", signature: ""}, 
-    Signature{username: "AlexanderPortland", signature: ""}, 
-    Signature{username: "AlexanderPortland", signature: ""}), ()).unwrap();
-    let dec_res = crate::crypto::decrypt_password_with_private_key(&unboxed_password_encrypted, &unboxed_key).await;
-
-    match dec_res {
-        Ok(dec) => {
-            // very hacky strategy, but since we can't combine policies manually with only references, 
-            // we do some fake combination in a ppr and then put our desired value inside
-            let policy_box = execute_pure((password_encrypted.clone(), key.clone(), dec), PrivacyPureRegion::new(|(c, k, dec): (String, String, String)|{
-                let _ = c.contains(&k);
-                dec
-            })).unwrap();
-            Ok(policy_box)
-        },
-        Err(e) => Err(e),
-    }
+) -> Result<BBox<String, P1>, ServiceError> {
+    let policy = password_encrypted.policy().clone();
+    execute_pcr(
+        (password_encrypted, key), 
+        PrivacyCriticalRegion::new( 
+            |(unboxed_password_encrypted, unboxed_key): (String, String), combined_policy, _| {
+                    dumb_helper(unboxed_password_encrypted, unboxed_key, policy)
+                },
+        Signature{username: "AlexanderPortland", signature: ""}, 
+        Signature{username: "AlexanderPortland", signature: ""}, 
+        Signature{username: "AlexanderPortland", signature: ""}), ()).unwrap().await
+    
 }
 
 pub async fn my_verify_password<P1: Policy + Clone + 'static, P2: Policy + Clone + 'static>(

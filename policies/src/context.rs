@@ -1,5 +1,5 @@
 use std::{collections::HashMap, marker::PhantomData, sync::Arc};
-use alohomora::{bbox::BBox, db::BBoxConn, policy::NoPolicy, AlohomoraType};
+use alohomora::{bbox::BBox, db::BBoxConn, policy::NoPolicy, rocket::BBoxJson, AlohomoraType};
 use std::sync::Mutex;
 use ::rocket::http::Status;
 use alohomora::rocket::{BBoxRequest, BBoxRequestOutcome, FromBBoxRequest};
@@ -73,11 +73,23 @@ impl<Db: sea_orm_rocket::Database> AlohomoraType for RealContextDataType<Db> {
     
 // }
 
+#[allow(non_snake_case)]
+#[derive(alohomora_derive::RequestBBoxJson)]
+pub struct LoginRequest {
+    pub applicationId: BBox<i32, FakePolicy>,
+    pub password: BBox<String, FakePolicy>,
+}
+
 #[::rocket::async_trait]
 impl<'a, 'r, P: sea_orm_rocket::Pool<Connection = sea_orm::DatabaseConnection>, Db: sea_orm_rocket::Database<Pool = P>> FromBBoxRequest<'a, 'r> for RealContextDataType<Db> {
     type BBoxError = ();
     
     async fn from_bbox_request(request: BBoxRequest<'a, 'r>,) -> BBoxRequestOutcome<Self, Self::BBoxError> {
+        let login: BBoxJson<LoginRequest> = match request.guard().await {
+            BBoxRequestOutcome::Success(f) => f,
+            _ => panic!(""),
+        };
+
         let session_id: Option<BBox<String, NoPolicy>> = request.cookies().get("id")
             .and_then(|k| Some(k.value().to_owned()));
         

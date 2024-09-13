@@ -2,7 +2,7 @@
 
 use sea_orm::entity::prelude::*;
 use alohomora::bbox::BBox;
-use portfolio_policies::FakePolicy;
+use portfolio_policies::{key::KeyPolicy, FakePolicy};
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel)]
 #[sea_orm(table_name = "admin")]
@@ -12,7 +12,7 @@ pub struct Model {
     pub name: BBox<String, FakePolicy>,
     pub public_key: BBox<String, FakePolicy>,
     #[sea_orm(column_type = "Text")]
-    pub private_key: BBox<String, FakePolicy>,
+    pub private_key: BBox<String, KeyPolicy>,
     pub password: BBox<String, FakePolicy>,
     pub created_at: BBox<DateTime, FakePolicy>,
     pub updated_at: BBox<DateTime, FakePolicy>,
