@@ -113,16 +113,16 @@ pub fn serialize_app_row_caller(rows: Vec<ApplicationRow>) -> Result<BBox<Vec<u8
     b
 }
 
-// This should be a Sandboxed region.
-pub fn serialize_in_sandbox<T: AlohomoraType>(rows: Vec<T>) -> Result<BBox<Vec<u8>, AnyPolicy>, ServiceError> where T::Out: Serialize {
-    execute_pure(rows, PrivacyPureRegion::new(|rows| {
-        let mut wtr = csv::Writer::from_writer(vec![]);
-        for row in rows {
-            wtr.serialize(row).unwrap();
-        }
-        wtr.into_inner().map_err(|_| ServiceError::CsvIntoInnerError)
-    })).unwrap().transpose()
-}
+// // This should be a Sandboxed region.
+// pub fn serialize_in_sandbox<T: AlohomoraType>(rows: Vec<T>) -> Result<BBox<Vec<u8>, AnyPolicy>, ServiceError> where T::Out: Serialize {
+//     execute_pure(rows, PrivacyPureRegion::new(|rows| {
+//         let mut wtr = csv::Writer::from_writer(vec![]);
+//         for row in rows {
+//             wtr.serialize(row).unwrap();
+//         }
+//         wtr.into_inner().map_err(|_| ServiceError::CsvIntoInnerError)
+//     })).unwrap().transpose()
+// }
 
 #[async_trait]
 pub trait CsvExporter {
@@ -169,7 +169,7 @@ impl CsvExporter for ApplicationCsv {
             rows.push(row);
         }
         println!("serialize?");
-        serialize_in_sandbox(rows)
+        serialize_app_row_caller(rows)
     }
 }
 
@@ -260,7 +260,7 @@ impl CsvExporter for CandidateCsv {
 
 
         // This should be a Sandboxed region.
-        serialize_in_sandbox(rows)
+        serialize_cand_row_caller(rows)
     }
 }
 
