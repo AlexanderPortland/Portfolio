@@ -7,6 +7,9 @@ use portfolio_policies::FakePolicy;
 use crate::Query;
 use crate::error::ServiceError;
 
+#[cfg(test)]
+pub const TESTING_ADMIN_COOKIE2: &str = "0xdeadbeef12345678deadbeef12345678";
+
 pub const TESTING_ADMIN_COOKIE: &str = "0xdeadbeef12345678deadbeef12345678";
 const TESTING_ADMIN_ID: &str = "1";
 pub const TESTING_ADMIN_KEY: &str = "blahblah";
@@ -85,8 +88,25 @@ pub async fn get_memory_sqlite_connection() -> sea_orm::DbConn {
 }
 
 #[cfg(test)]
-fn get_text_context() {
-    // ..
+use portfolio_api::pool::ContextDataType;
+use std::marker::PhantomData;
+use alohomora::context::{Context, ContextData};
+use alohomora::testing::TestContextData;
+use alohomora::policy::NoPolicy;
+
+#[cfg(test)]
+pub async fn get_test_context(db: &DbConn) -> Context<TestContextData<ContextDataType>> {
+    Context::test(ContextDataType{
+        session_id: Some(BBox::new(TESTING_ADMIN_COOKIE.to_string(), NoPolicy::new())),
+        key: Some(BBox::new(TESTING_ADMIN_KEY.to_string(), NoPolicy::new())),
+        conn: None,
+        phantom: PhantomData,
+    })
+}
+
+#[cfg(not(test))]
+pub async fn get_test_context<T: ContextData>(_db: &DbConn) -> Context<TestContextData<T>> {
+    todo!()
 }
 
 #[cfg(test)]

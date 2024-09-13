@@ -21,19 +21,9 @@ pub mod tests {
     pub const CANDIDATE_PASSWORD: &'static str = "test";
     pub const PERSONAL_ID_NUMBER: &'static str = "0101010000";
 
+    // #[cfg(test)]
+    // use portfolio_core::utils::db::get_test_context;
     use portfolio_core::utils::db::{TESTING_ADMIN_COOKIE, TESTING_ADMIN_KEY};
-
-    
-    static DB: std::sync::OnceLock<migration::sea_orm::DatabaseConnection> = std::sync::OnceLock::new();
-
-    async fn get_test_context(db: &DbConn) -> Context<TestContextData<ContextDataType>> {
-        Context::test(ContextDataType{
-            session_id: Some(BBox::new(TESTING_ADMIN_COOKIE.to_string(), NoPolicy::new())),
-            key: Some(BBox::new(TESTING_ADMIN_KEY.to_string(), NoPolicy::new())),
-            conn: None,
-            phantom: PhantomData,
-        })
-    }
 
     pub async fn run_test_migrations(db: &DbConn) {
         let (pubkey, priv_key) = crypto::create_identity();
@@ -58,7 +48,7 @@ pub mod tests {
         .unwrap();
 
         ApplicationService::create(
-            get_test_context(db).await,
+            portfolio_core::utils::db::get_test_context::<ContextDataType>(db).await,
             &BBox::new("".to_string(), FakePolicy::new()),
             db,
             BBox::new(APPLICATION_ID, FakePolicy::new()),

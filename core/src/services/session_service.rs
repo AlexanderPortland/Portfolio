@@ -57,25 +57,25 @@ mod tests {
     };
     const SECRET: &str = "Tajny_kod";
 
-    static DB: std::sync::OnceLock<sea_orm::DatabaseConnection> = std::sync::OnceLock::new();
+    // static DB: std::sync::OnceLock<sea_orm::DatabaseConnection> = std::sync::OnceLock::new();
 
-    async fn get_test_context() -> Context<TestContextData<ContextDataType>> {
-        let conn = match DB.get() {
-            None => {
-                let conn = get_memory_sqlite_connection().await;
-                DB.set(conn).unwrap();
-                &DB.get().unwrap()
-            },
-            Some(conn) => conn
-        };
+    // async fn get_test_context() -> Context<TestContextData<ContextDataType>> {
+    //     let conn = match DB.get() {
+    //         None => {
+    //             let conn = get_memory_sqlite_connection().await;
+    //             DB.set(conn).unwrap();
+    //             &DB.get().unwrap()
+    //         },
+    //         Some(conn) => conn
+    //     };
 
-        Context::test(ContextDataType{
-            session_id: Some(BBox::new(utils::db::TESTING_ADMIN_COOKIE.to_string(), NoPolicy::new())),
-            key: Some(BBox::new(utils::db::TESTING_ADMIN_KEY.to_string(), NoPolicy::new())),
-            conn: None,
-            phantom: std::marker::PhantomData,
-        })
-    }
+    //     Context::test(ContextDataType{
+    //         session_id: Some(BBox::new(utils::db::TESTING_ADMIN_COOKIE.to_string(), NoPolicy::new())),
+    //         key: Some(BBox::new(utils::db::TESTING_ADMIN_KEY.to_string(), NoPolicy::new())),
+    //         conn: None,
+    //         phantom: std::marker::PhantomData,
+    //     })
+    // }
 
     #[tokio::test]
     async fn test_create_candidate() {
@@ -83,7 +83,7 @@ mod tests {
         let db = get_memory_sqlite_connection().await;
 
         let application = ApplicationService::create(
-            get_test_context().await,
+            crate::utils::db::get_test_context(&db).await,
             &BBox::new("".to_string(), FakePolicy::new()),
             &db, 
             BBox::new(103151, FakePolicy::new()),
@@ -110,7 +110,7 @@ mod tests {
         let db = &get_memory_sqlite_connection().await;
 
         let application = ApplicationService::create(
-            get_test_context().await,
+            crate::utils::db::get_test_context(&db).await,
             &BBox::new("".to_string(), FakePolicy::new()),
             &db, 
             BBox::new(103151, FakePolicy::new()),
@@ -143,7 +143,7 @@ mod tests {
         let db = &get_memory_sqlite_connection().await;
 
         let application = ApplicationService::create(
-            get_test_context().await,
+            crate::utils::db::get_test_context(&db).await,
             &BBox::new("".to_string(), FakePolicy::new()),
             &db, 
             BBox::new(103151, FakePolicy::new()),

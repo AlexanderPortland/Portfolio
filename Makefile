@@ -4,9 +4,12 @@ check-api:
 	export PORTFOLIO_DATABASE_URL=mysql://root:@127.0.0.1/ && \
 	cd api; cargo test -- --test-threads=1
 
-check: check-api
+check-core: 
 	export PORTFOLIO_DATABASE_URL=mysql://root:@127.0.0.1/ && \
 	cd core; cargo test -- --test-threads=1
+
+check: check-api check-core
+	
 	
 backend:
 	export PORTFOLIO_DATABASE_URL=mysql://root:@127.0.0.1/; \

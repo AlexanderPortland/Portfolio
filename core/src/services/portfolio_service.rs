@@ -638,7 +638,9 @@ mod tests {
 
     static DB: std::sync::OnceLock<sea_orm::DatabaseConnection> = std::sync::OnceLock::new();
 
-    async fn get_test_context() -> Context<TestContextData<ContextDataType>> {
+    // NOTE: ONLY USE WHEN THIS IS THE *ONLY CONNECTION* to the DB for a given test
+    // otherwise, will wipe db and mess things up
+    async fn get_test_context_direct() -> Context<TestContextData<ContextDataType>> {
         let conn = match DB.get() {
             None => {
                 let conn = get_memory_sqlite_connection().await;
@@ -657,10 +659,12 @@ mod tests {
     }
 
     #[cfg(test)]
-    async fn open<T, P: Policy>(bbox: BBox<T, P>) -> T {
+    async fn open<T, P: Policy>(bbox: BBox<T, P>, db: &sea_orm::DatabaseConnection) -> T {
         use alohomora::pcr::Signature;
+        use sea_orm::DatabaseConnection;
 
-        bbox.into_unbox(get_test_context().await, PrivacyCriticalRegion::new(|t: T, ()| t,
+        // TODO: add fake context here bc PCR is just for unboxing
+        bbox.into_unbox(crate::utils::db::get_test_context(&db).await, PrivacyCriticalRegion::new(|t: T, ()| t,
         Signature{username: "AlexanderPortland", signature: ""}, 
         Signature{username: "AlexanderPortland", signature: ""}, 
         Signature{username: "AlexanderPortland", signature: ""}), ()).unwrap()
@@ -696,12 +700,12 @@ mod tests {
         let temp_dir = std::env::temp_dir().join("portfolio_test_tempdir").join("create_folder");
         std::env::set_var("PORTFOLIO_STORE_PATH", temp_dir.to_str().unwrap());
 
-        let candidate = CandidateService::create(get_test_context().await, &db, BBox::new("".to_string(), FakePolicy::new()))
+        let candidate = CandidateService::create(crate::utils::db::get_test_context(&db).await, &db, BBox::new("".to_string(), FakePolicy::new()))
             .await
             .ok()
             .unwrap();
 
-        let candidate_id = open(candidate.id.clone()).await;
+        let candidate_id = open(candidate.id.clone(), &db).await;
         assert!(tokio::fs::metadata(temp_dir.join(candidate_id.to_string())).await.is_ok());
         assert!(tokio::fs::metadata(temp_dir.join(candidate_id.to_string()).join("cache")).await.is_ok());
 
@@ -725,7 +729,7 @@ mod tests {
     async fn test_add_cover_letter_to_cache() {
         let (temp_dir, _, application_cache_dir) = create_data_store_temp_dir(APPLICATION_ID).await;
 
-        PortfolioService::add_cover_letter_to_cache(get_test_context().await, BBox::new(APPLICATION_ID, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
+        PortfolioService::add_cover_letter_to_cache(get_test_context_direct().await, BBox::new(APPLICATION_ID, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
         
         assert!(tokio::fs::metadata(application_cache_dir.join("MOTIVACNI_DOPIS.pdf")).await.is_ok());
 
@@ -737,7 +741,7 @@ mod tests {
     async fn test_delete_cover_letter_from_cache() {
         let (temp_dir, _, application_cache_dir) = create_data_store_temp_dir(APPLICATION_ID).await;
 
-        let context = get_test_context().await;
+        let context = get_test_context_direct().await;
 
         PortfolioService::add_cover_letter_to_cache(context.clone(), BBox::new(APPLICATION_ID, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
         
@@ -753,7 +757,7 @@ mod tests {
     async fn test_is_cover_letter() {
         let (temp_dir, _, _) = create_data_store_temp_dir(APPLICATION_ID).await;
 
-        PortfolioService::add_cover_letter_to_cache(get_test_context().await, BBox::new(APPLICATION_ID, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
+        PortfolioService::add_cover_letter_to_cache(get_test_context_direct().await, BBox::new(APPLICATION_ID, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
         
         assert!(PortfolioService::is_cover_letter(APPLICATION_ID).await);
 
@@ -765,7 +769,7 @@ mod tests {
     async fn test_delete_cache_item() {
         let (temp_dir, _, application_cache_dir) = create_data_store_temp_dir(APPLICATION_ID).await;
 
-        PortfolioService::add_cover_letter_to_cache(get_test_context().await, BBox::new(APPLICATION_ID, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
+        PortfolioService::add_cover_letter_to_cache(get_test_context_direct().await, BBox::new(APPLICATION_ID, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
 
         PortfolioService::delete_cache_item(APPLICATION_ID, FileType::CoverLetterPdf).await.unwrap();
 
@@ -780,7 +784,7 @@ mod tests {
     async fn test_add_portfolio_letter_to_cache() {
         let (temp_dir, _, application_cache_dir) = create_data_store_temp_dir(APPLICATION_ID).await;
         
-        PortfolioService::add_portfolio_letter_to_cache(get_test_context().await, BBox::new(APPLICATION_ID, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
+        PortfolioService::add_portfolio_letter_to_cache(get_test_context_direct().await, BBox::new(APPLICATION_ID, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
         
         assert!(tokio::fs::metadata(application_cache_dir.join("PORTFOLIO.pdf")).await.is_ok());
 
@@ -792,7 +796,7 @@ mod tests {
     async fn test_delete_portfolio_letter_from_cache() {
         let (temp_dir, _, application_cache_dir) = create_data_store_temp_dir(APPLICATION_ID).await;
 
-        let context = get_test_context().await;
+        let context = get_test_context_direct().await;
 
         PortfolioService::add_portfolio_letter_to_cache(context.clone(), BBox::new(APPLICATION_ID, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
         
@@ -808,7 +812,7 @@ mod tests {
     async fn test_is_portfolio_letter() {
         let (temp_dir, _, _) = create_data_store_temp_dir(APPLICATION_ID).await;
 
-        PortfolioService::add_portfolio_letter_to_cache(get_test_context().await, BBox::new(APPLICATION_ID, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
+        PortfolioService::add_portfolio_letter_to_cache(get_test_context_direct().await, BBox::new(APPLICATION_ID, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
         
         assert!(PortfolioService::is_portfolio_letter(APPLICATION_ID).await);
 
@@ -820,7 +824,7 @@ mod tests {
     async fn test_add_portfolio_zip_to_cache() {
         let (temp_dir, _, application_cache_dir) = create_data_store_temp_dir(APPLICATION_ID).await;
 
-        PortfolioService::add_portfolio_zip_to_cache(get_test_context().await, BBox::new(APPLICATION_ID, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
+        PortfolioService::add_portfolio_zip_to_cache(get_test_context_direct().await, BBox::new(APPLICATION_ID, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
         
         assert!(tokio::fs::metadata(application_cache_dir.join("PORTFOLIO.zip")).await.is_ok());
 
@@ -832,7 +836,7 @@ mod tests {
     async fn test_delete_portfolio_zip_from_cache() {
         let (temp_dir, _, application_cache_dir) = create_data_store_temp_dir(APPLICATION_ID).await;
 
-        let context = get_test_context().await;
+        let context = get_test_context_direct().await;
 
         PortfolioService::add_portfolio_zip_to_cache(context.clone(), BBox::new(APPLICATION_ID, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
         
@@ -848,7 +852,7 @@ mod tests {
     async fn test_is_portfolio_zip() {
         let (temp_dir, _, _) = create_data_store_temp_dir(APPLICATION_ID).await;
 
-        PortfolioService::add_portfolio_zip_to_cache(get_test_context().await, BBox::new(APPLICATION_ID, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
+        PortfolioService::add_portfolio_zip_to_cache(get_test_context_direct().await, BBox::new(APPLICATION_ID, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
         
         assert!(PortfolioService::is_portfolio_zip(APPLICATION_ID).await);
 
@@ -860,7 +864,7 @@ mod tests {
     async fn test_is_portfolio_prepared() {
         let (temp_dir, _, _) = create_data_store_temp_dir(APPLICATION_ID).await;
 
-        let context = get_test_context().await;
+        let context = get_test_context_direct().await;
         PortfolioService::add_cover_letter_to_cache(context.clone(),  BBox::new(APPLICATION_ID, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
         PortfolioService::add_portfolio_letter_to_cache(context.clone(), BBox::new(APPLICATION_ID, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
         PortfolioService::add_portfolio_zip_to_cache(context.clone(), BBox::new(APPLICATION_ID, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
@@ -885,7 +889,7 @@ mod tests {
     async fn test_delete_cache() {
         let (temp_dir, _, _) = create_data_store_temp_dir(APPLICATION_ID).await;
 
-        PortfolioService::add_portfolio_zip_to_cache(get_test_context().await, BBox::new(APPLICATION_ID, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
+        PortfolioService::add_portfolio_zip_to_cache(get_test_context_direct().await, BBox::new(APPLICATION_ID, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
         
         assert!(PortfolioService::is_portfolio_zip(APPLICATION_ID).await);
 
@@ -901,11 +905,11 @@ mod tests {
     async fn test_add_portfolio() {
         let db = get_memory_sqlite_connection().await;
         let (_, candidate, _) = put_user_data(&db).await;
-        let candidate_id = open(candidate.id.clone()).await;
+        let candidate_id = open(candidate.id.clone(), &db).await;
 
         let (temp_dir, application_dir, _) = create_data_store_temp_dir(candidate_id).await;
 
-        let context = get_test_context().await;
+        let context = crate::utils::db::get_test_context(&db).await;
 
         PortfolioService::add_cover_letter_to_cache(context.clone(),  BBox::new(candidate_id, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
         PortfolioService::add_portfolio_letter_to_cache(context.clone(), BBox::new(candidate_id, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
@@ -923,11 +927,11 @@ mod tests {
     async fn test_delete_portfolio() {
         let db = get_memory_sqlite_connection().await;
         let (_, candidate, _) = put_user_data(&db).await;
-        let candidate_id = open(candidate.id.clone()).await;
+        let candidate_id = open(candidate.id.clone(), &db).await;
 
         let (temp_dir, application_dir, _) = create_data_store_temp_dir(candidate_id).await;
 
-        let context = get_test_context().await;
+        let context = crate::utils::db::get_test_context(&db).await;
 
         PortfolioService::add_cover_letter_to_cache(context.clone(),  BBox::new(candidate_id, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
         PortfolioService::add_portfolio_letter_to_cache(context.clone(), BBox::new(candidate_id, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
@@ -950,11 +954,11 @@ mod tests {
         let db = get_memory_sqlite_connection().await;
 
         let (_, candidate, _) = put_user_data(&db).await;
-        let candidate_id = open(candidate.id.clone()).await;
+        let candidate_id = open(candidate.id.clone(), &db).await;
 
         let (temp_dir, _, _) = create_data_store_temp_dir(candidate_id).await;
 
-        let context = get_test_context().await;
+        let context = crate::utils::db::get_test_context(&db).await;
 
         PortfolioService::add_cover_letter_to_cache(context.clone(),  BBox::new(candidate_id, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
         PortfolioService::add_portfolio_letter_to_cache(context.clone(), BBox::new(candidate_id, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
@@ -993,7 +997,7 @@ mod tests {
     async fn test_get_portfolio() {
         let db = get_memory_sqlite_connection().await;
         let (application, candidate, _parent) = put_user_data(&db).await;
-        let candidate_id = open(candidate.id.clone()).await;
+        let candidate_id = open(candidate.id.clone(), &db).await;
 
         let (temp_dir, _, _) = create_data_store_temp_dir(candidate_id).await;
 
@@ -1007,7 +1011,7 @@ mod tests {
             .await
             .unwrap();
 
-        let context = get_test_context().await;
+        let context = crate::utils::db::get_test_context(&db).await;
 
         PortfolioService::add_cover_letter_to_cache(context.clone(), BBox::new(candidate_id, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new()))
             .await
