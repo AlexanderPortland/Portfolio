@@ -1,4 +1,4 @@
-use alohomora::bbox::BBox;
+use alohomora::{bbox::BBox, policy::NoPolicy};
 use chrono::Local;
 use entity::admin;
 use sea_orm_migration::{
@@ -18,7 +18,7 @@ impl Default for Migration {
             admin: admin::ActiveModel {
                 id: Set(BBox::new(1, FakePolicy::new())),
                 name: Set(BBox::new("Admin".to_owned(), FakePolicy::new())),
-                public_key: Set(BBox::new("age1u889gp407hsz309wn09kxx9anl6uns30m27lfwnctfyq9tq4qpus8tzmq5".to_owned(), FakePolicy::new())),
+                public_key: Set(BBox::new("age1u889gp407hsz309wn09kxx9anl6uns30m27lfwnctfyq9tq4qpus8tzmq5".to_owned(), NoPolicy::new())),
                 // AGE-SECRET-KEY-14QG24502DMUUQDT2SPMX2YXPSES0X8UD6NT0PCTDAT6RH8V5Q3GQGSRXPS
                 // TODO: shouldn't be none for keypolicy
                 private_key: Set(BBox::new("5KCEGk0ueWVGnu5Xo3rmpLoilcVZ2ZWmwIcdZEJ8rrBNW7jwzZU/XTcTXtk/xyy/zjF8s+YnuVpOklQvX3EC/Sn+ZwyPY3jokM2RNwnZZlnqdehOEV1SMm/Y".to_owned(), KeyPolicy::new(None, portfolio_policies::key::KeySource::JustGenerated))),

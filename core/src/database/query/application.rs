@@ -2,21 +2,21 @@ use alohomora::bbox::BBox;
 use chrono::NaiveDateTime;
 use entity::{application, candidate};
 use sea_orm::{EntityTrait, DbErr, DbConn, ModelTrait, FromQueryResult, QuerySelect, JoinType, RelationTrait, QueryFilter, ColumnTrait, QueryOrder, PaginatorTrait};
-use portfolio_policies::FakePolicy;
+use portfolio_policies::{data::CandidateDataPolicy, FakePolicy};
 use crate::Query;
 
 const PAGE_SIZE: u64 = 20;
 
 #[derive(FromQueryResult, Clone)]
 pub struct ApplicationCandidateJoin {
-    pub application_id: BBox<i32, FakePolicy>,
-    pub personal_id_number: BBox<String, FakePolicy>,
-    pub candidate_id: BBox<i32, FakePolicy>,
-    pub name: Option<BBox<String, FakePolicy>>,
-    pub surname: Option<BBox<String, FakePolicy>>,
-    pub email: Option<BBox<String, FakePolicy>>,
-    pub telephone: Option<BBox<String, FakePolicy>>,
-    pub field_of_study: Option<BBox<String, FakePolicy>>,
+    pub application_id: BBox<i32, CandidateDataPolicy>,
+    pub personal_id_number: BBox<String, CandidateDataPolicy>,
+    pub candidate_id: BBox<i32, CandidateDataPolicy>,
+    pub name: Option<BBox<String, CandidateDataPolicy>>,
+    pub surname: Option<BBox<String, CandidateDataPolicy>>,
+    pub email: Option<BBox<String, CandidateDataPolicy>>,
+    pub telephone: Option<BBox<String, CandidateDataPolicy>>,
+    pub field_of_study: Option<BBox<String, CandidateDataPolicy>>,
     pub created_at: BBox<NaiveDateTime, FakePolicy>,
 }
 
@@ -44,7 +44,7 @@ fn get_ordering(sort: String) -> (application::Column, sea_orm::Order)
 impl Query {
     pub async fn find_application_by_id(
         db: &DbConn,
-        application_id: BBox<i32, FakePolicy>,
+        application_id: BBox<i32, CandidateDataPolicy>,
     ) -> Result<Option<application::Model>, DbErr> {
         application::Entity::find_by_id(application_id)
             .one(db)
@@ -115,7 +115,7 @@ impl Query {
 
     pub async fn find_applications_by_candidate_id(
         db: &DbConn,
-        candidate_id: BBox<i32, FakePolicy>,
+        candidate_id: BBox<i32, CandidateDataPolicy>,
     ) -> Result<Vec<application::Model>, DbErr> {
         let applications = application::Entity::find()
             .filter(application::Column::CandidateId.eq(candidate_id))

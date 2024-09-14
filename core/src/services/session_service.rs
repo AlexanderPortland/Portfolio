@@ -49,7 +49,7 @@ mod tests {
     use sea_orm::{
         prelude::Uuid, DatabaseConnection,
     };
-    use portfolio_policies::{key::KeyPolicy, FakePolicy};
+    use portfolio_policies::{data::CandidateDataPolicy, key::KeyPolicy, FakePolicy};
     use portfolio_api::pool::ContextDataType;
 
     use crate::{
@@ -86,9 +86,9 @@ mod tests {
             crate::utils::db::get_test_context(&db).await,
             &BBox::new("".to_string(), KeyPolicy::new(None, portfolio_policies::key::KeySource::JustGenerated)),
             &db, 
-            BBox::new(103151, FakePolicy::new()),
-            &BBox::new(SECRET.to_string(), FakePolicy::new()),
-            BBox::new("".to_string(), FakePolicy::new())).await.unwrap().0;
+            BBox::new(103151, CandidateDataPolicy::new(None)),
+            &BBox::new(SECRET.to_string(), CandidateDataPolicy::new(None)),
+            BBox::new("".to_string(), CandidateDataPolicy::new(None))).await.unwrap().0;
 
         let (id, password) = execute_pcr((application.id, application.password), 
         PrivacyCriticalRegion::new(|(id, password), _, _| {
@@ -113,9 +113,9 @@ mod tests {
             crate::utils::db::get_test_context(&db).await,
             &BBox::new("".to_string(), KeyPolicy::new(None, portfolio_policies::key::KeySource::JustGenerated)),
             &db, 
-            BBox::new(103151, FakePolicy::new()),
-            &BBox::new(SECRET.to_string(), FakePolicy::new()),
-            BBox::new("".to_string(), FakePolicy::new())).await.unwrap().0;
+            BBox::new(103151, CandidateDataPolicy::new(None)),
+            &BBox::new(SECRET.to_string(), CandidateDataPolicy::new(None)),
+            BBox::new("".to_string(), CandidateDataPolicy::new(None))).await.unwrap().0;
 
         // correct password
         let session = ApplicationService::new_session(
@@ -146,9 +146,9 @@ mod tests {
             crate::utils::db::get_test_context(&db).await,
             &BBox::new("".to_string(), KeyPolicy::new(None, portfolio_policies::key::KeySource::JustGenerated)),
             &db, 
-            BBox::new(103151, FakePolicy::new()),
-            &BBox::new(SECRET.to_string(), FakePolicy::new()),
-            BBox::new("".to_string(), FakePolicy::new())).await.unwrap().0;
+            BBox::new(103151, CandidateDataPolicy::new(None)),
+            &BBox::new(SECRET.to_string(), CandidateDataPolicy::new(None)),
+            BBox::new("".to_string(), CandidateDataPolicy::new(None))).await.unwrap().0;
 
         // incorrect password
         assert!(ApplicationService::new_session(

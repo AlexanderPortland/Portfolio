@@ -2,7 +2,7 @@ use alohomora::bbox::BBox;
 use chrono::{Utc, Duration, NaiveDateTime};
 use ::entity::session;
 use sea_orm::{*, prelude::Uuid};
-use portfolio_policies::FakePolicy;
+use portfolio_policies::{data::CandidateDataPolicy, FakePolicy};
 
 use crate::Mutation;
 
@@ -11,7 +11,7 @@ impl Mutation {
     pub async fn insert_candidate_session(
         db: &DbConn,
         random_uuid: BBox<Uuid, FakePolicy>,
-        candidate_id: BBox<i32, FakePolicy>,
+        candidate_id: BBox<i32, CandidateDataPolicy>,
         ip_addr: BBox<String, FakePolicy>,
     ) -> Result<session::Model, DbErr> {
         session::ActiveModel {

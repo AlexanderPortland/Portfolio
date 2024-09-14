@@ -10,7 +10,7 @@ use crate::error::ServiceError;
 pub trait AuthenticableTrait {
     type User;
     type Session;
-    async fn login(db: &DbConn, user: BBox<i32, FakePolicy>, password: BBox<String, FakePolicy>, ip_addr: BBox<String, FakePolicy>) -> Result<(BBox<String, FakePolicy>, BBox<String, KeyPolicy>), ServiceError>;
+    async fn login(db: &DbConn, user: BBox<i32, AnyPolicy>, password: BBox<String, FakePolicy>, ip_addr: BBox<String, FakePolicy>) -> Result<(BBox<String, FakePolicy>, BBox<String, KeyPolicy>), ServiceError>;
     async fn auth(db: &DbConn, session_id: BBox<Uuid, FakePolicy>) -> Result<Self::User, ServiceError>;
     async fn logout(db: &DbConn, session: Self::Session) -> Result<(), ServiceError>;
     async fn new_session(db: &DbConn, user: &Self::User, password: BBox<String, FakePolicy>, ip_addr: BBox<String, FakePolicy>) -> Result<BBox<String, FakePolicy>, ServiceError>;

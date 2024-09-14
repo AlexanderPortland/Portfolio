@@ -12,7 +12,7 @@ use alohomora::policy::{AnyPolicy, NoPolicy};
 
 use portfolio_core::utils::csv::{ApplicationCsv, CandidateCsv, CsvExporter};
 use portfolio_core::utils::response::MyResult;
-use portfolio_policies::FakePolicy;
+use portfolio_policies::{data::CandidateDataPolicy, FakePolicy};
 
 use crate::{guards::request::auth::AdminAuth, pool::{ContextDataType, Db}, requests};
 
@@ -36,7 +36,7 @@ pub async fn login(
     let db = conn.into_inner();
     let session_token_key = AdminService::login(
         db,
-        login_form.adminId.clone(),
+        login_form.adminId.clone().into_any_policy(),
         login_form.password.clone(),
         ip_addr,
     )
@@ -117,7 +117,7 @@ pub async fn create_candidate(
     let db = conn.into_inner();
     let form = request.into_inner();
     let private_key = session.get_private_key();
-    let plain_text_password = BBox::new(random_12_char_string(), FakePolicy {});
+    let plain_text_password = BBox::new(random_12_char_string(), CandidateDataPolicy::new(todo!()));
 
     let (application, applications, personal_id_number) = match ApplicationService::create(
         context.clone(),
@@ -213,7 +213,7 @@ pub async fn list_admissions_csv(
 pub async fn get_candidate(
     conn: Connection<'_, Db>,
     session: AdminAuth,
-    id: BBox<i32, FakePolicy>,
+    id: BBox<i32, CandidateDataPolicy>,
     context: Context<ContextDataType>
 ) -> MyResult<JsonResponse<ApplicationDetails, ContextDataType>, (rocket::http::Status, String)> {
     let db = conn.into_inner();
@@ -250,7 +250,7 @@ pub async fn get_candidate(
 pub async fn delete_candidate(
     conn: Connection<'_, Db>,
     _session: AdminAuth,
-    id: BBox<i32, FakePolicy>,
+    id: BBox<i32, CandidateDataPolicy>,
     context: Context<ContextDataType>
 ) -> Result<(), (rocket::http::Status, String)> {
     let db = conn.into_inner();
@@ -271,7 +271,7 @@ pub async fn delete_candidate(
 pub async fn reset_candidate_password(
     conn: Connection<'_, Db>,
     session: AdminAuth,
-    id: BBox<i32, FakePolicy>,
+    id: BBox<i32, CandidateDataPolicy>,
     context: Context<ContextDataType>
 ) -> MyResult<JsonResponse<CreateCandidateResponse, ContextDataType>, (rocket::http::Status, String)> {
     let db = conn.into_inner();
@@ -290,7 +290,7 @@ pub async fn reset_candidate_password(
 pub async fn get_candidate_portfolio(
     conn: Connection<'_, Db>,
     session: AdminAuth, 
-    id: BBox<i32, FakePolicy>,
+    id: BBox<i32, CandidateDataPolicy>,
     context: Context<ContextDataType>
 ) -> MyResult<Vec<u8>, (rocket::http::Status, String)> {
     let db = conn.into_inner();

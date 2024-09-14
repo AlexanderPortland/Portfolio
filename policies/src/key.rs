@@ -7,6 +7,9 @@ pub enum KeySource {
     JustGenerated,
 }
 
+// this'll work, but we could just take the first element of the tuple
+// (we don't need the pk and we dont wanna accidentally policy check it inside our policy yk)
+
 // pub enum AnyAuth {
 //     Application(ApplicationAuth),
 //     Admin(AdminAuth),

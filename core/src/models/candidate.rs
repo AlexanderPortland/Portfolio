@@ -6,6 +6,7 @@ use alohomora::rocket::ResponseBBoxJson;
 use chrono::NaiveDate;
 use alohomora::policy::Policy;
 use entity::{application, candidate};
+use portfolio_policies::data::CandidateDataPolicy;
 use serde::{Deserialize, Serialize};
 use validator::Validate;
 use portfolio_policies::FakePolicy;
@@ -163,7 +164,7 @@ pub struct ApplicationDetails {
 
 impl NewCandidateResponse {
     pub async fn from_encrypted<P: Policy + Clone + 'static>(
-        current_application: BBox<i32, FakePolicy>,
+        current_application: BBox<i32, CandidateDataPolicy>,
         applications: Vec<application::Model>,
         private_key: &BBox<String, P>,
         c: candidate::Model,

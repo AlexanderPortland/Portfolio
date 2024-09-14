@@ -2,7 +2,7 @@
 
 use sea_orm::entity::prelude::*;
 use alohomora::bbox::BBox;
-use portfolio_policies::FakePolicy;
+use portfolio_policies::{data::CandidateDataPolicy, FakePolicy};
 
 use crate::session_trait::UserSession;
 
@@ -11,7 +11,7 @@ use crate::session_trait::UserSession;
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
     pub id: BBox<Uuid, FakePolicy>,
-    pub candidate_id: BBox<i32, FakePolicy>,
+    pub candidate_id: BBox<i32, CandidateDataPolicy>,
     pub ip_address: BBox<String, FakePolicy>,
     pub created_at: BBox<DateTime, FakePolicy>,
     pub expires_at: BBox<DateTime, FakePolicy>,

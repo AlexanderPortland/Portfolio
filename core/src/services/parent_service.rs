@@ -1,7 +1,7 @@
-use alohomora::bbox::BBox;
+use alohomora::{bbox::BBox, policy::NoPolicy};
 use entity::{parent, candidate};
 use sea_orm::DbConn;
-use portfolio_policies::FakePolicy;
+use portfolio_policies::{data::CandidateDataPolicy, FakePolicy};
 
 use crate::{error::ServiceError, Mutation, models::{candidate_details::{EncryptedParentDetails}, candidate::ParentDetails}, Query};
 
@@ -10,7 +10,7 @@ pub struct ParentService;
 impl ParentService {
     pub async fn create(
         db: &DbConn,
-        application_id: BBox<i32, FakePolicy>,
+        application_id: BBox<i32, CandidateDataPolicy>,
     ) -> Result<parent::Model, ServiceError> {
         let parent = Mutation::create_parent(db, application_id)
             .await?;
@@ -22,7 +22,7 @@ impl ParentService {
         db: &DbConn,
         ref_candidate: &candidate::Model,
         parents_details: &Vec<ParentDetails>,
-        recipients: &Vec<BBox<String, FakePolicy>>,
+        recipients: &Vec<BBox<String, NoPolicy>>,
     ) -> Result<Vec<parent::Model>, ServiceError> {
         if parents_details.len() > 2 {
             return Err(ServiceError::ParentOverflow);
@@ -56,7 +56,7 @@ mod tests {
 
     use alohomora::{bbox::BBox, context::Context, pcr::{execute_pcr, PrivacyCriticalRegion, Signature}, policy::{AnyPolicy, NoPolicy}, testing::TestContextData};
     use once_cell::sync::Lazy;
-    use portfolio_policies::{key::KeyPolicy, FakePolicy};
+    use portfolio_policies::{data::CandidateDataPolicy, key::KeyPolicy, FakePolicy};
     use portfolio_api::pool::ContextDataType;
 
     use crate::{crypto, models::{candidate::{ApplicationDetails, CandidateDetails, ParentDetails}, candidate_details::EncryptedApplicationDetails, grade::GradeList, school::School}, services::{application_service::ApplicationService, candidate_service::{tests::put_user_data, CandidateService}, parent_service::ParentService}, utils::{self, db::get_memory_sqlite_connection}};
@@ -121,7 +121,7 @@ mod tests {
     #[tokio::test]
     async fn create_parent_test() {
         let db = get_memory_sqlite_connection().await;
-        let candidate = CandidateService::create(crate::utils::db::get_test_context(&db).await, &db, BBox::new("".to_string(), FakePolicy::new())).await.unwrap();
+        let candidate = CandidateService::create(crate::utils::db::get_test_context(&db).await, &db, BBox::new("".to_string(), CandidateDataPolicy::new(None))).await.unwrap();
         super::ParentService::create(&db, candidate.id.clone()).await.unwrap();
         super::ParentService::create(&db, candidate.id).await.unwrap();
     }

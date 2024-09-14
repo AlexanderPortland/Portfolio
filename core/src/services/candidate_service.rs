@@ -1,7 +1,7 @@
-use alohomora::{bbox::BBox, context::Context};
+use alohomora::{bbox::BBox, context::Context, policy::NoPolicy};
 use entity::candidate;
 use sea_orm::DbConn;
-use portfolio_policies::FakePolicy;
+use portfolio_policies::{data::CandidateDataPolicy, FakePolicy};
 
 use crate::{
     models::{candidate_details::EncryptedCandidateDetails, candidate::CandidateDetails},
@@ -22,7 +22,7 @@ impl CandidateService {
     pub(in crate::services) async fn create<D: alohomora::context::ContextData + Clone>(
         context: Context<D>,
         db: &DbConn,
-        enc_personal_id_number: BBox<String, FakePolicy>,
+        enc_personal_id_number: BBox<String, CandidateDataPolicy>,
     ) -> Result<candidate::Model, ServiceError> {
         let candidate = Mutation::create_candidate(
             db,
@@ -51,8 +51,8 @@ impl CandidateService {
         db: &DbConn,
         candidate: candidate::Model,
         details: &CandidateDetails,
-        recipients: &Vec<BBox<String, FakePolicy>>,
-        encrypted_by: BBox<i32, FakePolicy>,
+        recipients: &Vec<BBox<String, NoPolicy>>,
+        encrypted_by: BBox<i32, CandidateDataPolicy>,
     ) -> Result<entity::candidate::Model, ServiceError> {
         let enc_details = EncryptedCandidateDetails::new(&details, recipients).await?;
         println!("encrypted details as {:?}", enc_details);
@@ -134,6 +134,8 @@ pub mod tests {
 
     #[cfg(test)]
     pub async fn put_user_data(db: &DbConn) -> (application::Model, candidate::Model, Vec<parent::Model>) {
+        use portfolio_policies::data::CandidateDataPolicy;
+
         use crate::{models::candidate_details::tests::APPLICATION_DETAILS, services::parent_service::ParentService};
 
         let plain_text_password = "test".to_string();
@@ -141,9 +143,9 @@ pub mod tests {
             crate::utils::db::get_test_context(&db).await,
             &BBox::new("".to_string(), KeyPolicy::new(None, portfolio_policies::key::KeySource::JustGenerated)),
             db,
-            BBox::new(APPLICATION_ID, FakePolicy::new()),
-            &BBox::new(plain_text_password, FakePolicy::new()),
-            BBox::new("0000001111".to_string(), FakePolicy::new())
+            BBox::new(APPLICATION_ID, CandidateDataPolicy::new(None)),
+            &BBox::new(plain_text_password, CandidateDataPolicy::new(None)),
+            BBox::new("0000001111".to_string(), CandidateDataPolicy::new(None))
         ).await.unwrap().0;
 
         let candidate= ApplicationService::find_related_candidate(db, &application).await.unwrap();

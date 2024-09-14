@@ -3,31 +3,32 @@
 use sea_orm::entity::prelude::*;
 use alohomora::bbox::BBox;
 use portfolio_policies::FakePolicy;
+use portfolio_policies::data::CandidateDataPolicy;
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel)]
 #[sea_orm(table_name = "candidate")]
 pub struct Model {
     #[sea_orm(primary_key)]
-    pub id: BBox<i32, FakePolicy>,
-    pub name: Option<BBox<String, FakePolicy>>,
-    pub surname: Option<BBox<String, FakePolicy>>,
-    pub birth_surname: Option<BBox<String, FakePolicy>>,
-    pub birthplace: Option<BBox<String, FakePolicy>>,
-    pub birthdate: Option<BBox<String, FakePolicy>>,
-    pub address: Option<BBox<String, FakePolicy>>,
-    pub letter_address: Option<BBox<String, FakePolicy>>,
-    pub telephone: Option<BBox<String, FakePolicy>>,
-    pub citizenship: Option<BBox<String, FakePolicy>>,
-    pub email: Option<BBox<String, FakePolicy>>,
-    pub sex: Option<BBox<String, FakePolicy>>,
-    pub personal_identification_number: BBox<String, FakePolicy>,
-    pub school_name: Option<BBox<String, FakePolicy>>,
-    pub health_insurance: Option<BBox<String, FakePolicy>>,
-    pub grades_json: Option<BBox<String, FakePolicy>>,
-    pub first_school: Option<BBox<String, FakePolicy>>,
-    pub second_school: Option<BBox<String, FakePolicy>>,
-    pub test_language: Option<BBox<String, FakePolicy>>,
-    pub encrypted_by_id: Option<BBox<i32, FakePolicy>>,
+    pub id: BBox<i32, CandidateDataPolicy>,
+    pub name: Option<BBox<String, CandidateDataPolicy>>,
+    pub surname: Option<BBox<String, CandidateDataPolicy>>,
+    pub birth_surname: Option<BBox<String, CandidateDataPolicy>>,
+    pub birthplace: Option<BBox<String, CandidateDataPolicy>>,
+    pub birthdate: Option<BBox<String, CandidateDataPolicy>>,
+    pub address: Option<BBox<String, CandidateDataPolicy>>,
+    pub letter_address: Option<BBox<String, CandidateDataPolicy>>,
+    pub telephone: Option<BBox<String, CandidateDataPolicy>>,
+    pub citizenship: Option<BBox<String, CandidateDataPolicy>>,
+    pub email: Option<BBox<String, CandidateDataPolicy>>,
+    pub sex: Option<BBox<String, CandidateDataPolicy>>,
+    pub personal_identification_number: BBox<String, CandidateDataPolicy>,
+    pub school_name: Option<BBox<String, CandidateDataPolicy>>,
+    pub health_insurance: Option<BBox<String, CandidateDataPolicy>>,
+    pub grades_json: Option<BBox<String, CandidateDataPolicy>>,
+    pub first_school: Option<BBox<String, CandidateDataPolicy>>,
+    pub second_school: Option<BBox<String, CandidateDataPolicy>>,
+    pub test_language: Option<BBox<String, CandidateDataPolicy>>,
+    pub encrypted_by_id: Option<BBox<i32, CandidateDataPolicy>>, // TODO: ill see what policy this should be
     pub created_at: BBox<DateTime, FakePolicy>,
     pub updated_at: BBox<DateTime, FakePolicy>,
 }

@@ -1,5 +1,5 @@
 use alohomora::{bbox::BBox, policy::NoPolicy};
-use portfolio_policies::FakePolicy;
+use portfolio_policies::{data::CandidateDataPolicy, FakePolicy};
 
 #[allow(non_snake_case)]
 #[derive(alohomora_derive::RequestBBoxJson)]
@@ -11,8 +11,8 @@ pub struct LoginRequest {
 #[allow(non_snake_case)]
 #[derive(alohomora_derive::RequestBBoxJson)]
 pub struct RegisterRequest {
-    pub applicationId: BBox<i32, FakePolicy>,
-    pub personalIdNumber: BBox<String, FakePolicy>,
+    pub applicationId: BBox<i32, CandidateDataPolicy>,
+    pub personalIdNumber: BBox<String, CandidateDataPolicy>,
 }
 
 #[allow(non_snake_case)]

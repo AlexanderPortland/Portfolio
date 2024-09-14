@@ -1,9 +1,11 @@
 use std::default;
 
 use alohomora::context::{Context, ContextData};
+use alohomora::policy::NoPolicy;
 use async_trait::async_trait;
 use chrono::{Duration, NaiveDateTime};
 use entity::{candidate, parent, application, session};
+use portfolio_policies::data::CandidateDataPolicy;
 use portfolio_policies::key::KeySource;
 use portfolio_policies::key::KeyPolicy;
 // use portfolio_policies::context::ContextDataType;
@@ -33,10 +35,10 @@ impl ApplicationService {
         context: Context<D>,
         admin_private_key: &BBox<String, KeyPolicy>,
         db: &DbConn,
-        application_id: BBox<i32, FakePolicy>,
-        plain_text_password: &BBox<String, FakePolicy>,
-        personal_id_number: BBox<String, FakePolicy>,
-    ) -> Result<(application::Model, Vec<application::Model>, BBox<String, FakePolicy>), ServiceError> {
+        application_id: BBox<i32, CandidateDataPolicy>,
+        plain_text_password: &BBox<String, CandidateDataPolicy>,
+        personal_id_number: BBox<String, CandidateDataPolicy>,
+    ) -> Result<(application::Model, Vec<application::Model>, BBox<String, CandidateDataPolicy>), ServiceError> {
         // Check if application id starts with 101, 102 or 103
         application_id.clone().into_ppr(PrivacyPureRegion::new(|id| {
             if !Self::is_application_id_valid(id) {
@@ -56,7 +58,7 @@ impl ApplicationService {
         
         let hashed_password = my_hash_password(plain_text_password.to_owned()).await?;
         let (pubkey, priv_key_plain_text) = crypto::create_identity();
-        let pubkey = BBox::new(pubkey, FakePolicy::new());
+        let pubkey = BBox::new(pubkey, NoPolicy::new());
         let bbox = BBox::new(priv_key_plain_text, KeyPolicy::new(None, portfolio_policies::key::KeySource::JustGenerated));
         // TODO: (aportlan) switch the args here
         let encrypted_priv_key: BBox<String, KeyPolicy> = my_encrypt_password(
@@ -101,13 +103,13 @@ impl ApplicationService {
 
     async fn find_or_create_candidate_with_personal_id<D: ContextData + Clone>(
         context: Context<D>,
-        application_id: BBox<i32, FakePolicy>,
+        application_id: BBox<i32, CandidateDataPolicy>,
         admin_private_key: &BBox<String, KeyPolicy>,
         db: &DbConn,
-        personal_id_number: &BBox<String, FakePolicy>,
-        pubkey: &BBox<String, FakePolicy>,
+        personal_id_number: &BBox<String, CandidateDataPolicy>,
+        pubkey: &BBox<String, NoPolicy>,
         // enc_personal_id_number: &EncryptedString,
-    ) -> Result<(candidate::Model, BBox<String, FakePolicy>), ServiceError> {
+    ) -> Result<(candidate::Model, BBox<String, CandidateDataPolicy>), ServiceError> {
         let candidates = Query::list_candidates_full(db).await?;
         let ids_decrypted = futures::future::join_all(
             candidates.iter().map(|c| async {
@@ -122,7 +124,7 @@ impl ApplicationService {
             })
         ).await;
 
-        let found_ids: Vec<&(BBox<i32, FakePolicy>, BBox<String, FakePolicy>)> = ids_decrypted
+        let found_ids: Vec<&(BBox<i32, CandidateDataPolicy>, BBox<String, CandidateDataPolicy>)> = ids_decrypted
             .iter()
             .filter(|(_, id)| id == personal_id_number)
             .collect();
@@ -138,7 +140,7 @@ impl ApplicationService {
             )
         } else {
             let recipients = get_recipients(db, pubkey.clone()).await?;
-            let enc_personal_id_number: BBox<String, FakePolicy> = EncryptedString::new(
+            let enc_personal_id_number: BBox<String, CandidateDataPolicy> = EncryptedString::new(
                 personal_id_number.clone(),
                 &recipients,
             ).await?.into();
@@ -154,11 +156,11 @@ impl ApplicationService {
 
     async fn find_linkable_candidate(
         db: &DbConn,
-        new_application_id: BBox<i32, FakePolicy>,
-        candidate_id: BBox<i32, FakePolicy>,
-        pubkey: &BBox<String, FakePolicy>,
-        personal_id_number: BBox<String, FakePolicy>,
-    ) -> Result<(candidate::Model, BBox<String, FakePolicy>), ServiceError> {
+        new_application_id: BBox<i32, CandidateDataPolicy>,
+        candidate_id: BBox<i32, CandidateDataPolicy>,
+        pubkey: &BBox<String, NoPolicy>,
+        personal_id_number: BBox<String, CandidateDataPolicy>,
+    ) -> Result<(candidate::Model, BBox<String, CandidateDataPolicy>), ServiceError> {
         let candidate = Query::find_candidate_by_id(db, candidate_id)
             .await?
             .ok_or(ServiceError::CandidateNotFound)?;
@@ -344,7 +346,7 @@ impl ApplicationService {
         context: Context<D>,
         admin_private_key: BBox<String, KeyPolicy>,
         db: &DbConn,
-        id: BBox<i32, FakePolicy>,
+        id: BBox<i32, CandidateDataPolicy>,
     ) -> Result<CreateCandidateResponse, ServiceError> {
         let application = Query::find_application_by_id(db, id.clone()).await?
             .ok_or(ServiceError::CandidateNotFound)?;
@@ -352,7 +354,7 @@ impl ApplicationService {
        
         let new_password_plain = crypto::random_12_char_string();
         let new_password_hash = crypto::hash_password(new_password_plain.clone()).await?;
-        let new_password_hash = BBox::new(new_password_hash, FakePolicy::new());
+        let new_password_hash = BBox::new(new_password_hash, CandidateDataPolicy::new(todo!())); // TODO: on gen
 
         let (pubkey, priv_key_plain_text) = crypto::create_identity();
         let encrypted_priv_key = crypto::encrypt_password(
@@ -360,7 +362,7 @@ impl ApplicationService {
             new_password_plain.clone()
         ).await?;
 
-        let pubkey = BBox::new(pubkey, FakePolicy::new());
+        let pubkey = BBox::new(pubkey, NoPolicy::new());
         let encrypted_priv_key = BBox::new(encrypted_priv_key, KeyPolicy::new(None, KeySource::JustGenerated));
 
         Self::delete_old_sessions(db, &application, 0).await?;
@@ -413,9 +415,9 @@ impl ApplicationService {
     }
 
     async fn update_all_application_details(db: &DbConn,
-         application_id: BBox<i32, FakePolicy>,
+         application_id: BBox<i32, CandidateDataPolicy>,
          candidate: candidate::Model,
-         recipients: &Vec<BBox<String, FakePolicy>>,
+         recipients: &Vec<BBox<String, NoPolicy>>,
          admin_private_key: &BBox<String, KeyPolicy>
     ) -> Result<candidate::Model, ServiceError> {
         let parents = Query::find_candidate_parents(db, &candidate).await?;
@@ -453,10 +455,11 @@ impl AuthenticableTrait for ApplicationService {
 
     async fn login(
         db: &DbConn,
-        application_id: BBox<i32, FakePolicy>,
+        application_id: BBox<i32, AnyPolicy>,
         password: BBox<String, FakePolicy>,
         ip_addr: BBox<String, FakePolicy>,
     ) -> Result<(BBox<String, FakePolicy>, BBox<String, KeyPolicy>), ServiceError> {
+        let application_id: BBox<i32, CandidateDataPolicy> = application_id.specialize_policy().unwrap();
         let application = Query::find_application_by_id(db, application_id)
             .await?
             .ok_or(ServiceError::CandidateNotFound)?;
@@ -528,7 +531,7 @@ impl AuthenticableTrait for ApplicationService {
 #[cfg(test)]
 mod application_tests {
     use alohomora::{bbox::BBox, context::Context, pcr::{execute_pcr, PrivacyCriticalRegion, Signature}, policy::NoPolicy, pure::{execute_pure, PrivacyPureRegion}, testing::TestContextData};
-    use portfolio_policies::{key::KeyPolicy, FakePolicy};
+    use portfolio_policies::{data::CandidateDataPolicy, key::KeyPolicy, FakePolicy};
     use portfolio_api::pool::ContextDataType;
     use rocket::figment::util;
     //use sea_orm::sea_query::private;
@@ -587,7 +590,7 @@ mod application_tests {
         let ip = BBox::new("127.0.0.1".to_string(), FakePolicy::new());
         let password = BBox::new("test".to_string(), FakePolicy::new());
         assert!(
-            ApplicationService::login(&db, application.id.clone(), password.clone(), ip.clone()).await.is_ok()
+            ApplicationService::login(&db, application.id.clone().into_any_policy(), password.clone(), ip.clone()).await.is_ok()
         );
 
         let new_password = ApplicationService::reset_password(
@@ -599,10 +602,10 @@ mod application_tests {
             .unwrap()
             .password;
         assert!(
-            ApplicationService::login(&db, application.id.clone(), password, ip.clone()).await.is_err()
+            ApplicationService::login(&db, application.id.clone().into_any_policy(), password, ip.clone()).await.is_err()
         );
         assert!(
-            ApplicationService::login(&db, application.id, new_password.specialize_policy().unwrap(), ip.clone()).await.is_ok()
+            ApplicationService::login(&db, application.id.into_any_policy(), new_password.specialize_policy().unwrap(), ip.clone()).await.is_ok()
         );
     }
 
@@ -618,9 +621,9 @@ mod application_tests {
             crate::utils::db::get_test_context(&db).await,
             &BBox::new("".to_string(), KeyPolicy::new(None, portfolio_policies::key::KeySource::JustGenerated)),
             &db,
-            BBox::new(103100, FakePolicy::new()),
-            &BBox::new(plain_text_password.clone(), FakePolicy::new()),
-            BBox::new("".to_string(), FakePolicy::new())
+            BBox::new(103100, CandidateDataPolicy::new(None)),
+            &BBox::new(plain_text_password.clone(), CandidateDataPolicy::new(None)),
+            BBox::new("".to_string(), CandidateDataPolicy::new(None))
         ).await.unwrap().0;
 
         let public_key = execute_pcr(application.public_key, 

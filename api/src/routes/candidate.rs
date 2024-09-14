@@ -44,7 +44,7 @@ pub async fn login(
 
     let res = ApplicationService::login(
         db,
-        login_form.applicationId.clone(),
+        login_form.applicationId.clone().into_any_policy(),
         login_form.password.clone(),
         ip_addr,
     ).await.map_err(to_custom_error);

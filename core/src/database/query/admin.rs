@@ -1,7 +1,7 @@
 use crate::Query;
 
 use ::entity::admin::{self, Model, Entity as Admin};
-use alohomora::bbox::BBox;
+use alohomora::{bbox::BBox, policy::NoPolicy};
 use sea_orm::*;
 use portfolio_policies::FakePolicy;
 
@@ -11,7 +11,7 @@ impl Query {
         r
     }
 
-    pub async fn get_all_admin_public_keys(db: &DbConn) -> Result<Vec<BBox<String, FakePolicy>>, DbErr> {
+    pub async fn get_all_admin_public_keys(db: &DbConn) -> Result<Vec<BBox<String, NoPolicy>>, DbErr> {
         let admins = Admin::find().all(db).await?;
 
         // convert them all to models
@@ -25,7 +25,7 @@ impl Query {
         Ok(public_keys)
     }
 
-    pub async fn get_all_admin_public_keys_together(db: &DbConn) -> Result<Vec<BBox<String, FakePolicy>>, DbErr> {
+    pub async fn get_all_admin_public_keys_together(db: &DbConn) -> Result<Vec<BBox<String, NoPolicy>>, DbErr> {
         let admins = Admin::find().all(db).await?;
 
         // convert them all to models
@@ -44,6 +44,7 @@ impl Query {
 mod tests {
     use alohomora::bbox::BBox;
     use alohomora::pcr::{execute_pcr, PrivacyCriticalRegion, Signature};
+    use alohomora::policy::NoPolicy;
     use entity::admin;
     use portfolio_policies::key::KeyPolicy;
     use sea_orm::{ActiveModelTrait, Set};
@@ -58,7 +59,7 @@ mod tests {
         let admin = admin::ActiveModel {
             id: Set(BBox::new(1, FakePolicy::new())),
             name: Set(BBox::new("admin_1".to_string(), FakePolicy::new())),
-            public_key: Set(BBox::new("valid_public_key_1".to_string(), FakePolicy::new())),
+            public_key: Set(BBox::new("valid_public_key_1".to_string(), NoPolicy::new())),
             private_key: Set(BBox::new("test".to_string(), KeyPolicy::new(None, portfolio_policies::key::KeySource::JustGenerated))),
             password: Set(BBox::new("test".to_string(), FakePolicy::new())),
             created_at: Set(BBox::new(chrono::offset::Local::now().naive_local(), FakePolicy::new())),
@@ -80,7 +81,7 @@ mod tests {
             admin::ActiveModel {
                 id: Set(BBox::new(index, FakePolicy::new())),
                 name: Set(BBox::new(format!("admin_{}", index), FakePolicy::new())),
-                public_key: Set(BBox::new(format!("valid_public_key_{}", index), FakePolicy::new())),
+                public_key: Set(BBox::new(format!("valid_public_key_{}", index), NoPolicy::new())),
                 private_key: Set(BBox::new("test".to_string(), KeyPolicy::new(None, portfolio_policies::key::KeySource::JustGenerated))),
                 password: Set(BBox::new("test".to_string(), FakePolicy::new())),
                 created_at: Set(BBox::new(chrono::offset::Local::now().naive_local(), FakePolicy::new())),

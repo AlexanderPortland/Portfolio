@@ -10,15 +10,15 @@ use sea_orm::DbConn;
 use async_trait::async_trait;
 use chrono::NaiveDate;
 use serde::Serialize;
-use portfolio_policies::{key::KeyPolicy, FakePolicy};
+use portfolio_policies::{data::CandidateDataPolicy, key::KeyPolicy, FakePolicy};
 use crate::models::candidate::{CandidateRow, FieldOfStudy, FieldsCombination};
 use crate::models::candidate_details::EncryptedCandidateDetails;
 use crate::models::grade::GradeList;
 use crate::models::school::School;
 
-impl TryFrom<(BBox<i32, FakePolicy>, ApplicationDetails)> for ApplicationRow {
+impl TryFrom<(BBox<i32, CandidateDataPolicy>, ApplicationDetails)> for ApplicationRow {
     type Error = ServiceError;
-    fn try_from((application, d): (BBox<i32, FakePolicy>, ApplicationDetails)) -> Result<Self, ServiceError> {
+    fn try_from((application, d): (BBox<i32, CandidateDataPolicy>, ApplicationDetails)) -> Result<Self, ServiceError> {
         let c = d.candidate;
 
         type Tup = (GradeList, GradeList, GradeList, GradeList);
@@ -265,8 +265,8 @@ impl CsvExporter for CandidateCsv {
 }
 
 fn get_applications_fields_comb(
-    related_applications: &[BBox<i32, FakePolicy>],
-) -> BBox<FieldsCombination, FakePolicy> {
+    related_applications: &[BBox<i32, CandidateDataPolicy>],
+) -> BBox<FieldsCombination, CandidateDataPolicy> {
     let fields_vec = related_applications
         .iter()
         .map(|id| {

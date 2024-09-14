@@ -196,7 +196,7 @@ fn serde_school_sandbox_caller(t: BBox<School, AnyPolicy>) -> BBox<String, AnyPo
 impl EncryptedCandidateDetails {
     pub async fn new(
         form: &CandidateDetails,
-        recipients: &Vec<BBox<String, FakePolicy>>,
+        recipients: &Vec<BBox<String, NoPolicy>>,
     ) -> Result<EncryptedCandidateDetails, ServiceError> {
         let birthdate_str = naive_date_str_caller(form.birthdate.clone(), true);
         let grades_str = serde_grade_sandbox_caller(form.grades.clone());
@@ -339,7 +339,7 @@ impl From<&candidate::Model> for EncryptedCandidateDetails {
 impl EncryptedParentDetails {
     pub async fn new(
         form: &ParentDetails,
-        recipients: &Vec<BBox<String, FakePolicy>>,
+        recipients: &Vec<BBox<String, NoPolicy>>,
     ) -> Result<EncryptedParentDetails, ServiceError> {
         let d = tokio::try_join!(
             EncryptedString::new_option(&form.name, recipients),
@@ -398,7 +398,7 @@ impl From<&parent::Model> for EncryptedParentDetails {
 impl EncryptedApplicationDetails {
     pub async fn new(
         form: &ApplicationDetails,
-        recipients: &Vec<BBox<String, FakePolicy>>,
+        recipients: &Vec<BBox<String, NoPolicy>>,
     ) -> Result<EncryptedApplicationDetails, ServiceError> {
         let candidate =  EncryptedCandidateDetails::new(&form.candidate, &recipients).await?;
         let enc_parents = future::try_join_all(
@@ -465,7 +465,7 @@ pub mod tests {
     use std::sync::Mutex;
 
     use portfolio_policies::{key::KeyPolicy, FakePolicy};
-    use alohomora::{bbox::BBox, pcr::{execute_pcr, PrivacyCriticalRegion, Signature}, policy::AnyPolicy, pure::PrivacyPureRegion};
+    use alohomora::{bbox::BBox, pcr::{execute_pcr, PrivacyCriticalRegion, Signature}, policy::{AnyPolicy, NoPolicy}, pure::PrivacyPureRegion};
     use chrono::Local;
     use entity::admin;
     use once_cell::sync::Lazy;
@@ -531,7 +531,7 @@ pub mod tests {
         admin::ActiveModel {
             id: Set(BBox::new(1, FakePolicy::new())),
             name: Set(BBox::new("Admin".to_owned(), FakePolicy::new())),
-            public_key: Set(BBox::new("age1u889gp407hsz309wn09kxx9anl6uns30m27lfwnctfyq9tq4qpus8tzmq5".to_owned(), FakePolicy::new())),
+            public_key: Set(BBox::new("age1u889gp407hsz309wn09kxx9anl6uns30m27lfwnctfyq9tq4qpus8tzmq5".to_owned(), NoPolicy::new())),
             // AGE-SECRET-KEY-14QG24502DMUUQDT2SPMX2YXPSES0X8UD6NT0PCTDAT6RH8V5Q3GQGSRXPS
             private_key: Set(BBox::new("5KCEGk0ueWVGnu5Xo3rmpLoilcVZ2ZWmwIcdZEJ8rrBNW7jwzZU/XTcTXtk/xyy/zjF8s+YnuVpOklQvX3EC/Sn+ZwyPY3jokM2RNwnZZlnqdehOEV1SMm/Y".to_owned(), KeyPolicy::new(None, portfolio_policies::key::KeySource::JustGenerated))),
             // test
@@ -549,7 +549,7 @@ pub mod tests {
     async fn test_encrypted_application_details_new() {
         let encrypted_details = EncryptedApplicationDetails::new(
             &APPLICATION_DETAILS.lock().unwrap().clone(),
-            &vec![BBox::new(PUBLIC_KEY.to_string(), FakePolicy::new())],
+            &vec![BBox::new(PUBLIC_KEY.to_string(), NoPolicy::new())],
         )
         .await
         .unwrap();
@@ -578,7 +578,7 @@ pub mod tests {
     async fn test_encrypted_application_details_decrypt() {
         let encrypted_details = EncryptedApplicationDetails::new(
             &APPLICATION_DETAILS.lock().unwrap().clone(),
-            &vec![BBox::new(PUBLIC_KEY.to_string(), FakePolicy::new())],
+            &vec![BBox::new(PUBLIC_KEY.to_string(), NoPolicy::new())],
         )
         .await
         .unwrap();

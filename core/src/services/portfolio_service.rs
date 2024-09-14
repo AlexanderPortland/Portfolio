@@ -1,7 +1,7 @@
 use std::{path::{Path, PathBuf}};
 use age::x25519::Recipient;
 
-use alohomora::{bbox::BBox, context::ContextData, pcr::Signature};
+use alohomora::{bbox::BBox, context::ContextData, pcr::Signature, policy::NoPolicy};
 use alohomora::context::Context;
 use alohomora::pcr::PrivacyCriticalRegion;
 use entity::candidate;
@@ -11,7 +11,7 @@ use alohomora::unbox::unbox;
 use sea_orm::{DbConn};
 use serde::{Serialize, ser::{SerializeStruct}};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
-use portfolio_policies::{key::KeyPolicy, FakePolicy};
+use portfolio_policies::{data::CandidateDataPolicy, key::KeyPolicy, FakePolicy};
 
 use crate::{error::ServiceError, Query, crypto};
 //use crate::crypto_helpers::get_context;
@@ -173,7 +173,7 @@ impl PortfolioService {
 
     pub async fn create_user_dir<D: alohomora::context::ContextData + Clone>(
         context: Context<D>,
-        application_id: BBox<i32, FakePolicy>
+        application_id: BBox<i32, CandidateDataPolicy>
     ) -> tokio::io::Result<()> {
         application_id.into_unbox(context, PrivacyCriticalRegion::new(|application_id: i32, ()| {
             tokio::fs::create_dir_all(
@@ -600,9 +600,9 @@ impl PortfolioService {
 
     pub async fn reencrypt_portfolio<D: ContextData>(
         context: Context<D>,
-        candidate_id: BBox<i32, FakePolicy>,
+        candidate_id: BBox<i32, CandidateDataPolicy>,
         private_key: BBox<String, KeyPolicy>,
-        recipients: &Vec<BBox<String, FakePolicy>>,
+        recipients: &Vec<BBox<String, NoPolicy>>,
     ) -> Result<(), ServiceError> {
         match unbox(
             (candidate_id.clone(), private_key, recipients.clone()),
@@ -631,7 +631,7 @@ mod tests {
     use std::path::PathBuf;
     use alohomora::pcr::PrivacyCriticalRegion;
     use alohomora::policy::Policy;
-    use portfolio_policies::FakePolicy;
+    use portfolio_policies::{data::CandidateDataPolicy, FakePolicy};
     use portfolio_api::pool::ContextDataType;
 
     const APPLICATION_ID: i32 = 103151;
@@ -700,7 +700,7 @@ mod tests {
         let temp_dir = std::env::temp_dir().join("portfolio_test_tempdir").join("create_folder");
         std::env::set_var("PORTFOLIO_STORE_PATH", temp_dir.to_str().unwrap());
 
-        let candidate = CandidateService::create(crate::utils::db::get_test_context(&db).await, &db, BBox::new("".to_string(), FakePolicy::new()))
+        let candidate = CandidateService::create(crate::utils::db::get_test_context(&db).await, &db, BBox::new("".to_string(), CandidateDataPolicy::new(None)))
             .await
             .ok()
             .unwrap();

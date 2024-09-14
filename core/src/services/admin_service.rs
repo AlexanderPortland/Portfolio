@@ -37,10 +37,11 @@ impl AuthenticableTrait for AdminService {
 
     async fn login(
         db: &DbConn,
-        admin_id: BBox<i32, FakePolicy>,
+        admin_id: BBox<i32, AnyPolicy>,
         password: BBox<String, FakePolicy>,
         ip_addr: BBox<String, FakePolicy>,
     ) -> Result<(BBox<String, FakePolicy>, BBox<String, KeyPolicy>), ServiceError> {
+        let admin_id: BBox<i32, FakePolicy> = admin_id.specialize_policy().unwrap();
         let admin = Query::find_admin_by_id(db, admin_id).await?.ok_or(ServiceError::InvalidCredentials)?;
         let session_id = Self::new_session(db,
             &admin,
@@ -115,6 +116,7 @@ impl AuthenticableTrait for AdminService {
 
 #[cfg(test)]
 pub mod admin_tests {
+    use alohomora::policy::NoPolicy;
     use chrono::{Local, Utc};
     use entity::admin;
     use sea_orm::{Set, ActiveModelTrait};
@@ -133,7 +135,7 @@ pub mod admin_tests {
 
         let admin = admin::ActiveModel {
             name: Set(BBox::new("admin".to_string(), FakePolicy::new())),
-            public_key: Set(BBox::new(pubkey, FakePolicy::new())),
+            public_key: Set(BBox::new(pubkey, NoPolicy::new())),
             private_key: Set(enc_priv_key),
             // should be password hash
             password: Set(BBox::new("admin".to_string(), FakePolicy::new())),
@@ -154,7 +156,7 @@ pub mod admin_tests {
         let admin = admin::ActiveModel {
             id: Set(BBox::new(1, FakePolicy::new())),
             name: Set(BBox::new("Admin".to_owned(), FakePolicy::new())),
-            public_key: Set(BBox::new("age1u889gp407hsz309wn09kxx9anl6uns30m27lfwnctfyq9tq4qpus8tzmq5".to_owned(), FakePolicy::new())),
+            public_key: Set(BBox::new("age1u889gp407hsz309wn09kxx9anl6uns30m27lfwnctfyq9tq4qpus8tzmq5".to_owned(), NoPolicy::new())),
             // AGE-SECRET-KEY-14QG24502DMUUQDT2SPMX2YXPSES0X8UD6NT0PCTDAT6RH8V5Q3GQGSRXPS
             private_key: Set(BBox::new("5KCEGk0ueWVGnu5Xo3rmpLoilcVZ2ZWmwIcdZEJ8rrBNW7jwzZU/XTcTXtk/xyy/zjF8s+YnuVpOklQvX3EC/Sn+ZwyPY3jokM2RNwnZZlnqdehOEV1SMm/Y".to_owned(), KeyPolicy::new(None, portfolio_policies::key::KeySource::JustGenerated))),
             // test
@@ -166,7 +168,7 @@ pub mod admin_tests {
             .insert(&db)
             .await?;
 
-        let (session_id, _private_key) = AdminService::login(&db, admin.id, 
+        let (session_id, _private_key) = AdminService::login(&db, admin.id.into_any_policy(), 
             BBox::new("test".to_owned(), FakePolicy::new()),
             BBox::new("127.0.0.1".to_owned(), FakePolicy::new())).await?;
 

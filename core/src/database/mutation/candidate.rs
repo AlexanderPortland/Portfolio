@@ -4,12 +4,12 @@ use alohomora::bbox::BBox;
 use ::entity::candidate;
 use log::{info, warn};
 use sea_orm::*;
-use portfolio_policies::FakePolicy;
+use portfolio_policies::{data::CandidateDataPolicy, FakePolicy};
 
 impl Mutation {
     pub async fn create_candidate(
         db: &DbConn,
-        enc_personal_id_number: BBox<String, FakePolicy>,
+        enc_personal_id_number: BBox<String, CandidateDataPolicy>,
     ) -> Result<candidate::Model, DbErr> {
         let candidate = candidate::ActiveModel {
             personal_identification_number: Set(enc_personal_id_number),
@@ -35,7 +35,7 @@ impl Mutation {
         db: &DbConn,
         candidate: candidate::Model,
         enc_candidate: EncryptedCandidateDetails,
-        encrypted_by_id: BBox<i32, FakePolicy>,
+        encrypted_by_id: BBox<i32, CandidateDataPolicy>,
     ) -> Result<candidate::Model, sea_orm::DbErr> {
         let application = candidate.id.clone();
         let mut candidate: candidate::ActiveModel = candidate.into();
@@ -67,7 +67,7 @@ impl Mutation {
     pub async fn update_personal_id(
         db: &DbConn,
         candidate: candidate::Model,
-        personal_id: &BBox<String, FakePolicy>,
+        personal_id: &BBox<String, CandidateDataPolicy>,
     ) -> Result<candidate::Model, DbErr> {
         let mut candidate = candidate.into_active_model();
         candidate.personal_identification_number = Set(personal_id.clone());
@@ -81,6 +81,8 @@ impl Mutation {
 #[cfg(test)]
 mod tests {
     use alohomora::bbox::BBox;
+    use alohomora::policy::NoPolicy;
+    use portfolio_policies::data::CandidateDataPolicy;
     use portfolio_policies::FakePolicy;
 
     use crate::models::candidate_details::EncryptedApplicationDetails;
@@ -94,7 +96,7 @@ mod tests {
 
         let candidate = Mutation::create_candidate(
             &db,
-            BBox::new("".to_string(), FakePolicy::new()),
+            BBox::new("".to_string(), CandidateDataPolicy::new(None)),
         )
         .await
         .unwrap();
@@ -111,17 +113,17 @@ mod tests {
 
         let candidate = Mutation::create_candidate(
             &db,
-            BBox::new("".to_string(), FakePolicy::new()),
+            BBox::new("".to_string(), CandidateDataPolicy::new(None)),
         )
         .await
         .unwrap();
 
         let encrypted_details: EncryptedApplicationDetails = EncryptedApplicationDetails::new(
             &APPLICATION_DETAILS.lock().unwrap().clone(),
-            &vec![BBox::new("age1u889gp407hsz309wn09kxx9anl6uns30m27lfwnctfyq9tq4qpus8tzmq5".to_string(), FakePolicy::new())],
+            &vec![BBox::new("age1u889gp407hsz309wn09kxx9anl6uns30m27lfwnctfyq9tq4qpus8tzmq5".to_string(), NoPolicy::new())],
         ).await.unwrap();
 
-        let candidate = Mutation::update_candidate_opt_details(&db, candidate, encrypted_details.candidate, BBox::new(1, FakePolicy::new())).await.unwrap();
+        let candidate = Mutation::update_candidate_opt_details(&db, candidate, encrypted_details.candidate, BBox::new(1, CandidateDataPolicy::new(None))).await.unwrap();
 
         let candidate = Query::find_candidate_by_id(&db, candidate.id)
         .await

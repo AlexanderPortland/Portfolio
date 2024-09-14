@@ -3,10 +3,10 @@ use crate::{Mutation, models::candidate_details::{EncryptedParentDetails}};
 use alohomora::bbox::BBox;
 use ::entity::parent::{self, Model};
 use sea_orm::*;
-use portfolio_policies::FakePolicy;
+use portfolio_policies::{data::CandidateDataPolicy, FakePolicy};
 
 impl Mutation {
-    pub async fn create_parent(db: &DbConn, application_id: BBox<i32, FakePolicy>) -> Result<Model, DbErr> {
+    pub async fn create_parent(db: &DbConn, application_id: BBox<i32, CandidateDataPolicy>) -> Result<Model, DbErr> {
         parent::ActiveModel {
             candidate_id: Set(application_id),
             created_at: Set(BBox::new(chrono::offset::Local::now().naive_local(), Default::default())),
@@ -41,6 +41,7 @@ impl Mutation {
 #[cfg(test)]
 mod tests {
     use alohomora::bbox::BBox;
+    use portfolio_policies::data::CandidateDataPolicy;
     use portfolio_policies::FakePolicy;
 
     use crate::models::candidate_details::EncryptedApplicationDetails;
@@ -54,7 +55,7 @@ mod tests {
 
         let candidate = Mutation::create_candidate(
             &db,
-            BBox::new("candidate".to_string(), FakePolicy::new()),
+            BBox::new("candidate".to_string(), CandidateDataPolicy::new(None)),
         )
         .await
         .unwrap();
@@ -71,7 +72,7 @@ mod tests {
 
         let candidate = Mutation::create_candidate(
             &db,
-            BBox::new("".to_string(), FakePolicy::new()),
+            BBox::new("".to_string(), CandidateDataPolicy::new(None)),
         )
         .await
         .unwrap();
@@ -80,7 +81,7 @@ mod tests {
 
         let encrypted_details: EncryptedApplicationDetails = EncryptedApplicationDetails::new(
             &APPLICATION_DETAILS.lock().unwrap().clone(),
-            &vec![BBox::new("age1u889gp407hsz309wn09kxx9anl6uns30m27lfwnctfyq9tq4qpus8tzmq5".to_string(), FakePolicy::new())],
+            &vec![BBox::new("age1u889gp407hsz309wn09kxx9anl6uns30m27lfwnctfyq9tq4qpus8tzmq5".to_string(), alohomora::policy::NoPolicy::new())],
         )
         .await
         .unwrap();

@@ -41,6 +41,7 @@ impl Query {
 #[cfg(test)]
 mod tests {
     use alohomora::bbox::BBox;
+    use alohomora::policy::NoPolicy;
     use entity::{session, admin, admin_session};
     use portfolio_policies::key::KeyPolicy;
     use sea_orm::{prelude::Uuid, ActiveModelTrait, Set};
@@ -97,7 +98,7 @@ mod tests {
         let admin = admin::ActiveModel {
             id: Set(BBox::new(ADMIN_ID, FakePolicy::new())),
             name: Set(BBox::new("admin".to_string(), FakePolicy::new())),
-            public_key: Set(BBox::new("test".to_string(), FakePolicy::new())),
+            public_key: Set(BBox::new("test".to_string(), NoPolicy::new())),
             private_key: Set(BBox::new("test".to_string(), KeyPolicy::new(None, portfolio_policies::key::KeySource::JustGenerated))),
             password: Set(BBox::new("test".to_string(), FakePolicy::new())),
             created_at: Set(BBox::new(chrono::offset::Local::now().naive_local(), FakePolicy::new())),

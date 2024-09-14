@@ -1,6 +1,7 @@
 use alohomora::bbox::BBox;
 
 use entity::{admin_session, application};
+use portfolio_policies::data::CandidateDataPolicy;
 use sea_orm::{DbConn, Statement};
 use portfolio_policies::FakePolicy;
 
@@ -14,8 +15,8 @@ pub const TESTING_ADMIN_COOKIE: &str = "0xdeadbeef12345678deadbeef12345678";
 const TESTING_ADMIN_ID: &str = "1";
 pub const TESTING_ADMIN_KEY: &str = "blahblah";
 
-pub async fn get_recipients(db: &DbConn, candidate_pubkey: BBox<String, FakePolicy>)
-    -> Result<Vec<BBox<String, FakePolicy>>, ServiceError>
+pub async fn get_recipients(db: &DbConn, candidate_pubkey: BBox<String, NoPolicy>)
+    -> Result<Vec<BBox<String, NoPolicy>>, ServiceError>
 {
     let mut admin_public_keys = Query::get_all_admin_public_keys_together(db).await?;
     admin_public_keys.push(candidate_pubkey);

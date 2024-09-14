@@ -2,18 +2,19 @@
 
 use sea_orm::entity::prelude::*;
 use alohomora::bbox::BBox;
+use portfolio_policies::data::CandidateDataPolicy;
 use portfolio_policies::FakePolicy;
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel)]
 #[sea_orm(table_name = "parent")]
 pub struct Model {
     #[sea_orm(primary_key)]
-    pub id: BBox<i32, FakePolicy>,
-    pub candidate_id: BBox<i32, FakePolicy>,
-    pub name: Option<BBox<String, FakePolicy>>,
-    pub surname: Option<BBox<String, FakePolicy>>,
-    pub telephone: Option<BBox<String, FakePolicy>>,
-    pub email: Option<BBox<String, FakePolicy>>,
+    pub id: BBox<i32, CandidateDataPolicy>,
+    pub candidate_id: BBox<i32, CandidateDataPolicy>,
+    pub name: Option<BBox<String, CandidateDataPolicy>>,
+    pub surname: Option<BBox<String, CandidateDataPolicy>>,
+    pub telephone: Option<BBox<String, CandidateDataPolicy>>,
+    pub email: Option<BBox<String, CandidateDataPolicy>>,
     pub created_at: BBox<DateTime, FakePolicy>,
     pub updated_at: BBox<DateTime, FakePolicy>,
 }

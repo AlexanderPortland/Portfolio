@@ -2,7 +2,7 @@ use alohomora::bbox::BBox;
 use sea_orm::*;
 
 use ::entity::{candidate, candidate::Entity as Candidate};
-use portfolio_policies::FakePolicy;
+use portfolio_policies::{data::CandidateDataPolicy, FakePolicy};
 
 use crate::Query;
 
@@ -39,7 +39,7 @@ pub struct CandidateResult {
 impl Query {
     pub async fn find_candidate_by_id(
         db: &DbConn,
-        id: BBox<i32, FakePolicy>,
+        id: BBox<i32, CandidateDataPolicy>,
     ) -> Result<Option<candidate::Model>, DbErr> {
         Candidate::find_by_id(id)
             .one(db)
@@ -80,6 +80,7 @@ impl Query {
 #[cfg(test)]
 mod tests {
     use alohomora::bbox::BBox;
+    use portfolio_policies::data::CandidateDataPolicy;
     use sea_orm::{ActiveModelTrait, Set};
 
     use entity::candidate;
@@ -88,12 +89,13 @@ mod tests {
     use crate::Query;
     use crate::utils::db::get_memory_sqlite_connection;
 
+    const CANDIDATE_ID: i32 = 103158;
     #[tokio::test]
     async fn test_find_candidate_by_id() {
         let db = get_memory_sqlite_connection().await;
         let candidate = candidate::ActiveModel {
-            id: Set(BBox::new(103158, FakePolicy::new())),
-            personal_identification_number: Set(BBox::new("test".to_string(), FakePolicy::new())),
+            id: Set(BBox::new(CANDIDATE_ID, CandidateDataPolicy::new(Some(CANDIDATE_ID)))),
+            personal_identification_number: Set(BBox::new("test".to_string(), CandidateDataPolicy::new(Some(CANDIDATE_ID)))),
             created_at: Set(BBox::new(chrono::offset::Local::now().naive_local(), FakePolicy::new())),
             updated_at: Set(BBox::new(chrono::offset::Local::now().naive_local(), FakePolicy::new())),
             ..Default::default()
