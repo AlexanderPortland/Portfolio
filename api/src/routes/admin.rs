@@ -321,9 +321,9 @@ pub mod tests {
             ))
             .dispatch();
 
-        println!("res {:?}", response);
-        println!("id cookee {:?}", response.cookies().get("id"));
-        println!("key cookee {:?}", response.cookies().get("key"));
+        // println!("res {:?}", response);
+        // println!("id cookee {:?}", response.cookies().get("id"));
+        // println!("key cookee {:?}", response.cookies().get("key"));
 
         (
             response.cookies().get("id").unwrap().to_owned(),

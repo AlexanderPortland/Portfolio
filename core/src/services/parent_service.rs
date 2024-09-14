@@ -84,36 +84,36 @@ mod tests {
     pub static APPLICATION_DETAILS_TWO_PARENTS: Lazy<Mutex<ApplicationDetails>> = Lazy::new(|| 
         Mutex::new(ApplicationDetails {
             candidate: CandidateDetails {
-                name: BBox::new("name".to_string(), AnyPolicy::new(FakePolicy::new())),
-                surname: BBox::new("surname".to_string(), AnyPolicy::new(FakePolicy::new())),
-                birthSurname: BBox::new("birth_surname".to_string(), AnyPolicy::new(FakePolicy::new())),
-                birthplace: BBox::new("birthplace".to_string(), AnyPolicy::new(FakePolicy::new())),
-                birthdate: BBox::new(chrono::NaiveDate::from_ymd_opt(2000, 1, 1).unwrap(), AnyPolicy::new(FakePolicy::new())),
-                address: BBox::new("address".to_string(), AnyPolicy::new(FakePolicy::new())),
-                letterAddress: BBox::new("letter_address".to_string(), AnyPolicy::new(FakePolicy::new())),
-                telephone: BBox::new("telephone".to_string(), AnyPolicy::new(FakePolicy::new())),
-                citizenship: BBox::new("citizenship".to_string(), AnyPolicy::new(FakePolicy::new())),
-                email: BBox::new("email".to_string(), AnyPolicy::new(FakePolicy::new())),
-                sex: BBox::new("sex".to_string(), AnyPolicy::new(FakePolicy::new())),
-                personalIdNumber: BBox::new("personal_id_number".to_string(), AnyPolicy::new(FakePolicy::new())),
-                schoolName: BBox::new("school_name".to_string(), AnyPolicy::new(FakePolicy::new())),
-                healthInsurance: BBox::new("health_insurance".to_string(), AnyPolicy::new(FakePolicy::new())),
-                grades: BBox::new(GradeList::from(vec![]), AnyPolicy::new(FakePolicy::new())),
-                firstSchool: School::from_opt_str(Some(BBox::new("{\"name\": \"SSPS\", \"field\": \"KB\"}".to_string(), AnyPolicy::new(FakePolicy::new())))).unwrap(),
-                secondSchool: School::from_opt_str(Some(BBox::new("{\"name\": \"SSPS\", \"field\": \"IT\"}".to_string(), AnyPolicy::new(FakePolicy::new())))).unwrap(),
-                testLanguage: BBox::new("test_language".to_string(), AnyPolicy::new(FakePolicy::new())),
+                name: BBox::new("name".to_string(), AnyPolicy::new(CandidateDataPolicy::new(None))),
+                surname: BBox::new("surname".to_string(), AnyPolicy::new(CandidateDataPolicy::new(None))),
+                birthSurname: BBox::new("birth_surname".to_string(), AnyPolicy::new(CandidateDataPolicy::new(None))),
+                birthplace: BBox::new("birthplace".to_string(), AnyPolicy::new(CandidateDataPolicy::new(None))),
+                birthdate: BBox::new(chrono::NaiveDate::from_ymd_opt(2000, 1, 1).unwrap(), AnyPolicy::new(CandidateDataPolicy::new(None))),
+                address: BBox::new("address".to_string(), AnyPolicy::new(CandidateDataPolicy::new(None))),
+                letterAddress: BBox::new("letter_address".to_string(), AnyPolicy::new(CandidateDataPolicy::new(None))),
+                telephone: BBox::new("telephone".to_string(), AnyPolicy::new(CandidateDataPolicy::new(None))),
+                citizenship: BBox::new("citizenship".to_string(), AnyPolicy::new(CandidateDataPolicy::new(None))),
+                email: BBox::new("email".to_string(), AnyPolicy::new(CandidateDataPolicy::new(None))),
+                sex: BBox::new("sex".to_string(), AnyPolicy::new(CandidateDataPolicy::new(None))),
+                personalIdNumber: BBox::new("personal_id_number".to_string(), AnyPolicy::new(CandidateDataPolicy::new(None))),
+                schoolName: BBox::new("school_name".to_string(), AnyPolicy::new(CandidateDataPolicy::new(None))),
+                healthInsurance: BBox::new("health_insurance".to_string(), AnyPolicy::new(CandidateDataPolicy::new(None))),
+                grades: BBox::new(GradeList::from(vec![]), AnyPolicy::new(CandidateDataPolicy::new(None))),
+                firstSchool: School::from_opt_str(Some(BBox::new("{\"name\": \"SSPS\", \"field\": \"KB\"}".to_string(), AnyPolicy::new(CandidateDataPolicy::new(None))))).unwrap(),
+                secondSchool: School::from_opt_str(Some(BBox::new("{\"name\": \"SSPS\", \"field\": \"IT\"}".to_string(), AnyPolicy::new(CandidateDataPolicy::new(None))))).unwrap(),
+                testLanguage: BBox::new("test_language".to_string(), AnyPolicy::new(CandidateDataPolicy::new(None))),
             },
             parents: vec![ParentDetails {
-                name: BBox::new("parent_name".to_string(), AnyPolicy::new(FakePolicy::new())),
-                surname: BBox::new("parent_surname".to_string(), AnyPolicy::new(FakePolicy::new())),
-                telephone: BBox::new("parent_telephone".to_string(), AnyPolicy::new(FakePolicy::new())),
-                email: BBox::new("parent_email".to_string(), AnyPolicy::new(FakePolicy::new())),
+                name: BBox::new("parent_name".to_string(), AnyPolicy::new(CandidateDataPolicy::new(None))),
+                surname: BBox::new("parent_surname".to_string(), AnyPolicy::new(CandidateDataPolicy::new(None))),
+                telephone: BBox::new("parent_telephone".to_string(), AnyPolicy::new(CandidateDataPolicy::new(None))),
+                email: BBox::new("parent_email".to_string(), AnyPolicy::new(CandidateDataPolicy::new(None))),
             },
             ParentDetails {
-                name: BBox::new("parent_name2".to_string(), AnyPolicy::new(FakePolicy::new())),
-                surname: BBox::new("parent_surname2".to_string(), AnyPolicy::new(FakePolicy::new())),
-                telephone: BBox::new("parent_telephone2".to_string(), AnyPolicy::new(FakePolicy::new())),
-                email: BBox::new("parent_email2".to_string(), AnyPolicy::new(FakePolicy::new())),
+                name: BBox::new("parent_name2".to_string(), AnyPolicy::new(CandidateDataPolicy::new(None))),
+                surname: BBox::new("parent_surname2".to_string(), AnyPolicy::new(CandidateDataPolicy::new(None))),
+                telephone: BBox::new("parent_telephone2".to_string(), AnyPolicy::new(CandidateDataPolicy::new(None))),
+                email: BBox::new("parent_email2".to_string(), AnyPolicy::new(CandidateDataPolicy::new(None))),
             }],
         })
     );
@@ -164,7 +164,7 @@ mod tests {
         assert_eq!(dec_details.candidate.citizenship, form.candidate.citizenship);
         assert_eq!(dec_details.candidate.email, form.candidate.email);
         assert_eq!(dec_details.candidate.sex, form.candidate.sex);
-        assert_eq!(dec_details.candidate.personalIdNumber, BBox::new("0000001111".to_string(), AnyPolicy::new(FakePolicy::new())));
+        assert_eq!(dec_details.candidate.personalIdNumber, BBox::new("0000001111".to_string(), AnyPolicy::new(CandidateDataPolicy::new(None))));
         assert_eq!(dec_details.candidate.schoolName, form.candidate.schoolName);
         assert_eq!(dec_details.candidate.healthInsurance, form.candidate.healthInsurance);
         assert_eq!(dec_details.candidate.grades, form.candidate.grades);

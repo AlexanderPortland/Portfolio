@@ -345,7 +345,7 @@ impl ApplicationService {
        
         let new_password_plain = crypto::random_12_char_string();
         let new_password_hash = crypto::hash_password(new_password_plain.clone()).await?;
-        let new_password_hash = BBox::new(new_password_hash, CandidateDataPolicy::new(todo!())); // TODO: on gen
+        let new_password_hash = BBox::new(new_password_hash, CandidateDataPolicy::new(None)); // TODO: on gen
 
         let (pubkey, priv_key_plain_text) = crypto::create_identity();
         let encrypted_priv_key = crypto::encrypt_password(
