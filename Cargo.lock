@@ -3705,6 +3705,7 @@ dependencies = [
  "portfolio-api",
  "portfolio-entity",
  "portfolio-policies",
+ "portfolio-types",
  "portfolio_sandbox",
  "rand 0.8.5",
  "rocket",
@@ -3764,6 +3765,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "portfolio-types"
+version = "0.1.0"
+dependencies = [
+ "serde",
+]
+
+[[package]]
 name = "portfolio_sandbox"
 version = "0.1.0"
 dependencies = [
@@ -3775,6 +3783,7 @@ dependencies = [
  "linfa",
  "linfa-linear",
  "ndarray",
+ "portfolio-types",
  "serde",
  "serde_json",
  "sha2 0.10.8",

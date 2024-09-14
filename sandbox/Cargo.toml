@@ -14,11 +14,13 @@ csv = "^1.2"
 # alohomora = { path = "../../alohomora/alohomora" }
 alohomora_derive = { path = "../../alohomora/alohomora_derive" }
 alohomora_sandbox = { path = "../../alohomora/alohomora_sandbox" }
+portfolio-types = { path = "../types" }
 # don't need everything below here
 linfa = "0.6.1"
 linfa-linear = "0.6.1"
 ndarray = "0.15.6"
 sha2 = "0.10.8" 
+
 
 [build-dependencies]
 alohomora_build = { path = "../../alohomora/alohomora_build" }

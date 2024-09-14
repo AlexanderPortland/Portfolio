@@ -1,7 +1,5 @@
-use std::any::Any;
 use std::fmt::Debug;
 use alohomora::bbox::BBox;
-use alohomora::orm::ORMPolicy;
 use alohomora::policy::{AnyPolicy, Policy, NoPolicy};
 use alohomora::pure::{execute_pure, PrivacyPureRegion};
 use chrono::NaiveDate;
@@ -11,12 +9,10 @@ use entity::{candidate, parent};
 use futures::future;
 use portfolio_policies::FakePolicy;
 use portfolio_sandbox::naive_date_str;
-use serde::Serialize;
 
 use crate::{crypto, models::candidate::ApplicationDetails, error::ServiceError, utils::date::parse_naive_date_from_opt_str};
 use crate::crypto_helpers::{my_decrypt_password_with_private_key, my_encrypt_password_with_recipients};
 
-use super::grade::Grade;
 use super::{candidate::{CandidateDetails, ParentDetails}, grade::GradeList, school::School};
 
 pub const NAIVE_DATE_FMT: &str = "%Y-%m-%d";
@@ -152,45 +148,19 @@ pub fn naive_date_str_caller(date: BBox<NaiveDate, AnyPolicy>, format: bool) -> 
     execute_sandbox::<naive_date_str, _, _>((date, format))
 }
 
-// FIXME: this will go in SANDBOX 
-// (DRAFTED)
-// fn naive_date_str((date, format): (chrono::NaiveDate, bool)) -> String {
-//     match format {
-//         true => date.to_string(),
-//         false => date.format(NAIVE_DATE_FMT).to_string(),
-//     }
-// }
-
 fn serde_grade_sandbox_caller(t: BBox<GradeList, AnyPolicy>) -> BBox<String, AnyPolicy> {
-    let s: BBox<portfolio_sandbox::GradeList, AnyPolicy> = t.into_ppr(PrivacyPureRegion::new(|s: GradeList|{
+    let s: BBox<portfolio_types::GradeList, AnyPolicy> = t.into_ppr(PrivacyPureRegion::new(|s: GradeList|{
         s.to_sandbox()
     }));
     execute_sandbox::<portfolio_sandbox::serde_from_grade, _, _>(s)
-
-    // execute_sandbox::<portfolio_sandbox::serde_from_grade, _, _>(t)
 }
 
-// FIXME: this will go in SANDBOX lib
-// drafted
-// fn serde_grade_sandbox(t: GradeList) -> String {
-//     serde_json::to_string(&t).unwrap()
-// }
-
 fn serde_school_sandbox_caller(t: BBox<School, AnyPolicy>) -> BBox<String, AnyPolicy> {
-    // t.into_ppr(PrivacyPureRegion::new(|t|{
-    //     serde_school_sandbox(t)
-    // }))
-    let s: BBox<portfolio_sandbox::School, AnyPolicy> = t.into_ppr(PrivacyPureRegion::new(|s: School|{
+    let s: BBox<portfolio_types::School, AnyPolicy> = t.into_ppr(PrivacyPureRegion::new(|s: School|{
         s.to_sandbox()
     }));
     execute_sandbox::<portfolio_sandbox::serde_from_school, _, _>(s)
 }
-
-// FIXME: this will go in SANDBOX lib
-// drafted
-// fn serde_school_sandbox(t: School) -> String {
-//     serde_json::to_string(&t).unwrap()
-// }
 
 impl EncryptedCandidateDetails {
     pub async fn new(
@@ -333,8 +303,6 @@ impl From<&candidate::Model> for EncryptedCandidateDetails {
     }
 }
 
-//fn encrypted_string_from_
-
 impl EncryptedParentDetails {
     pub async fn new(
         form: &ParentDetails,
@@ -422,11 +390,6 @@ impl EncryptedApplicationDetails {
                 .iter()
                 .map(|d| {
                     d.decrypt(&private_key)
-                    // match d.decrypt(&private_key).await {
-                    //     Ok(o) => {Ok(o)},
-                    //     Err(e) => {Err(e)},
-                    // }
-                    
                 })
         ).await?;
 

@@ -54,6 +54,7 @@ lazy_static = "*"
 alohomora = { path = "../../alohomora/alohomora", features = ["default", "orm"] }
 alohomora_derive = { path = "../../alohomora/alohomora_derive" }
 portfolio-policies = { path = "../policies" }
+portfolio-types = { path = "../types" }
 portfolio_sandbox ={ path = "../sandbox" }
 
 rocket = { git = "https://github.com/KinanBab/Rocket.git", branch = "main" }
