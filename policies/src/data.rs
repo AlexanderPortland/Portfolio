@@ -55,39 +55,82 @@ impl Policy for CandidateDataPolicy {
 
     fn check(&self, context: &alohomora::context::UnprotectedContext, reason: alohomora::policy::Reason<'_>) -> bool {
         println!("thank you sir! you've given me {:?}", context);
-        let context: &ContextDataTypeOut = if let Some(test) = context.downcast_ref::<TestContextData<ContextDataTypeOut>>() {
-            // test.0
-            // FIXME: how to downcast to testcontext data here
-            println!("test context data");
-            todo!()
-        } else {
-            println!("real context data");
-            context.downcast_ref().unwrap()
-        };
+        
 
         match reason {
             // 0. we trust the custom reviewers
-            alohomora::policy::Reason::Custom(_) => return true,
+            alohomora::policy::Reason::Custom(_) => {
+                println!("Custom reason");
+                return true
+            },
             // 1. if writing to DB, make sure it's from the same session as data
             alohomora::policy::Reason::DB(_, _) => {
-                // return true;
-                if let Some(session_id) = self.session_id.clone(){
-                    return session_id == context.session_id.clone().unwrap();
-                }
+                println!("DB reason");
+                return true;
             }
             // 2. if rendering, we must either be a) an admin, or b) the right candidate
-            alohomora::policy::Reason::TemplateRender(_) => {
-                if let Some(candidate_id) = self.candidate_id {
-                    // candidate check
-                }
+            alohomora::policy::Reason::TemplateRender(_) | alohomora::policy::Reason::Response => {
+                println!("render reason for me {:?}", self);
+                let context: &ContextDataTypeOut = if let Some(test) = context.downcast_ref::<TestContextData<ContextDataTypeOut>>() {
+                    // test.0
+                    // FIXME: how to downcast to testcontext data here
+                    println!("test context data");
+                    todo!()
+                } else {
+                    println!("real context data");
+                    context.downcast_ref().unwrap()
+                };
+
+                let session_id = context.session_id.clone().unwrap();
+                let session_id = sea_orm::prelude::Uuid::parse_str(session_id.as_str()).unwrap();
+
+                println!("got it!");
+                
+                // if let Some(candidate_id) = self.candidate_id {
+                //     // candidate check (your session_id exists for the data's candidate_id)
+                //     let session_id = context.session_id.clone().unwrap();
+                //     println!("session id is {session_id}");
+                //     let result = rocket::tokio::task::block_in_place(||{
+                //         let res = context.conn.query_all(Statement::from_string(
+                //                 context.conn.get_database_backend(),
+                //                 format!("select * from session where id = {} and candidate_id = {};", session_id, candidate_id),
+                //             ));
+                //         let result = rocket::tokio::runtime::Handle::current().block_on(res);
+                //         result.unwrap()
+                //     });
+                //     println!("got query response {:?}", result);
+                //     println!("len is {:?}", result.len());
+                //     todo!();
+                // }
+                    // println!("session id is {session_id}");
+                    // println!("session id is {}", session_id.as_u128());
+                    // println!("session id is {}", session_id.as_simple());
+                    // println!("session id is 0X{:X}", session_id.as_u128());
+
                 // admin check
+                let result = rocket::tokio::task::block_in_place(||{
+                    let res = context.conn.query_all(Statement::from_string(
+                            context.conn.get_database_backend(),
+                            // format!("select * from admin_session where id = {};", session_id),
+                            format!("select * from admin_session where id=0x{:x};", session_id.as_u128()),
+                        ));
+                    let result = rocket::tokio::runtime::Handle::current().block_on(res);
+                    result.unwrap()
+                });
+                if result.len() >= 1 {
+                    return true;
+                }
+                
                 todo!()
                 // let res = context.conn.execute(Statement::from_string(
                 //     context.conn.get_database_backend(),
                 //     String::from(""),
                 // )).await?;
-            }
-            _ => return false,
+            },
+            _ => {
+                println!("other");
+                return false
+            },
         }
 
         return false;

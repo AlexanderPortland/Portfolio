@@ -117,7 +117,7 @@ pub async fn create_candidate(
     let db = conn.into_inner();
     let form = request.into_inner();
     let private_key = session.get_private_key();
-    let plain_text_password = BBox::new(random_12_char_string(), CandidateDataPolicy::new(todo!()));
+    let plain_text_password = BBox::new(random_12_char_string(), CandidateDataPolicy::new(None));
 
     let (application, applications, personal_id_number) = match ApplicationService::create(
         context.clone(),
