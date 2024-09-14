@@ -1,3 +1,5 @@
+use core::panic;
+
 use alohomora::{orm::ORMPolicy, policy::{AnyPolicy, FrontendPolicy, Policy, PolicyAnd}, AlohomoraType};
 use rocket::{data, figment::value::magic::Either};
 use serde::Serialize;
@@ -37,10 +39,25 @@ impl Policy for CandidateDataPolicy {
     }
 
     fn check(&self, context: &alohomora::context::UnprotectedContext, reason: alohomora::policy::Reason<'_>) -> bool {
-        // let context: &ContextDataTypeOut = context.downcast_ref().unwrap();
-        // context.conn
+        match reason {
+            // 0. we trust the custom reviewers
+            alohomora::policy::Reason::Custom(_) => return true,
+            // 1. all DB writes are okay
+            alohomora::policy::Reason::DB(_, _) => return true,
+            // 2. if they're trying to render it
+            alohomora::policy::Reason::TemplateRender(s) => {
+                if let Some(owner_candidate_id) = self.candidate_id {
+                    // 2a. check if they're owner
+                }
 
-        return true;
+                // 2b. check if they're admin
+
+                return false;
+            }
+            a => {
+                return false;
+            }
+        }
     }
 
     fn join(&self, other: alohomora::policy::AnyPolicy) -> Result<alohomora::policy::AnyPolicy, ()> {
@@ -99,12 +116,24 @@ impl FrontendPolicy for CandidateDataPolicy {
             name: &str,
             cookie: &'a rocket::http::Cookie<'static>,
             request: &'a rocket::Request<'r>) -> Self where Self: Sized {
-        todo!()
+        Self::from_request(request)
     }
 
     fn from_request<'a, 'r>(request: &'a rocket::Request<'r>) -> Self
             where
                 Self: Sized {
-        todo!()
+        match request.cookies().get("id") {
+            // cookie id is a session id which maps in the sessions db table to candidate_id which is what we want
+            Some(session_id) => {
+                println!("yahoo i got id {session_id}");
+                // let s = id.to_string().parse().unwrap();
+                todo!()
+                // CandidateDataPolicy::new(Some(s))
+            },
+            None => {
+                println!("no such luck with the id cookie strategy");
+                panic!();
+            }
+        }
     }
 }

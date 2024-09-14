@@ -136,14 +136,13 @@ impl FrontendPolicy for KeyPolicy {
             name: &str,
             cookie: &'a rocket::http::Cookie<'static>,
             request: &'a rocket::Request<'r>) -> Self where Self: Sized {
-                let id = request.cookies().get("id").unwrap().to_string();
-                KeyPolicy { owner_id: Some(id), source: KeySource::Cookie }
+        Self::from_request(request)
     }
     fn from_request<'a, 'r>(request: &'a rocket::Request<'r>) -> Self
             where
                 Self: Sized {
-                let id = request.cookies().get("id").unwrap().to_string();
-                KeyPolicy { owner_id: Some(id), source: KeySource::Cookie }
+        let id = request.cookies().get("id").unwrap().to_string();
+        KeyPolicy { owner_id: Some(id), source: KeySource::Cookie }
     }
 }
 
