@@ -17,9 +17,9 @@ pub struct School {
 }
 
 pub fn serde_to_school_caller<P: Policy + Clone + 'static>(t: BBox<String, P>) -> BBox<School, P> {
-    let s: BBox<portfolio_sandbox::School, P> = execute_sandbox::<portfolio_sandbox::serde_to_school, _, _>(t).specialize_policy().unwrap();
+    let s: BBox<portfolio_types::School, P> = execute_sandbox::<portfolio_sandbox::serde_to_school, _, _>(t).specialize_policy().unwrap();
 
-    s.into_ppr(PrivacyPureRegion::new(|s: portfolio_sandbox::School|{
+    s.into_ppr(PrivacyPureRegion::new(|s: portfolio_types::School|{
         School::from_sandbox(s)
     }))
 }
@@ -49,14 +49,14 @@ impl School {
         &self.field
     }
 
-    pub fn to_sandbox(self) -> portfolio_sandbox::School {
-        portfolio_sandbox::School {
+    pub fn to_sandbox(self) -> portfolio_types::School {
+        portfolio_types::School {
             name: self.name,
             field: self.field,
         }
     }
 
-    pub fn from_sandbox(s: portfolio_sandbox::School) -> Self {
+    pub fn from_sandbox(s: portfolio_types::School) -> Self {
         School {
             name: s.name,
             field: s.field,
