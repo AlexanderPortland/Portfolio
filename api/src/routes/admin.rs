@@ -226,12 +226,6 @@ pub async fn get_candidate(
         .map_err(|e| to_custom_error(ServiceError::DbError(e)))?
         .ok_or(to_custom_error(ServiceError::CandidateNotFound))?;
 
-        println!("b");
-    execute_pure(private_key.clone(), PrivacyPureRegion::new(|pk|{
-        println!("pk -> {:?}", pk);
-        println!("db -> {:?}", db);
-        println!("app -> {:?}", &application);
-    })).unwrap();
     println!("calling app service decrypt");
     let details = ApplicationService::decrypt_all_details(
         private_key,
