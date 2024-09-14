@@ -224,7 +224,6 @@ async fn age_encrypt_with_recipients<W: tokio::io::AsyncWrite + Unpin>(
         .into_iter()
         .map(|recipient| {
             //TODO: No unwrap
-            println!("recipient is {:?}", recipient);
             Box::new(age::x25519::Recipient::from_str(recipient).unwrap()) as _
         })
         .collect();

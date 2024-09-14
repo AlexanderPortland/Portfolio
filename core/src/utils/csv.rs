@@ -134,20 +134,14 @@ pub struct ApplicationCsv;
 #[async_trait]
 impl CsvExporter for ApplicationCsv {
     async fn export(db: &DbConn, private_key: BBox<String, KeyPolicy>) -> Result<BBox<Vec<u8>, AnyPolicy>, ServiceError> {
-        println!("Exportin");
         let applications = Query::list_applications_compact(&db).await?;
-        println!("listed apps");
         let mut rows = Vec::new();
         for application in applications {
-            println!("pre-cand");
             let candidate = ApplicationService::find_related_candidate(db, &application).await?;
-            println!("pre-par");
             let parents = Query::find_candidate_parents(db, &candidate).await?;
-            println!("pre-row");
             let row: ApplicationRow = match EncryptedApplicationDetails::try_from((&candidate, &parents))
             {
                 Ok(d) => {
-                    println!("yay");
                     ApplicationRow::try_from(
                     d.decrypt(private_key.clone())
                         .await
@@ -159,16 +153,13 @@ impl CsvExporter for ApplicationCsv {
                     })},
 
                 Err(_) => {
-                    println!("nay");
                     ApplicationRow {
                     application: application.id.into_any_policy(),
                     ..Default::default()
                 }},
             };
-            println!("pre-push");
             rows.push(row);
         }
-        println!("serialize?");
         serialize_in_sandbox(rows)
     }
 }

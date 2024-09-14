@@ -24,15 +24,12 @@ impl CandidateService {
         db: &DbConn,
         enc_personal_id_number: BBox<String, CandidateDataPolicy>,
     ) -> Result<candidate::Model, ServiceError> {
-        println!("level 2");
         let candidate = Mutation::create_candidate(
             db,
             enc_personal_id_number,
         )
             .await?;
-        println!("level 2a");
         PortfolioService::create_user_dir(context, candidate.id.clone()).await?;
-        println!("level 2b");
 
         Ok(candidate)
     }
@@ -56,7 +53,7 @@ impl CandidateService {
         encrypted_by: BBox<i32, CandidateDataPolicy>,
     ) -> Result<entity::candidate::Model, ServiceError> {
         let enc_details = EncryptedCandidateDetails::new(&details, recipients).await?;
-        println!("encrypted details as {:?}", enc_details);
+        // println!("encrypted details as {:?}", enc_details);
         let model = Mutation::update_candidate_opt_details(
             db,
             candidate,
@@ -139,7 +136,6 @@ pub mod tests {
 
         use crate::{models::candidate_details::tests::APPLICATION_DETAILS, services::parent_service::ParentService};
 
-        println!("hello");
         let plain_text_password = "test".to_string();
         let application = ApplicationService::create(
             crate::utils::db::get_test_context(&db).await,
@@ -150,19 +146,14 @@ pub mod tests {
             BBox::new("0000001111".to_string(), CandidateDataPolicy::new(None))
         ).await.unwrap().0;
 
-        println!("its me");
-
         let candidate= ApplicationService::find_related_candidate(db, &application).await.unwrap();
-        println!("im in california");
         ParentService::create(db, candidate.id.clone()).await.unwrap();
-        println!("dreaming");
 
         let form = APPLICATION_DETAILS.lock().unwrap().clone();
 
         let (candidate, parents) = ApplicationService::add_all_details(&db,  &application, candidate, &form)
             .await
             .unwrap();
-
         (
             application,
             candidate,

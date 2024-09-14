@@ -37,7 +37,6 @@ impl alohomora::orm::Pool for SeaOrmPool {
         let init = false;
 
         dotenv::dotenv().ok();
-        println!("NO TEST");
 
         let database_url = std::env::var("PORTFOLIO_DATABASE_URL").unwrap();
         let mut options: ConnectOptions = database_url.clone().into();
@@ -57,7 +56,6 @@ impl alohomora::orm::Pool for SeaOrmPool {
         if let Some(idle_timeout) = config.idle_timeout {
             options.idle_timeout(Duration::from_secs(idle_timeout));
         } */
-        println!("connecting");
 
         // connect to general database
         let db: sea_orm::DbConn = sea_orm::Database::connect(options).await?;
@@ -84,8 +82,6 @@ impl alohomora::orm::Pool for SeaOrmPool {
             .idle_timeout(Duration::from_secs(5))
             .sqlx_logging(false);
         let db = sea_orm::Database::connect(options2).await?;
-        println!("CONNECTED to new");
-
         
         if init {
             use entity::{admin, candidate, parent, session};

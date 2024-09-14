@@ -95,9 +95,7 @@ fn setup_logger() -> Result<(), fern::InitError> {
 
 async fn run_migrations(rocket: Rocket<Build>) -> fairing::Result {
     let conn = &Db::fetch(&rocket).unwrap().conn;
-    println!("got conn");
     let _ = migration::Migrator::up(conn, None).await;
-    println!("migrated");
     Ok(rocket)
 }
 

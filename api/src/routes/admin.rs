@@ -133,7 +133,6 @@ pub async fn create_candidate(
             Err(e) => return MyResult::Err(e),
         };
 
-    println!("did the thing");
     let cand = CreateCandidateResponse {
         application_id: application.id.into_any_policy(),
         field_of_study: application.field_of_study.into_any_policy(),
@@ -219,20 +218,11 @@ pub async fn get_candidate(
     let db = conn.into_inner();
     let private_key = session.get_private_key();
 
-    println!("a");
-
     let application = Query::find_application_by_id(db, id)
         .await
         .map_err(|e| to_custom_error(ServiceError::DbError(e)))?
         .ok_or(to_custom_error(ServiceError::CandidateNotFound))?;
 
-        println!("b");
-    execute_pure(private_key.clone(), PrivacyPureRegion::new(|pk|{
-        println!("pk -> {:?}", pk);
-        println!("db -> {:?}", db);
-        println!("app -> {:?}", &application);
-    })).unwrap();
-    println!("calling app service decrypt");
     let details = ApplicationService::decrypt_all_details(
         private_key,
         db,
@@ -240,7 +230,7 @@ pub async fn get_candidate(
     )
         .await
         .map_err(to_custom_error)?;
-    println!("c");
+
     MyResult::Ok(
         JsonResponse::from((details, context))
     )

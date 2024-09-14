@@ -249,15 +249,8 @@ pub async fn upload_cover_letter(
     context: Context<ContextDataType>,
 ) -> MyResult<(), (rocket::http::Status, String)> {
     let application: entity::application::Model = session.into();
-    println!("hello");
 
     let a: BBox<Vec<u8>, FakePolicy> = letter.into();
-    execute_pcr(a.clone(), PrivacyCriticalRegion::new(|v, _, _|{
-        println!("{:?}", v);
-    },
-    Signature{username: "AlexanderPortland", signature: ""}, 
-    Signature{username: "AlexanderPortland", signature: ""}, 
-    Signature{username: "AlexanderPortland", signature: ""}), ()).unwrap();
 
     PortfolioService::add_cover_letter_to_cache(context, application.candidate_id, a)
         .await

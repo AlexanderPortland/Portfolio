@@ -37,9 +37,7 @@ impl Mutation {
         enc_candidate: EncryptedCandidateDetails,
         encrypted_by_id: BBox<i32, CandidateDataPolicy>,
     ) -> Result<candidate::Model, sea_orm::DbErr> {
-        println!("specializinggg");
         let application = candidate.id.clone();
-        println!("it all wne tokay :)");
         let mut candidate: candidate::ActiveModel = candidate.into();
 
         candidate.name = Set(enc_candidate.name.clone().map(|e| e.into()));

@@ -129,7 +129,6 @@ impl<P: Policy + Clone + 'static>  From<BBox<String, P>> for EncryptedString {
 
 impl<P: Policy + Clone + 'static> Into<BBox<String, P>> for EncryptedString {
     fn into(self) -> BBox<String, P> {
-        println!("trying to specialize {:?} into {:?}", self, type_name::<P>());
         self.0.specialize_policy().unwrap()
     }
 }
@@ -415,9 +414,7 @@ impl EncryptedApplicationDetails {
     }
 
     pub async fn decrypt(self, private_key: BBox<String, KeyPolicy>) -> Result<ApplicationDetails, ServiceError> {
-        println!("in decrypt w/ enc details {:?}", self.candidate);
         let decrypted_candidate = self.candidate.decrypt(&private_key).await?;
-        println!("got cand details {:?}", decrypted_candidate);
 
         let decrypted_parents = future::try_join_all(
             self.parents
@@ -431,8 +428,6 @@ impl EncryptedApplicationDetails {
                     
                 })
         ).await?;
-
-        println!("everything in the map worked");
 
         Ok(ApplicationDetails {
             candidate: decrypted_candidate,
