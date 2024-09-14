@@ -44,7 +44,7 @@ impl SessionService {
 mod tests {
     use std::sync::OnceLock;
 
-    use alohomora::{bbox::BBox, context::Context, pcr::{execute_pcr, PrivacyCriticalRegion, Signature}, policy::NoPolicy, testing::TestContextData};
+    use alohomora::{bbox::BBox, context::Context, pcr::{execute_pcr, PrivacyCriticalRegion, Signature}, policy::{AnyPolicy, NoPolicy}, testing::TestContextData};
     use futures::future::lazy;
     use sea_orm::{
         prelude::Uuid, DatabaseConnection,
@@ -121,7 +121,7 @@ mod tests {
         let session = ApplicationService::new_session(
             db,
             &application,
-            BBox::new(SECRET.to_string(), FakePolicy::new()),
+            BBox::new(SECRET.to_string(), AnyPolicy::new(FakePolicy::new())),
             BBox::new("127.0.0.1".to_string(), FakePolicy::new()),
         )
         .await
@@ -152,7 +152,7 @@ mod tests {
         assert!(ApplicationService::new_session(
             db,
             &application,
-            BBox::new("Spatny_kod".to_string(), FakePolicy::new()),
+            BBox::new("Spatny_kod".to_string(), AnyPolicy::new(FakePolicy::new())),
             BBox::new("127.0.0.1".to_string(), FakePolicy::new())
         )
         .await

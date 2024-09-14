@@ -37,7 +37,7 @@ pub async fn login(
     let session_token_key = AdminService::login(
         db,
         login_form.adminId.clone().into_any_policy(),
-        login_form.password.clone(),
+        login_form.password.clone().into_any_policy(),
         ip_addr,
     )
     .await;

@@ -38,7 +38,7 @@ impl AuthenticableTrait for AdminService {
     async fn login(
         db: &DbConn,
         admin_id: BBox<i32, AnyPolicy>,
-        password: BBox<String, FakePolicy>,
+        password: BBox<String, AnyPolicy>,
         ip_addr: BBox<String, FakePolicy>,
     ) -> Result<(BBox<String, FakePolicy>, BBox<String, KeyPolicy>), ServiceError> {
         let admin_id: BBox<i32, FakePolicy> = admin_id.specialize_policy().unwrap();
@@ -50,7 +50,7 @@ impl AuthenticableTrait for AdminService {
         )
             .await?;
 
-        let private_key = Self::decrypt_private_key(db, admin.id, password).await?;
+        let private_key = Self::decrypt_private_key(db, admin.id, password.specialize_policy().unwrap()).await?;
 
         Ok((session_id, private_key))
     }
@@ -80,7 +80,7 @@ impl AuthenticableTrait for AdminService {
     async fn new_session(
         db: &DbConn,
         admin: &admin::Model,
-        password: BBox<String, FakePolicy>,
+        password: BBox<String, AnyPolicy>,
         ip_addr: BBox<String, FakePolicy>,
     ) -> Result<BBox<String, FakePolicy>, ServiceError> {
         if !my_verify_password(password.clone(), admin.password.clone()).await? {
@@ -169,7 +169,7 @@ pub mod admin_tests {
             .await?;
 
         let (session_id, _private_key) = AdminService::login(&db, admin.id.into_any_policy(), 
-            BBox::new("test".to_owned(), FakePolicy::new()),
+            BBox::new("test".to_owned(), AnyPolicy::new(FakePolicy::new())),
             BBox::new("127.0.0.1".to_owned(), FakePolicy::new())).await?;
 
         

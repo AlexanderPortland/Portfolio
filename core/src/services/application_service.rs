@@ -1,3 +1,4 @@
+use std::any::Any;
 use std::default;
 
 use alohomora::context::{Context, ContextData};
@@ -303,7 +304,7 @@ impl ApplicationService {
 
     async fn decrypt_private_key(
         application: application::Model,
-        password: BBox<String, FakePolicy>,
+        password: BBox<String, AnyPolicy>,
     ) -> Result<BBox<String, KeyPolicy>, ServiceError> {
         let private_key_encrypted = application.private_key;
 
@@ -447,16 +448,17 @@ impl AuthenticableTrait for ApplicationService {
     async fn login(
         db: &DbConn,
         application_id: BBox<i32, AnyPolicy>,
-        password: BBox<String, FakePolicy>,
+        password: BBox<String, AnyPolicy>,
         ip_addr: BBox<String, FakePolicy>,
     ) -> Result<(BBox<String, FakePolicy>, BBox<String, KeyPolicy>), ServiceError> {
         let application_id: BBox<i32, CandidateDataPolicy> = application_id.specialize_policy().unwrap();
+        let password: BBox<String, CandidateDataPolicy> = password.specialize_policy().unwrap();
         let application = Query::find_application_by_id(db, application_id)
             .await?
             .ok_or(ServiceError::CandidateNotFound)?;
 
-        let session_id = Self::new_session(db, &application, password.clone(), ip_addr).await?;
-        let private_key = Self::decrypt_private_key(application, password).await?;
+        let session_id = Self::new_session(db, &application, password.clone().into_any_policy(), ip_addr).await?;
+        let private_key = Self::decrypt_private_key(application, password.into_any_policy()).await?;
 
         Ok((session_id, private_key))
     }
@@ -489,7 +491,7 @@ impl AuthenticableTrait for ApplicationService {
     async fn new_session(
         db: &DbConn,
         application: &application::Model,
-        password: BBox<String, FakePolicy>,
+        password: BBox<String, AnyPolicy>,
         ip_addr: BBox<String, FakePolicy>,
     ) -> Result<BBox<String, FakePolicy>, ServiceError> {
         if !my_verify_password(password.clone(), application.password.clone()).await? {
@@ -581,7 +583,7 @@ mod application_tests {
         let ip = BBox::new("127.0.0.1".to_string(), FakePolicy::new());
         let password = BBox::new("test".to_string(), FakePolicy::new());
         assert!(
-            ApplicationService::login(&db, application.id.clone().into_any_policy(), password.clone(), ip.clone()).await.is_ok()
+            ApplicationService::login(&db, application.id.clone().into_any_policy(), password.clone().into_any_policy(), ip.clone()).await.is_ok()
         );
 
         let new_password = ApplicationService::reset_password(
@@ -593,7 +595,7 @@ mod application_tests {
             .unwrap()
             .password;
         assert!(
-            ApplicationService::login(&db, application.id.clone().into_any_policy(), password, ip.clone()).await.is_err()
+            ApplicationService::login(&db, application.id.clone().into_any_policy(), password.into_any_policy(), ip.clone()).await.is_err()
         );
         assert!(
             ApplicationService::login(&db, application.id.into_any_policy(), new_password.specialize_policy().unwrap(), ip.clone()).await.is_ok()
