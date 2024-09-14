@@ -6,6 +6,7 @@ use alohomora::{bbox::BBox, context::Context, orm::Connection, pure::{execute_pu
 use alohomora_derive::{RequestBBoxJson, ResponseBBoxJson};
 use chrono::NaiveDate;
 use entity::application;
+use portfolio_policies::data::CandidateDataPolicy;
 use crate::pool::ContextDataType;
 use portfolio_core::utils::response::MyResult;
 use portfolio_core::Query;
@@ -118,24 +119,24 @@ pub async fn whoami(conn: Connection<'_, Db>,
 #[allow(non_snake_case)]
 #[derive(Debug, Clone, PartialEq, RequestBBoxJson)]
 pub struct RequestCandidateDetails {
-    pub name: BBox<String, FakePolicy>,
-    pub surname: BBox<String, FakePolicy>,
-    pub birthSurname: BBox<String, FakePolicy>,
-    pub birthplace: BBox<String, FakePolicy>,
-    pub birthdate: BBox<NaiveDate, FakePolicy>,
-    pub address: BBox<String, FakePolicy>,
-    pub letterAddress: BBox<String, FakePolicy>,
-    pub telephone: BBox<String, FakePolicy>,
-    pub citizenship: BBox<String, FakePolicy>,
-    pub email: BBox<String, FakePolicy>,
-    pub sex: BBox<String, FakePolicy>,
-    pub personalIdNumber: BBox<String, FakePolicy>,
-    pub schoolName: BBox<String, FakePolicy>,
-    pub healthInsurance: BBox<String, FakePolicy>,
-    pub grades: BBox<GradeList, FakePolicy>,
-    pub firstSchool: BBox<School, FakePolicy>,
-    pub secondSchool: BBox<School, FakePolicy>,
-    pub testLanguage: BBox<String, FakePolicy>,
+    pub name: BBox<String, CandidateDataPolicy>,
+    pub surname: BBox<String, CandidateDataPolicy>,
+    pub birthSurname: BBox<String, CandidateDataPolicy>,
+    pub birthplace: BBox<String, CandidateDataPolicy>,
+    pub birthdate: BBox<NaiveDate, CandidateDataPolicy>,
+    pub address: BBox<String, CandidateDataPolicy>,
+    pub letterAddress: BBox<String, CandidateDataPolicy>,
+    pub telephone: BBox<String, CandidateDataPolicy>,
+    pub citizenship: BBox<String, CandidateDataPolicy>,
+    pub email: BBox<String, CandidateDataPolicy>,
+    pub sex: BBox<String, CandidateDataPolicy>,
+    pub personalIdNumber: BBox<String, CandidateDataPolicy>,
+    pub schoolName: BBox<String, CandidateDataPolicy>,
+    pub healthInsurance: BBox<String, CandidateDataPolicy>,
+    pub grades: BBox<GradeList, CandidateDataPolicy>,
+    pub firstSchool: BBox<School, CandidateDataPolicy>,
+    pub secondSchool: BBox<School, CandidateDataPolicy>,
+    pub testLanguage: BBox<String, CandidateDataPolicy>,
 }
 impl RequestCandidateDetails {
     pub fn validate_self(&self) -> Result<(), ServiceError> {
@@ -169,10 +170,10 @@ impl RequestCandidateDetails {
 
 #[derive(Debug, Clone, PartialEq, RequestBBoxJson)]
 pub struct RequestParentDetails {
-    pub name: BBox<String, FakePolicy>,
-    pub surname: BBox<String, FakePolicy>,
-    pub telephone: BBox<String, FakePolicy>,
-    pub email: BBox<String, FakePolicy>,
+    pub name: BBox<String, CandidateDataPolicy>,
+    pub surname: BBox<String, CandidateDataPolicy>,
+    pub telephone: BBox<String, CandidateDataPolicy>,
+    pub email: BBox<String, CandidateDataPolicy>,
 }
 impl RequestParentDetails {
     pub fn to_any(self) -> ParentDetails {

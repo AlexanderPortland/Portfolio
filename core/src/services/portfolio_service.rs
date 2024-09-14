@@ -953,18 +953,28 @@ mod tests {
     async fn test_is_portfolio_submitted() {
         let db = get_memory_sqlite_connection().await;
 
+        println!("pre-w");
+
         let (_, candidate, _) = put_user_data(&db).await;
+        println!("pre-w1");
         let candidate_id = open(candidate.id.clone(), &db).await;
+        println!("pre-w2");
 
         let (temp_dir, _, _) = create_data_store_temp_dir(candidate_id).await;
+        println!("pre-w3");
 
         let context = crate::utils::db::get_test_context(&db).await;
 
+        println!("w");
         PortfolioService::add_cover_letter_to_cache(context.clone(),  BBox::new(candidate_id, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
+        println!("w2");
         PortfolioService::add_portfolio_letter_to_cache(context.clone(), BBox::new(candidate_id, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
+        println!("w3");
         PortfolioService::add_portfolio_zip_to_cache(context.clone(), BBox::new(candidate_id, FakePolicy::new()), BBox::new(vec![0], FakePolicy::new())).await.unwrap();
+        println!("w4");
 
         PortfolioService::submit(context.clone(), &candidate, &db).await.unwrap();
+        println!("w5");
         
         assert!(PortfolioService::is_portfolio_submitted(candidate_id).await);
 

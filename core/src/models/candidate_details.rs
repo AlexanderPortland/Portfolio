@@ -1,4 +1,4 @@
-use std::any::Any;
+use std::any::{type_name, Any};
 use std::fmt::Debug;
 use alohomora::bbox::BBox;
 use alohomora::orm::ORMPolicy;
@@ -129,6 +129,7 @@ impl<P: Policy + Clone + 'static>  From<BBox<String, P>> for EncryptedString {
 
 impl<P: Policy + Clone + 'static> Into<BBox<String, P>> for EncryptedString {
     fn into(self) -> BBox<String, P> {
+        println!("trying to specialize {:?} into {:?}", self, type_name::<P>());
         self.0.specialize_policy().unwrap()
     }
 }

@@ -139,6 +139,7 @@ pub mod tests {
 
         use crate::{models::candidate_details::tests::APPLICATION_DETAILS, services::parent_service::ParentService};
 
+        println!("hello");
         let plain_text_password = "test".to_string();
         let application = ApplicationService::create(
             crate::utils::db::get_test_context(&db).await,
@@ -149,8 +150,12 @@ pub mod tests {
             BBox::new("0000001111".to_string(), CandidateDataPolicy::new(None))
         ).await.unwrap().0;
 
+        println!("its me");
+
         let candidate= ApplicationService::find_related_candidate(db, &application).await.unwrap();
+        println!("im in california");
         ParentService::create(db, candidate.id.clone()).await.unwrap();
+        println!("dreaming");
 
         let form = APPLICATION_DETAILS.lock().unwrap().clone();
 

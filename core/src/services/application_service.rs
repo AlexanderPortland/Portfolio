@@ -256,12 +256,18 @@ impl ApplicationService {
         candidate: candidate::Model,
         form: &ApplicationDetails,
     ) -> Result<(candidate::Model, Vec<parent::Model>), ServiceError> {
+        println!("adding all the deets");
         let mut recipients = Query::get_all_admin_public_keys_together(db).await?;
+        println!("adding 1");
         let applications = Query::find_applications_by_candidate_id(db, candidate.id.clone()).await?;
+        println!("adding 2");
         recipients.append(&mut applications.iter().map(|a| a.public_key.to_owned()).collect());
+        println!("adding 3");
 
         let candidate = CandidateService::add_candidate_details(db, candidate, &form.candidate, &recipients, application.id.clone()).await?;
+        println!("adding 4");
         let parents = ParentService::add_parents_details(db, &candidate, &form.parents, &recipients).await?;
+        println!("done adding all the deets");
         Ok(
             (
                 candidate,
