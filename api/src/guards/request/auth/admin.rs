@@ -8,6 +8,7 @@ use entity::admin::Model as Admin;
 use portfolio_core::models::auth::AuthenticableTrait;
 use portfolio_core::sea_orm::prelude::Uuid;
 use portfolio_core::services::admin_service::AdminService;
+use portfolio_policies::key::KeyPolicy;
 use rocket::http::Status;
 use rocket::outcome::Outcome;
 use portfolio_policies::FakePolicy;
@@ -15,7 +16,7 @@ use portfolio_policies::FakePolicy;
 
 use crate::pool::Db;
 
-pub struct AdminAuth(Admin, BBox<String, FakePolicy>);
+pub struct AdminAuth(Admin, BBox<String, KeyPolicy>);
 
 impl Into<Admin> for AdminAuth {
     fn into(self) -> Admin {
@@ -24,7 +25,7 @@ impl Into<Admin> for AdminAuth {
 }
 
 impl AdminAuth {
-    pub fn get_private_key(&self) -> BBox<String, FakePolicy> {
+    pub fn get_private_key(&self) -> BBox<String, KeyPolicy> {
         self.1.clone()
     }
 }
@@ -37,7 +38,7 @@ impl<'a, 'r> FromBBoxRequest<'a, 'r> for AdminAuth {
         request: BBoxRequest<'a, 'r>,
     ) -> BBoxRequestOutcome<Self, Self::BBoxError>{
         let cookie_id = request.cookies().get::<FakePolicy>("id");
-        let cookie_private_key = request.cookies().get::<FakePolicy>("key");
+        let cookie_private_key = request.cookies().get::<KeyPolicy>("key");
 
         let Some(cookie_id) = cookie_id else {
             return BBoxRequestOutcome::Failure((Status::Unauthorized, ()));

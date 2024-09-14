@@ -9,6 +9,7 @@ use alohomora::sandbox::execute_sandbox;
 
 use entity::{candidate, parent};
 use futures::future;
+use portfolio_policies::key::KeyPolicy;
 use portfolio_policies::FakePolicy;
 use portfolio_sandbox::naive_date_str;
 use serde::Serialize;
@@ -245,7 +246,7 @@ impl EncryptedCandidateDetails {
         )
     }
 
-    pub async fn decrypt(&self, private_key: &BBox<String, FakePolicy>) -> Result<CandidateDetails, ServiceError> {
+    pub async fn decrypt(&self, private_key: &BBox<String, KeyPolicy>) -> Result<CandidateDetails, ServiceError> {
         let d = tokio::try_join!(
             EncryptedString::decrypt_option(&self.name, private_key),              // 0
             EncryptedString::decrypt_option(&self.surname, private_key),           // 1
@@ -412,7 +413,7 @@ impl EncryptedApplicationDetails {
         )
     }
 
-    pub async fn decrypt(self, private_key: BBox<String, FakePolicy>) -> Result<ApplicationDetails, ServiceError> {
+    pub async fn decrypt(self, private_key: BBox<String, KeyPolicy>) -> Result<ApplicationDetails, ServiceError> {
         println!("in decrypt w/ enc details {:?}", self.candidate);
         let decrypted_candidate = self.candidate.decrypt(&private_key).await?;
         println!("got cand details {:?}", decrypted_candidate);
@@ -463,7 +464,7 @@ impl From<(&candidate::Model, &Vec<parent::Model>)> for EncryptedApplicationDeta
 pub mod tests {
     use std::sync::Mutex;
 
-    use portfolio_policies::{KeyPolicy, FakePolicy};
+    use portfolio_policies::{key::KeyPolicy, FakePolicy};
     use alohomora::{bbox::BBox, pcr::{execute_pcr, PrivacyCriticalRegion, Signature}, policy::AnyPolicy, pure::PrivacyPureRegion};
     use chrono::Local;
     use entity::admin;
@@ -532,7 +533,7 @@ pub mod tests {
             name: Set(BBox::new("Admin".to_owned(), FakePolicy::new())),
             public_key: Set(BBox::new("age1u889gp407hsz309wn09kxx9anl6uns30m27lfwnctfyq9tq4qpus8tzmq5".to_owned(), FakePolicy::new())),
             // AGE-SECRET-KEY-14QG24502DMUUQDT2SPMX2YXPSES0X8UD6NT0PCTDAT6RH8V5Q3GQGSRXPS
-            private_key: Set(BBox::new("5KCEGk0ueWVGnu5Xo3rmpLoilcVZ2ZWmwIcdZEJ8rrBNW7jwzZU/XTcTXtk/xyy/zjF8s+YnuVpOklQvX3EC/Sn+ZwyPY3jokM2RNwnZZlnqdehOEV1SMm/Y".to_owned(), KeyPolicy::new(None))),
+            private_key: Set(BBox::new("5KCEGk0ueWVGnu5Xo3rmpLoilcVZ2ZWmwIcdZEJ8rrBNW7jwzZU/XTcTXtk/xyy/zjF8s+YnuVpOklQvX3EC/Sn+ZwyPY3jokM2RNwnZZlnqdehOEV1SMm/Y".to_owned(), KeyPolicy::new(None, portfolio_policies::key::KeySource::JustGenerated))),
             // test
             password: Set(BBox::new("$argon2i$v=19$m=6000,t=3,p=10$WE9xCQmmWdBK82R4SEjoqA$TZSc6PuLd4aWK2x2WAb+Lm9sLySqjK3KLbNyqyQmzPQ".to_owned(), FakePolicy::new())),
             created_at: Set(BBox::new(Local::now().naive_local(), FakePolicy::new())),
@@ -583,7 +584,7 @@ pub mod tests {
         .unwrap();
 
         let application_details = encrypted_details
-            .decrypt(BBox::new(PRIVATE_KEY.to_string(), FakePolicy::new()))
+            .decrypt(BBox::new(PRIVATE_KEY.to_string(), KeyPolicy::new(None, portfolio_policies::key::KeySource::JustGenerated)))
             .await
             .unwrap();
 
@@ -600,7 +601,7 @@ pub mod tests {
         let encrypted_details = EncryptedApplicationDetails::try_from((&candidate, &parents)).unwrap();
 
         let application_details = encrypted_details
-            .decrypt(BBox::new(PRIVATE_KEY.to_string(), FakePolicy::new())) // decrypt with admin's private key
+            .decrypt(BBox::new(PRIVATE_KEY.to_string(), KeyPolicy::new(None, portfolio_policies::key::KeySource::JustGenerated))) // decrypt with admin's private key
             .await
             .unwrap();
 

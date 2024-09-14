@@ -11,7 +11,7 @@ use alohomora::unbox::unbox;
 use sea_orm::{DbConn};
 use serde::{Serialize, ser::{SerializeStruct}};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
-use portfolio_policies::FakePolicy;
+use portfolio_policies::{key::KeyPolicy, FakePolicy};
 
 use crate::{error::ServiceError, Query, crypto};
 //use crate::crypto_helpers::get_context;
@@ -601,7 +601,7 @@ impl PortfolioService {
     pub async fn reencrypt_portfolio<D: ContextData>(
         context: Context<D>,
         candidate_id: BBox<i32, FakePolicy>,
-        private_key: BBox<String, FakePolicy>,
+        private_key: BBox<String, KeyPolicy>,
         recipients: &Vec<BBox<String, FakePolicy>>,
     ) -> Result<(), ServiceError> {
         match unbox(

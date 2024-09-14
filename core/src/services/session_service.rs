@@ -49,7 +49,7 @@ mod tests {
     use sea_orm::{
         prelude::Uuid, DatabaseConnection,
     };
-    use portfolio_policies::FakePolicy;
+    use portfolio_policies::{key::KeyPolicy, FakePolicy};
     use portfolio_api::pool::ContextDataType;
 
     use crate::{
@@ -84,7 +84,7 @@ mod tests {
 
         let application = ApplicationService::create(
             crate::utils::db::get_test_context(&db).await,
-            &BBox::new("".to_string(), FakePolicy::new()),
+            &BBox::new("".to_string(), KeyPolicy::new(None, portfolio_policies::key::KeySource::JustGenerated)),
             &db, 
             BBox::new(103151, FakePolicy::new()),
             &BBox::new(SECRET.to_string(), FakePolicy::new()),
@@ -111,7 +111,7 @@ mod tests {
 
         let application = ApplicationService::create(
             crate::utils::db::get_test_context(&db).await,
-            &BBox::new("".to_string(), FakePolicy::new()),
+            &BBox::new("".to_string(), KeyPolicy::new(None, portfolio_policies::key::KeySource::JustGenerated)),
             &db, 
             BBox::new(103151, FakePolicy::new()),
             &BBox::new(SECRET.to_string(), FakePolicy::new()),
@@ -144,7 +144,7 @@ mod tests {
 
         let application = ApplicationService::create(
             crate::utils::db::get_test_context(&db).await,
-            &BBox::new("".to_string(), FakePolicy::new()),
+            &BBox::new("".to_string(), KeyPolicy::new(None, portfolio_policies::key::KeySource::JustGenerated)),
             &db, 
             BBox::new(103151, FakePolicy::new()),
             &BBox::new(SECRET.to_string(), FakePolicy::new()),

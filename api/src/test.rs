@@ -2,7 +2,7 @@
 pub mod tests {
     use crate::rocket;
     use alohomora::{bbox::BBox, context::Context, policy::NoPolicy, testing::{BBoxClient, TestContextData}};
-    use portfolio_policies::{KeyPolicy, FakePolicy};
+    use portfolio_policies::{key::KeyPolicy, FakePolicy};
     use crate::pool::ContextDataType;
     use entity::admin;
     use once_cell::sync::OnceCell;
@@ -47,7 +47,7 @@ pub mod tests {
             id: Set(BBox::new(ADMIN_ID, FakePolicy::new())),
             name: Set(BBox::new("admin pepa".to_string(), FakePolicy::new())),
             public_key: Set(BBox::new(pubkey, FakePolicy::new())),
-            private_key: Set(BBox::new(priv_key, KeyPolicy::new(None))),
+            private_key: Set(BBox::new(priv_key, KeyPolicy::new(None, portfolio_policies::key::KeySource::JustGenerated))),
             password: Set(BBox::new(password_hash, FakePolicy::new())),
             created_at: Set(BBox::new(chrono::Utc::now().naive_utc(), FakePolicy::new())),
             updated_at: Set(BBox::new(chrono::Utc::now().naive_utc(), FakePolicy::new())),
@@ -58,7 +58,7 @@ pub mod tests {
 
         ApplicationService::create(
             get_test_context(db).await,
-            &BBox::new("".to_string(), FakePolicy::new()),
+            &BBox::new("".to_string(), KeyPolicy::new(None, portfolio_policies::key::KeySource::JustGenerated)),
             db,
             BBox::new(APPLICATION_ID, FakePolicy::new()),
             &BBox::new(CANDIDATE_PASSWORD.to_string(), FakePolicy::new()),

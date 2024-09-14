@@ -5,7 +5,7 @@ use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use alohomora::policy::{AnyPolicy, NoPolicy};
-use portfolio_policies::FakePolicy;
+use portfolio_policies::{key::KeyPolicy, FakePolicy};
 
 use crate::{database::query::application::ApplicationCandidateJoin, error::ServiceError};
 
@@ -42,7 +42,7 @@ pub struct CleanApplicationResponse {
 
 impl ApplicationResponse {
     pub async fn from_encrypted(
-        private_key: &BBox<String, FakePolicy>,
+        private_key: &BBox<String, KeyPolicy>,
         c: ApplicationCandidateJoin,
         related_applications: Vec<BBox<i32, FakePolicy>>,
     ) -> Result<Self, ServiceError> {

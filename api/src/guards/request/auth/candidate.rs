@@ -4,7 +4,7 @@ use entity::application::Model as Application;
 use portfolio_core::models::auth::AuthenticableTrait;
 use portfolio_core::sea_orm::prelude::Uuid;
 use portfolio_core::services::application_service::ApplicationService;
-use portfolio_policies::KeyPolicy;
+use portfolio_policies::key::KeyPolicy;
 use rocket::http::Status;
 use rocket::outcome::Outcome;
 

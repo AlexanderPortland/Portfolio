@@ -4,7 +4,8 @@ use alohomora::context::{Context, ContextData};
 use async_trait::async_trait;
 use chrono::{Duration, NaiveDateTime};
 use entity::{candidate, parent, application, session};
-use portfolio_policies::KeyPolicy;
+use portfolio_policies::key::KeySource;
+use portfolio_policies::key::KeyPolicy;
 // use portfolio_policies::context::ContextDataType;
 use sea_orm::{DbConn, prelude::Uuid, IntoActiveModel};
 use alohomora::bbox::BBox;
@@ -30,7 +31,7 @@ impl ApplicationService {
     /// Public key
     pub async fn create<D: ContextData + Clone>(
         context: Context<D>,
-        admin_private_key: &BBox<String, FakePolicy>,
+        admin_private_key: &BBox<String, KeyPolicy>,
         db: &DbConn,
         application_id: BBox<i32, FakePolicy>,
         plain_text_password: &BBox<String, FakePolicy>,
@@ -56,7 +57,7 @@ impl ApplicationService {
         let hashed_password = my_hash_password(plain_text_password.to_owned()).await?;
         let (pubkey, priv_key_plain_text) = crypto::create_identity();
         let pubkey = BBox::new(pubkey, FakePolicy::new());
-        let bbox = BBox::new(priv_key_plain_text, KeyPolicy::new(None));
+        let bbox = BBox::new(priv_key_plain_text, KeyPolicy::new(None, portfolio_policies::key::KeySource::JustGenerated));
         // TODO: (aportlan) switch the args here
         let encrypted_priv_key: BBox<String, KeyPolicy> = my_encrypt_password(
             bbox,
@@ -101,7 +102,7 @@ impl ApplicationService {
     async fn find_or_create_candidate_with_personal_id<D: ContextData + Clone>(
         context: Context<D>,
         application_id: BBox<i32, FakePolicy>,
-        admin_private_key: &BBox<String, FakePolicy>,
+        admin_private_key: &BBox<String, KeyPolicy>,
         db: &DbConn,
         personal_id_number: &BBox<String, FakePolicy>,
         pubkey: &BBox<String, FakePolicy>,
@@ -261,7 +262,7 @@ impl ApplicationService {
     }
 
     pub async fn decrypt_all_details(
-        private_key: BBox<String, FakePolicy>,
+        private_key: BBox<String, KeyPolicy>,
         db: &DbConn,
         application: &application::Model,
     ) -> Result<ApplicationDetails, ServiceError>  {
@@ -284,7 +285,7 @@ impl ApplicationService {
     }
 
     pub async fn list_applications(
-        private_key: &BBox<String, FakePolicy>,
+        private_key: &BBox<String, KeyPolicy>,
         db: &DbConn,
         field_of_study: Option<String>,
         page: Option<u64>,
@@ -310,12 +311,12 @@ impl ApplicationService {
     async fn decrypt_private_key(
         application: application::Model,
         password: BBox<String, FakePolicy>,
-    ) -> Result<BBox<String, FakePolicy>, ServiceError> {
+    ) -> Result<BBox<String, KeyPolicy>, ServiceError> {
         let private_key_encrypted = application.private_key;
 
         let private_key = my_decrypt_password(private_key_encrypted, password).await?;
 
-        Ok(private_key.specialize_policy().unwrap())
+        Ok(private_key)
     }
 
     pub async fn extend_session_duration_to_14_days(db: &DbConn, session: session::Model) -> Result<session::Model, ServiceError> {
@@ -341,7 +342,7 @@ impl ApplicationService {
 
     pub async fn reset_password<D: ContextData + Clone>(
         context: Context<D>,
-        admin_private_key: BBox<String, FakePolicy>,
+        admin_private_key: BBox<String, KeyPolicy>,
         db: &DbConn,
         id: BBox<i32, FakePolicy>,
     ) -> Result<CreateCandidateResponse, ServiceError> {
@@ -360,7 +361,7 @@ impl ApplicationService {
         ).await?;
 
         let pubkey = BBox::new(pubkey, FakePolicy::new());
-        let encrypted_priv_key = BBox::new(encrypted_priv_key, KeyPolicy::new(None));
+        let encrypted_priv_key = BBox::new(encrypted_priv_key, KeyPolicy::new(None, KeySource::JustGenerated));
 
         Self::delete_old_sessions(db, &application, 0).await?;
         let application = Mutation::update_application_password_and_keys(db,
@@ -415,7 +416,7 @@ impl ApplicationService {
          application_id: BBox<i32, FakePolicy>,
          candidate: candidate::Model,
          recipients: &Vec<BBox<String, FakePolicy>>,
-         admin_private_key: &BBox<String, FakePolicy>
+         admin_private_key: &BBox<String, KeyPolicy>
     ) -> Result<candidate::Model, ServiceError> {
         let parents = Query::find_candidate_parents(db, &candidate).await?;
         let dec_details = EncryptedApplicationDetails::from((&candidate, &parents))
@@ -455,7 +456,7 @@ impl AuthenticableTrait for ApplicationService {
         application_id: BBox<i32, FakePolicy>,
         password: BBox<String, FakePolicy>,
         ip_addr: BBox<String, FakePolicy>,
-    ) -> Result<(BBox<String, FakePolicy>, BBox<String, AnyPolicy>), ServiceError> {
+    ) -> Result<(BBox<String, FakePolicy>, BBox<String, KeyPolicy>), ServiceError> {
         let application = Query::find_application_by_id(db, application_id)
             .await?
             .ok_or(ServiceError::CandidateNotFound)?;
@@ -463,7 +464,7 @@ impl AuthenticableTrait for ApplicationService {
         let session_id = Self::new_session(db, &application, password.clone(), ip_addr).await?;
         let private_key = Self::decrypt_private_key(application, password).await?;
 
-        Ok((session_id, private_key.into_any_policy()))
+        Ok((session_id, private_key))
     }
 
     async fn auth(db: &DbConn, session_uuid: BBox<Uuid, FakePolicy>) -> Result<application::Model, ServiceError> {
@@ -527,7 +528,7 @@ impl AuthenticableTrait for ApplicationService {
 #[cfg(test)]
 mod application_tests {
     use alohomora::{bbox::BBox, context::Context, pcr::{execute_pcr, PrivacyCriticalRegion, Signature}, policy::NoPolicy, pure::{execute_pure, PrivacyPureRegion}, testing::TestContextData};
-    use portfolio_policies::FakePolicy;
+    use portfolio_policies::{key::KeyPolicy, FakePolicy};
     use portfolio_api::pool::ContextDataType;
     use rocket::figment::util;
     //use sea_orm::sea_query::private;
@@ -591,7 +592,7 @@ mod application_tests {
 
         let new_password = ApplicationService::reset_password(
             crate::utils::db::get_test_context(&db).await,
-            BBox::new(private_key, FakePolicy::new()),
+            BBox::new(private_key, KeyPolicy::new(None, portfolio_policies::key::KeySource::JustGenerated)),
             &db,
             application.id.clone()
         ).await
@@ -615,7 +616,7 @@ mod application_tests {
 
         let application = ApplicationService::create(
             crate::utils::db::get_test_context(&db).await,
-            &BBox::new("".to_string(), FakePolicy::new()),
+            &BBox::new("".to_string(), KeyPolicy::new(None, portfolio_policies::key::KeySource::JustGenerated)),
             &db,
             BBox::new(103100, FakePolicy::new()),
             &BBox::new(plain_text_password.clone(), FakePolicy::new()),

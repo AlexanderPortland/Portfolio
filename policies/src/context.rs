@@ -73,22 +73,22 @@ impl<Db: sea_orm_rocket::Database> AlohomoraType for RealContextDataType<Db> {
     
 // }
 
-#[allow(non_snake_case)]
-#[derive(alohomora_derive::RequestBBoxJson)]
-pub struct LoginRequest {
-    pub applicationId: BBox<i32, FakePolicy>,
-    pub password: BBox<String, FakePolicy>,
-}
+// #[allow(non_snake_case)]
+// #[derive(alohomora_derive::RequestBBoxJson)]
+// pub struct LoginRequest {
+//     pub applicationId: BBox<i32, crate::FakePolicy>,
+//     pub password: BBox<String, crate::FakePolicy>,
+// }
 
 #[::rocket::async_trait]
 impl<'a, 'r, P: sea_orm_rocket::Pool<Connection = sea_orm::DatabaseConnection>, Db: sea_orm_rocket::Database<Pool = P>> FromBBoxRequest<'a, 'r> for RealContextDataType<Db> {
     type BBoxError = ();
     
     async fn from_bbox_request(request: BBoxRequest<'a, 'r>,) -> BBoxRequestOutcome<Self, Self::BBoxError> {
-        let login: BBoxJson<LoginRequest> = match request.guard().await {
-            BBoxRequestOutcome::Success(f) => f,
-            _ => panic!(""),
-        };
+        // let login: BBoxJson<LoginRequest> = match request.guard().await {
+        //     BBoxRequestOutcome::Success(f) => f,
+        //     _ => panic!(""),
+        // };
 
         let session_id: Option<BBox<String, NoPolicy>> = request.cookies().get("id")
             .and_then(|k| Some(k.value().to_owned()));

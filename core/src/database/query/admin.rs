@@ -45,7 +45,7 @@ mod tests {
     use alohomora::bbox::BBox;
     use alohomora::pcr::{execute_pcr, PrivacyCriticalRegion, Signature};
     use entity::admin;
-    use portfolio_policies::KeyPolicy;
+    use portfolio_policies::key::KeyPolicy;
     use sea_orm::{ActiveModelTrait, Set};
     use portfolio_policies::FakePolicy;
 
@@ -59,7 +59,7 @@ mod tests {
             id: Set(BBox::new(1, FakePolicy::new())),
             name: Set(BBox::new("admin_1".to_string(), FakePolicy::new())),
             public_key: Set(BBox::new("valid_public_key_1".to_string(), FakePolicy::new())),
-            private_key: Set(BBox::new("test".to_string(), KeyPolicy::new(None))),
+            private_key: Set(BBox::new("test".to_string(), KeyPolicy::new(None, portfolio_policies::key::KeySource::JustGenerated))),
             password: Set(BBox::new("test".to_string(), FakePolicy::new())),
             created_at: Set(BBox::new(chrono::offset::Local::now().naive_local(), FakePolicy::new())),
             updated_at: Set(BBox::new(chrono::offset::Local::now().naive_local(), FakePolicy::new())),
@@ -81,7 +81,7 @@ mod tests {
                 id: Set(BBox::new(index, FakePolicy::new())),
                 name: Set(BBox::new(format!("admin_{}", index), FakePolicy::new())),
                 public_key: Set(BBox::new(format!("valid_public_key_{}", index), FakePolicy::new())),
-                private_key: Set(BBox::new("test".to_string(), KeyPolicy::new(None))),
+                private_key: Set(BBox::new("test".to_string(), KeyPolicy::new(None, portfolio_policies::key::KeySource::JustGenerated))),
                 password: Set(BBox::new("test".to_string(), FakePolicy::new())),
                 created_at: Set(BBox::new(chrono::offset::Local::now().naive_local(), FakePolicy::new())),
                 updated_at: Set(BBox::new(chrono::offset::Local::now().naive_local(), FakePolicy::new())),

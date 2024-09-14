@@ -4,7 +4,7 @@ use ::entity::application;
 use log::{info, warn};
 use rocket::form::name::Key;
 use sea_orm::{DbConn, DbErr, Set, ActiveModelTrait, IntoActiveModel, DeleteResult, ModelTrait};
-use portfolio_policies::{KeyPolicy, FakePolicy};
+use portfolio_policies::{key::KeyPolicy, FakePolicy};
 
 use crate::{Mutation, models::candidate::FieldOfStudy};
 

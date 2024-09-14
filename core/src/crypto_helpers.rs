@@ -9,7 +9,7 @@ use alohomora::testing::TestContextData;
 use alohomora::unbox;
 use argon2::Argon2;
 use futures::channel::mpsc::Receiver;
-use portfolio_policies::KeyPolicy;
+use portfolio_policies::key::KeyPolicy;
 use crate::error::ServiceError;
 
 pub async fn my_hash_password<P: Policy + Clone + 'static>(password_plain_text: BBox<String, P>) -> Result<BBox<String, P>, ServiceError> {
@@ -45,29 +45,19 @@ pub async fn my_encrypt_password<P: Policy + Clone + 'static>(
     }
 }
 
+// TODO: (aportlan) the fricking args are reversed (what the heck)
 pub async fn my_decrypt_password<P1: Policy + Clone + 'static, P2: Policy + Clone + 'static>(
     ciphertext: BBox<String, P1>, key: BBox<String, P2>
-) -> Result<BBox<String, AnyPolicy>, ServiceError> {
+) -> Result<BBox<String, P1>, ServiceError> {
     let dec_res = execute_pcr((ciphertext.clone(), key.clone()), 
         PrivacyCriticalRegion::new(|(ciphertext, key), _, _|{
             crate::crypto::decrypt_password(ciphertext, key)
         },
         Signature{username: "AlexanderPortland", signature: ""}, 
         Signature{username: "AlexanderPortland", signature: ""}, 
-        Signature{username: "AlexanderPortland", signature: ""}), ()).unwrap().await;
+        Signature{username: "AlexanderPortland", signature: ""}), ()).unwrap().await?;
 
-    match dec_res {
-        Ok(dec) => {
-            // very hacky strategy, but since we can't combine policies manually with only references, 
-            // we do some fake combination in a ppr and then put our desired value inside
-            let policy_box = execute_pure((ciphertext.clone(), key.clone(), dec), PrivacyPureRegion::new(|(c, k, dec): (String, String, String)|{
-                let _ = c.contains(&k);
-                dec
-            })).unwrap();
-            Ok(policy_box)
-        },
-        Err(e) => Err(e),
-    }
+    Ok(BBox::new(dec_res, ciphertext.policy().to_owned()))
 }
 
 pub async fn my_encrypt_password_with_recipients<P: Policy + Clone + 'static, P2: Policy + Clone + 'static>(

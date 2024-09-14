@@ -10,7 +10,7 @@ use sea_orm::DbConn;
 use async_trait::async_trait;
 use chrono::NaiveDate;
 use serde::Serialize;
-use portfolio_policies::FakePolicy;
+use portfolio_policies::{key::KeyPolicy, FakePolicy};
 use crate::models::candidate::{CandidateRow, FieldOfStudy, FieldsCombination};
 use crate::models::candidate_details::EncryptedCandidateDetails;
 use crate::models::grade::GradeList;
@@ -126,14 +126,14 @@ pub fn serialize_in_sandbox<T: AlohomoraType>(rows: Vec<T>) -> Result<BBox<Vec<u
 
 #[async_trait]
 pub trait CsvExporter {
-    async fn export(db: &DbConn, private_key: BBox<String, FakePolicy>) -> Result<BBox<Vec<u8>, AnyPolicy>, ServiceError>;
+    async fn export(db: &DbConn, private_key: BBox<String, KeyPolicy>) -> Result<BBox<Vec<u8>, AnyPolicy>, ServiceError>;
 }
 
 pub struct ApplicationCsv;
 
 #[async_trait]
 impl CsvExporter for ApplicationCsv {
-    async fn export(db: &DbConn, private_key: BBox<String, FakePolicy>) -> Result<BBox<Vec<u8>, AnyPolicy>, ServiceError> {
+    async fn export(db: &DbConn, private_key: BBox<String, KeyPolicy>) -> Result<BBox<Vec<u8>, AnyPolicy>, ServiceError> {
         println!("Exportin");
         let applications = Query::list_applications_compact(&db).await?;
         println!("listed apps");
@@ -177,7 +177,7 @@ pub struct CandidateCsv;
 
 #[async_trait]
 impl CsvExporter for CandidateCsv {
-    async fn export(db: &DbConn, private_key: BBox<String, FakePolicy>) -> Result<BBox<Vec<u8>, AnyPolicy>, ServiceError> {
+    async fn export(db: &DbConn, private_key: BBox<String, KeyPolicy>) -> Result<BBox<Vec<u8>, AnyPolicy>, ServiceError> {
         let candidates = Query::list_candidates_full(&db).await?;
         let applications = Query::list_applications_compact(&db).await?;
         let parents = Query::list_all_parents(&db).await?;

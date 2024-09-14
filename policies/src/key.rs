@@ -1,15 +1,16 @@
 use alohomora::{orm::ORMPolicy, policy::{AnyPolicy, FrontendPolicy, Policy, PolicyAnd}};
 
+#[derive(Clone, Debug, PartialEq)]
 pub enum KeySource {
     Database,
     Cookie,
     JustGenerated,
 }
 
-pub enum AnyAuth {
-    Application(ApplicationAuth),
-    Admin(AdminAuth),
-}
+// pub enum AnyAuth {
+//     Application(ApplicationAuth),
+//     Admin(AdminAuth),
+// }
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct KeyPolicy {
@@ -24,7 +25,8 @@ pub struct KeyPolicy {
 impl KeyPolicy {
     pub fn new(id: Option<String>, source: KeySource) -> Self {
         Self {
-            owner
+            owner_id: id,
+            source,
         }
     }
 }
@@ -32,10 +34,7 @@ impl KeyPolicy {
 // Policy
 impl Policy for KeyPolicy {
     fn name(&self) -> String {
-        match self.owner.clone() {
-            None => format!("KeyPolicy(for no users)"),
-            Some(owner) => format!("KeyPolicy(for {}'s keys)", owner),
-        }
+        format!("{:?}", self)
     }
 
     fn check(&self, context: &alohomora::context::UnprotectedContext, reason: alohomora::policy::Reason<'_>) -> bool {
@@ -115,12 +114,12 @@ impl ORMPolicy for KeyPolicy {
     fn from_result(result: &sea_orm::QueryResult) -> Self
         where
             Self: Sized {
-        println!("getting from result");
-        let id: String = result.try_get("", "id").unwrap();
+        println!("getting from result for ORM POLICy");
+        let id: i32 = result.try_get("", "id").unwrap();
         // should this panic? or should this just return with None?
-        println!("got result {}", name);
+        println!("got id {}", id);
         KeyPolicy{
-            owner_id: Some(name),
+            owner_id: Some(id.to_string()),
             source: KeySource::Database,
         }
     }
@@ -132,12 +131,14 @@ impl FrontendPolicy for KeyPolicy {
             name: &str,
             cookie: &'a rocket::http::Cookie<'static>,
             request: &'a rocket::Request<'r>) -> Self where Self: Sized {
-        
+                let id = request.cookies().get("id").unwrap().to_string();
+                KeyPolicy { owner_id: Some(id), source: KeySource::Cookie }
     }
     fn from_request<'a, 'r>(request: &'a rocket::Request<'r>) -> Self
             where
                 Self: Sized {
-        
+                let id = request.cookies().get("id").unwrap().to_string();
+                KeyPolicy { owner_id: Some(id), source: KeySource::Cookie }
     }
 }
 

@@ -73,6 +73,7 @@ pub mod tests {
     use alohomora::pcr::{execute_pcr, PrivacyCriticalRegion, Signature};
     use alohomora::policy::NoPolicy;
     use alohomora::testing::TestContextData;
+    use portfolio_policies::key::KeyPolicy;
     use portfolio_policies::FakePolicy;
     use portfolio_api::pool::ContextDataType;
     use sea_orm::DbConn;
@@ -121,7 +122,7 @@ pub mod tests {
             Signature{username: "AlexanderPortland", signature: ""}, 
             Signature{username: "AlexanderPortland", signature: ""}), ()).unwrap().await.unwrap();
         //let private_key = crypto::decrypt_password(admin.private_key.discard_box(), "admin".to_string()).await.unwrap();
-        let private_key = BBox::new(private_key, FakePolicy::new());
+        let private_key = BBox::new(private_key, KeyPolicy::new(None, portfolio_policies::key::KeySource::JustGenerated));
         let candidates = ApplicationService::list_applications(&private_key, &db, None, None, None).await.unwrap();
         assert_eq!(candidates.len(), 0);
 
@@ -138,7 +139,7 @@ pub mod tests {
         let plain_text_password = "test".to_string();
         let application = ApplicationService::create(
             crate::utils::db::get_test_context(&db).await,
-            &BBox::new("".to_string(), FakePolicy::new()),
+            &BBox::new("".to_string(), KeyPolicy::new(None, portfolio_policies::key::KeySource::JustGenerated)),
             db,
             BBox::new(APPLICATION_ID, FakePolicy::new()),
             &BBox::new(plain_text_password, FakePolicy::new()),
@@ -185,7 +186,7 @@ pub mod tests {
         // let dec_priv_key = crypto::decrypt_password(application.private_key.clone().discard_box(), password)
         //     .await
         //     .unwrap();
-        let dec_priv_key = BBox::new(dec_priv_key, FakePolicy::new());
+        let dec_priv_key = BBox::new(dec_priv_key, KeyPolicy::new(None, portfolio_policies::key::KeySource::JustGenerated));
         let enc_details = EncryptedApplicationDetails::try_from((&enc_candidate, &enc_parent))
             .ok()
             .unwrap();

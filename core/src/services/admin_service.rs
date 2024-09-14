@@ -1,6 +1,7 @@
 use alohomora::policy::AnyPolicy;
 use async_trait::async_trait;
 use entity::{admin, admin_session};
+use portfolio_policies::key::KeyPolicy;
 use sea_orm::{prelude::Uuid, DbConn, IntoActiveModel};
 use alohomora::bbox::BBox;
 use alohomora::pure::{execute_pure, PrivacyPureRegion};
@@ -18,12 +19,12 @@ impl AdminService {
         db: &DbConn,
         admin_id: BBox<i32, FakePolicy>,
         password: BBox<String, FakePolicy>,
-    ) -> Result<BBox<String, AnyPolicy>, ServiceError> {
+    ) -> Result<BBox<String, KeyPolicy>, ServiceError> {
         let admin = Query::find_admin_by_id(db, admin_id).await?.ok_or(ServiceError::InvalidCredentials)?;
         let private_key_encrypted = admin.private_key;
 
         match my_decrypt_password(private_key_encrypted, password).await {
-            Ok(bbox) => Ok(bbox.specialize_policy().unwrap()),
+            Ok(bbox) => Ok(bbox),
             Err(e) => Err(e)
         }
     }
@@ -39,7 +40,7 @@ impl AuthenticableTrait for AdminService {
         admin_id: BBox<i32, FakePolicy>,
         password: BBox<String, FakePolicy>,
         ip_addr: BBox<String, FakePolicy>,
-    ) -> Result<(BBox<String, FakePolicy>, BBox<String, AnyPolicy>), ServiceError> {
+    ) -> Result<(BBox<String, FakePolicy>, BBox<String, KeyPolicy>), ServiceError> {
         let admin = Query::find_admin_by_id(db, admin_id).await?.ok_or(ServiceError::InvalidCredentials)?;
         let session_id = Self::new_session(db,
             &admin,
@@ -128,7 +129,7 @@ pub mod admin_tests {
 
         // TODO: is this the right parameter order for password encryption
         let enc_priv_key = crypto::encrypt_password(priv_key, password).await.unwrap();
-        let enc_priv_key = BBox::new(enc_priv_key, FakePolicy::new());
+        let enc_priv_key = BBox::new(enc_priv_key, KeyPolicy::new(None, portfolio_policies::key::KeySource::JustGenerated));
 
         let admin = admin::ActiveModel {
             name: Set(BBox::new("admin".to_string(), FakePolicy::new())),
@@ -155,7 +156,7 @@ pub mod admin_tests {
             name: Set(BBox::new("Admin".to_owned(), FakePolicy::new())),
             public_key: Set(BBox::new("age1u889gp407hsz309wn09kxx9anl6uns30m27lfwnctfyq9tq4qpus8tzmq5".to_owned(), FakePolicy::new())),
             // AGE-SECRET-KEY-14QG24502DMUUQDT2SPMX2YXPSES0X8UD6NT0PCTDAT6RH8V5Q3GQGSRXPS
-            private_key: Set(BBox::new("5KCEGk0ueWVGnu5Xo3rmpLoilcVZ2ZWmwIcdZEJ8rrBNW7jwzZU/XTcTXtk/xyy/zjF8s+YnuVpOklQvX3EC/Sn+ZwyPY3jokM2RNwnZZlnqdehOEV1SMm/Y".to_owned(), FakePolicy::new())),
+            private_key: Set(BBox::new("5KCEGk0ueWVGnu5Xo3rmpLoilcVZ2ZWmwIcdZEJ8rrBNW7jwzZU/XTcTXtk/xyy/zjF8s+YnuVpOklQvX3EC/Sn+ZwyPY3jokM2RNwnZZlnqdehOEV1SMm/Y".to_owned(), KeyPolicy::new(None, portfolio_policies::key::KeySource::JustGenerated))),
             // test
             password: Set(BBox::new("$argon2i$v=19$m=6000,t=3,p=10$WE9xCQmmWdBK82R4SEjoqA$TZSc6PuLd4aWK2x2WAb+Lm9sLySqjK3KLbNyqyQmzPQ".to_owned(), FakePolicy::new())),
             created_at: Set(BBox::new(Local::now().naive_local(), FakePolicy::new())),
