@@ -37,7 +37,7 @@ impl Policy for CandidateDataPolicy {
     }
 
     fn check(&self, context: &alohomora::context::UnprotectedContext, reason: alohomora::policy::Reason<'_>) -> bool {
-        let context: &ContextDataTypeOut = context.downcast_ref().unwrap();
+        // let context: &ContextDataTypeOut = context.downcast_ref().unwrap();
         // context.conn
 
         return true;

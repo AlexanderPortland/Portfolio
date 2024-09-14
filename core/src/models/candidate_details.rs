@@ -61,17 +61,17 @@ pub struct EncryptedApplicationDetails {
 }
 
 impl EncryptedString {
-    pub async fn new<P1: Policy + Clone + 'static, P2: Policy + Clone + 'static>(
+    pub async fn new<P1: Policy + Clone + 'static>(
         password_plain_text: BBox<String, P1>,
-        recipients: &Vec<BBox<String, P2>>,
+        recipients: &Vec<BBox<String, NoPolicy>>,
     ) -> Result<Self, ServiceError> {
         let encrypted_string = my_encrypt_password_with_recipients(password_plain_text, recipients).await?;
-        Ok(Self(encrypted_string))
+        Ok(Self(encrypted_string.into_any_policy()))
     }
 
-    pub async fn new_option<P1: Policy + Clone + 'static, P2: Policy + Clone + 'static>(
+    pub async fn new_option<P1: Policy + Clone + 'static>(
         password_plain_text: &BBox<String, P1>,
-        recipients: &Vec<BBox<String, P2>>,
+        recipients: &Vec<BBox<String, NoPolicy>>,
     ) -> Result<Option<Self>, ServiceError> {
         let password_plain_text = password_plain_text.clone().into_ppr(
             PrivacyPureRegion::new(|password: String|
@@ -87,7 +87,7 @@ impl EncryptedString {
             None => Ok(None),
             Some(password_plain_text) => {
                 let encrypted_string = my_encrypt_password_with_recipients(password_plain_text, recipients).await?;
-                Ok(Some(Self(encrypted_string)))
+                Ok(Some(Self(encrypted_string.into_any_policy())))
             }
         }
     }
@@ -612,7 +612,7 @@ pub mod tests {
     async fn test_encrypted_string_new() {
         let encrypted = EncryptedString::new(
             BBox::new("test".to_string(), FakePolicy::new()),
-            &vec![BBox::new(PUBLIC_KEY.to_string(), FakePolicy {})]
+            &vec![BBox::new(PUBLIC_KEY.to_string(), NoPolicy {})]
         ).await.unwrap();
 
         let enc_password = execute_pcr(encrypted.0, 
@@ -633,7 +633,7 @@ pub mod tests {
     async fn test_encrypted_string_decrypt() {
         let encrypted = EncryptedString::new(
             BBox::new("test".to_string(), FakePolicy::new()),
-            &vec![BBox::new(PUBLIC_KEY.to_string(), FakePolicy {})]
+            &vec![BBox::new(PUBLIC_KEY.to_string(), NoPolicy {})]
         ).await.unwrap();
 
         assert_eq!(

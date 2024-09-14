@@ -141,7 +141,7 @@ mod tests {
     #[tokio::test]
     async fn test_candidate_session_incorrect_password() {
         let db = &get_memory_sqlite_connection().await;
-
+        println!("before");
         let application = ApplicationService::create(
             crate::utils::db::get_test_context(&db).await,
             &BBox::new("".to_string(), KeyPolicy::new(None, portfolio_policies::key::KeySource::JustGenerated)),
@@ -149,7 +149,7 @@ mod tests {
             BBox::new(103151, CandidateDataPolicy::new(None)),
             &BBox::new(SECRET.to_string(), CandidateDataPolicy::new(None)),
             BBox::new("".to_string(), CandidateDataPolicy::new(None))).await.unwrap().0;
-
+            println!("after");
         // incorrect password
         assert!(ApplicationService::new_session(
             db,

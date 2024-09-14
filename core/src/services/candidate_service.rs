@@ -24,14 +24,15 @@ impl CandidateService {
         db: &DbConn,
         enc_personal_id_number: BBox<String, CandidateDataPolicy>,
     ) -> Result<candidate::Model, ServiceError> {
+        println!("level 2");
         let candidate = Mutation::create_candidate(
             db,
             enc_personal_id_number,
         )
             .await?;
-
+        println!("level 2a");
         PortfolioService::create_user_dir(context, candidate.id.clone()).await?;
-
+        println!("level 2b");
 
         Ok(candidate)
     }

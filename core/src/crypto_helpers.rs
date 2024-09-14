@@ -3,7 +3,7 @@ use age::decryptor::RecipientsDecryptor;
 use alohomora::bbox::BBox;
 use alohomora::context::Context;
 use alohomora::pcr::{execute_pcr, PrivacyCriticalRegion, Signature};
-use alohomora::policy::{AnyPolicy, Policy, PolicyAnd};
+use alohomora::policy::{AnyPolicy, NoPolicy, Policy, PolicyAnd};
 use alohomora::pure::{execute_pure, PrivacyPureRegion};
 use alohomora::testing::TestContextData;
 use alohomora::unbox;
@@ -60,10 +60,11 @@ pub async fn my_decrypt_password<P1: Policy + Clone + 'static, P2: Policy + Clon
     Ok(BBox::new(dec_res, ciphertext.policy().to_owned()))
 }
 
-pub async fn my_encrypt_password_with_recipients<P: Policy + Clone + 'static, P2: Policy + Clone + 'static>(
+pub async fn my_encrypt_password_with_recipients<P: Policy + Clone + 'static>(
     password_plain_text: BBox<String, P>,
-    recipients: &Vec<BBox<String, P2>>,
-) -> Result<BBox<String, AnyPolicy>, ServiceError> {
+    recipients: &Vec<BBox<String, NoPolicy>>,
+) -> Result<BBox<String, P>, ServiceError> {
+    // TODO: (aportlan) fix this shit
     let (unboxed_password_plain_text, unboxed_recipients): (String, Vec<String>) = execute_pcr((password_plain_text.clone(), recipients.clone()), 
     PrivacyCriticalRegion::new(|(plaintext, recipients): (String, Vec<String>), _, _|{
         (plaintext, recipients)
@@ -80,10 +81,7 @@ pub async fn my_encrypt_password_with_recipients<P: Policy + Clone + 'static, P2
         Ok(dec) => {
             // very hacky strategy, but since we can't combine policies manually with only references, 
             // we do some fake combination in a ppr and then put our desired value inside
-            let policy_box = execute_pure((password_plain_text.clone(), recipients.clone(), dec), PrivacyPureRegion::new(|(c, k, dec): (_, _, String)|{
-                dec
-            })).unwrap();
-            Ok(policy_box)
+            Ok(BBox::new(dec, password_plain_text.policy().clone()))
         },
         Err(e) => Err(e),
     }

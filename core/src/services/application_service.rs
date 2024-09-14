@@ -40,13 +40,14 @@ impl ApplicationService {
         personal_id_number: BBox<String, CandidateDataPolicy>,
     ) -> Result<(application::Model, Vec<application::Model>, BBox<String, CandidateDataPolicy>), ServiceError> {
         // Check if application id starts with 101, 102 or 103
+        println!("a");
         application_id.clone().into_ppr(PrivacyPureRegion::new(|id| {
             if !Self::is_application_id_valid(id) {
                 return Err(ServiceError::InvalidApplicationId);
             }
             Ok(())
         })).transpose()?;
-
+        println!("c");
         // Check if user with that application id already exists
         if Query::find_application_by_id(db, application_id.clone())
             .await?
@@ -55,17 +56,18 @@ impl ApplicationService {
             println!("user exists");
             return Err(ServiceError::UserAlreadyExists);
         }
-        
+        println!("c");
         let hashed_password = my_hash_password(plain_text_password.to_owned()).await?;
         let (pubkey, priv_key_plain_text) = crypto::create_identity();
         let pubkey = BBox::new(pubkey, NoPolicy::new());
         let bbox = BBox::new(priv_key_plain_text, KeyPolicy::new(None, portfolio_policies::key::KeySource::JustGenerated));
         // TODO: (aportlan) switch the args here
+        println!("d");
         let encrypted_priv_key: BBox<String, KeyPolicy> = my_encrypt_password(
             bbox,
             plain_text_password.to_owned(),
         ).await?;
-
+        println!("e");
         let (candidate, enc_personal_id_number) = Self::find_or_create_candidate_with_personal_id(
             context.clone(),
             application_id.clone(),
@@ -74,7 +76,7 @@ impl ApplicationService {
             &personal_id_number,
             &pubkey,
         ).await?;
-
+        println!("f");
         let application = Mutation::create_application(
             db,
             application_id,
@@ -84,7 +86,7 @@ impl ApplicationService {
             pubkey,
             encrypted_priv_key,
         ).await?;
-
+        println!("h");
         let applications = Query::find_applications_by_candidate_id(db, candidate.id).await?;
         if applications.len() >= 3 {
             for application in applications {
@@ -92,6 +94,7 @@ impl ApplicationService {
             }
             return Err(ServiceError::InternalServerError);
         }
+        println!("i");
         Ok(
             (
                 application,
@@ -111,6 +114,7 @@ impl ApplicationService {
         // enc_personal_id_number: &EncryptedString,
     ) -> Result<(candidate::Model, BBox<String, CandidateDataPolicy>), ServiceError> {
         let candidates = Query::list_candidates_full(db).await?;
+        println!("11");
         let ids_decrypted = futures::future::join_all(
             candidates.iter().map(|c| async {
                 let es = match EncryptedString::from(c.personal_identification_number.clone())
@@ -123,13 +127,14 @@ impl ApplicationService {
                 (c.id.clone(), es)
             })
         ).await;
-
+        println!("12");
         let found_ids: Vec<&(BBox<i32, CandidateDataPolicy>, BBox<String, CandidateDataPolicy>)> = ids_decrypted
             .iter()
             .filter(|(_, id)| id == personal_id_number)
             .collect();
-
+        println!("13");
         if let Some((candidate_id, _)) = found_ids.first() {
+            println!("14");
             Ok(
                 Self::find_linkable_candidate(db, 
                     application_id,
@@ -139,12 +144,14 @@ impl ApplicationService {
                 ).await?
             )
         } else {
+            println!("14b");
             let recipients = get_recipients(db, pubkey.clone()).await?;
+            println!("i got {:?} & {:?}", personal_id_number, recipients);
             let enc_personal_id_number: BBox<String, CandidateDataPolicy> = EncryptedString::new(
                 personal_id_number.clone(),
                 &recipients,
             ).await?.into();
-
+            println!("15b");
             Ok(
                 (
                     CandidateService::create(context, db, enc_personal_id_number.clone()).await?,
