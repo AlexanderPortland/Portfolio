@@ -2,7 +2,7 @@
 pub mod tests {
     use crate::rocket;
     use alohomora::{bbox::BBox, context::Context, policy::NoPolicy, testing::{BBoxClient, TestContextData}};
-    use portfolio_policies::{key::KeyPolicy, FakePolicy};
+    use portfolio_policies::{KeyPolicy, FakePolicy};
     use crate::pool::ContextDataType;
     use entity::admin;
     use once_cell::sync::OnceCell;

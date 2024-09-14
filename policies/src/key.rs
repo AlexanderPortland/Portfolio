@@ -1,15 +1,28 @@
 use alohomora::{orm::ORMPolicy, policy::{AnyPolicy, FrontendPolicy, Policy, PolicyAnd}};
 
+pub enum KeySource {
+    Database,
+    Cookie,
+    JustGenerated,
+}
+
+pub enum AnyAuth {
+    Application(ApplicationAuth),
+    Admin(AdminAuth),
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct KeyPolicy {
-    pub owner: Option<String>
+    pub owner_id: Option<String>,
+    pub source: KeySource,
+    // pub auth: Option<()>
     // just generated, orm, or cookie
 
         // custom accessible everywhere
 }
 
 impl KeyPolicy {
-    pub fn new(owner: Option<String>) -> Self {
+    pub fn new(id: Option<String>, source: KeySource) -> Self {
         Self {
             owner
         }
@@ -26,15 +39,49 @@ impl Policy for KeyPolicy {
     }
 
     fn check(&self, context: &alohomora::context::UnprotectedContext, reason: alohomora::policy::Reason<'_>) -> bool {
-        println!("checking key");
-        // 1. check must be for setting a cookie
-        let crate::Reason::Cookie(c) = reason else {
-            return false;
-        };
+        println!("checking key policy");
 
-        // 2. check must be for the right owner
+        match self.source {
+            // 1. if coming from db -> should only go to cookie for right person
+            KeySource::Database => {
+                // 1a. it's for a key cookie
+                let crate::Reason::Cookie(c) = reason else {
+                    println!("NOT A COOKIE");
+                    return false;
+                };
+                println!("for cookie {}", c);
+                if c.ne("key") {
+                    println!("NOT FOR THE KEY COOKIE");
+                    return false;
+                }
 
-        // 3. check must be at the login endpoint?
+                // 1b. TODO: right owner
+
+                // 1c. login endpoint
+                if (context.route != "/candidate/login" && context.route != "/admin/login") {
+                    println!("{} is not a chill route", context.route);
+                }
+            },
+            // 2. if coming from cookie -> should only go to critical regions
+            KeySource::Cookie => {
+                if let crate::Reason::Custom(_) = reason {
+                    // all custom sinks are chill
+                    return true;
+                } else {
+                    return false;
+                }
+            },
+            // 3. if coming from just generated -> should only go to db
+            KeySource::JustGenerated => {
+                if let crate::Reason::DB(_, _) = reason {
+                    // TODO: specialize db sink??
+                    return true;
+                } else {
+                    return false;
+                }
+            }
+            _ => todo!(),
+        }
 
         return true;
     }
@@ -54,39 +101,44 @@ impl Policy for KeyPolicy {
     }
 
     fn join_logic(&self, other: Self) -> Result<Self, ()> where Self: Sized {
-        let (Some(own1), Some(own2)) = (self.owner.clone(), other.owner) else {
-            return Ok(KeyPolicy { owner: None });
-        };
-        if own1.eq(&own2) {
-            return Ok(KeyPolicy { owner: None });
-        } else {
-            return Ok(KeyPolicy { owner: Some(own1) });
-        }
+        todo!()
     }
 }
 
 // ORM Policy
 impl ORMPolicy for KeyPolicy {
     fn empty() -> Self where Self: Sized {
-        KeyPolicy { owner: None }
+        // KeyPolicy { owner: None }
+        todo!()
     }
 
     fn from_result(result: &sea_orm::QueryResult) -> Self
         where
             Self: Sized {
         println!("getting from result");
-        let name: String = result.try_get("", "name").unwrap();
+        let id: String = result.try_get("", "id").unwrap();
         // should this panic? or should this just return with None?
         println!("got result {}", name);
         KeyPolicy{
-            owner: Some(name)
+            owner_id: Some(name),
+            source: KeySource::Database,
         }
     }
 }
 
 // optionally store duplicate of auth struct in context
 impl FrontendPolicy for KeyPolicy {
-
+    fn from_cookie<'a, 'r>(
+            name: &str,
+            cookie: &'a rocket::http::Cookie<'static>,
+            request: &'a rocket::Request<'r>) -> Self where Self: Sized {
+        
+    }
+    fn from_request<'a, 'r>(request: &'a rocket::Request<'r>) -> Self
+            where
+                Self: Sized {
+        
+    }
 }
 
 // Frontend Policy (I don't think we actually need this bc it should be applied on backend only)

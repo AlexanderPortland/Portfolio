@@ -42,7 +42,7 @@ impl Query {
 mod tests {
     use alohomora::bbox::BBox;
     use entity::{session, admin, admin_session};
-    use portfolio_policies::key::KeyPolicy;
+    use portfolio_policies::KeyPolicy;
     use sea_orm::{prelude::Uuid, ActiveModelTrait, Set};
     use portfolio_policies::FakePolicy;
 

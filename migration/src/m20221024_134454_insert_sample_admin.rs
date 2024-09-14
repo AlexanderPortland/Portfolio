@@ -5,7 +5,7 @@ use sea_orm_migration::{
     prelude::*,
     sea_orm::{ActiveModelTrait, Set},
 };
-use portfolio_policies::{key::KeyPolicy, FakePolicy};
+use portfolio_policies::{KeyPolicy, FakePolicy};
 
 #[derive(DeriveMigrationName)]
 pub struct Migration {

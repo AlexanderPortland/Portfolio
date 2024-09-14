@@ -463,7 +463,7 @@ impl From<(&candidate::Model, &Vec<parent::Model>)> for EncryptedApplicationDeta
 pub mod tests {
     use std::sync::Mutex;
 
-    use portfolio_policies::{key::KeyPolicy, FakePolicy};
+    use portfolio_policies::{KeyPolicy, FakePolicy};
     use alohomora::{bbox::BBox, pcr::{execute_pcr, PrivacyCriticalRegion, Signature}, policy::AnyPolicy, pure::PrivacyPureRegion};
     use chrono::Local;
     use entity::admin;

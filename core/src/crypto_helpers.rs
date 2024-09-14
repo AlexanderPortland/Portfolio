@@ -9,7 +9,7 @@ use alohomora::testing::TestContextData;
 use alohomora::unbox;
 use argon2::Argon2;
 use futures::channel::mpsc::Receiver;
-use portfolio_policies::key::KeyPolicy;
+use portfolio_policies::KeyPolicy;
 use crate::error::ServiceError;
 
 pub async fn my_hash_password<P: Policy + Clone + 'static>(password_plain_text: BBox<String, P>) -> Result<BBox<String, P>, ServiceError> {

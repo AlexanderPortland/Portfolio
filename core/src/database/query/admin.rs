@@ -45,7 +45,7 @@ mod tests {
     use alohomora::bbox::BBox;
     use alohomora::pcr::{execute_pcr, PrivacyCriticalRegion, Signature};
     use entity::admin;
-    use portfolio_policies::key::KeyPolicy;
+    use portfolio_policies::KeyPolicy;
     use sea_orm::{ActiveModelTrait, Set};
     use portfolio_policies::FakePolicy;
 

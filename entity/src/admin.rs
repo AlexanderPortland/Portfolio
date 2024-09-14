@@ -2,7 +2,7 @@
 
 use sea_orm::entity::prelude::*;
 use alohomora::bbox::BBox;
-use portfolio_policies::{key::KeyPolicy, FakePolicy};
+use portfolio_policies::{KeyPolicy, FakePolicy};
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel)]
 #[sea_orm(table_name = "admin")]
