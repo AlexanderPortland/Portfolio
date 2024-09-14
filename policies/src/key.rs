@@ -48,17 +48,19 @@ impl Policy for KeyPolicy {
                     println!("NOT A COOKIE");
                     return false;
                 };
+                const COOKIE_NAME: &str = "key";
                 println!("for cookie {}", c);
-                if c.ne("key") {
-                    println!("NOT FOR THE KEY COOKIE");
+                if c.ne(COOKIE_NAME) {
+                    println!("NOT FOR THE {COOKIE_NAME} COOKIE");
                     return false;
                 }
 
                 // 1b. TODO: right owner
 
                 // 1c. login endpoint
-                if (context.route != "/candidate/login" && context.route != "/admin/login") {
+                if context.route != "/candidate/login" && context.route != "/admin/login" {
                     println!("{} is not a chill route", context.route);
+                    return false;
                 }
             },
             // 2. if coming from cookie -> should only go to critical regions
