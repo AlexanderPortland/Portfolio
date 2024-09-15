@@ -8,6 +8,7 @@ use sea_orm_migration::sea_orm::QueryResult;
 pub mod data;
 pub mod context;
 pub mod key;
+pub mod request;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct FakePolicy {}

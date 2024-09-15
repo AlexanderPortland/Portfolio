@@ -1,4 +1,4 @@
-use alohomora::{orm::ORMPolicy, policy::{AnyPolicy, FrontendPolicy, Policy, PolicyAnd}};
+use alohomora::{orm::ORMPolicy, policy::{AnyPolicy, FrontendPolicy, Policy, PolicyAnd}, AlohomoraType};
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum KeySource {

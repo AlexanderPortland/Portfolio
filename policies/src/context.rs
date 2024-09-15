@@ -1,17 +1,27 @@
-use std::{collections::HashMap, marker::PhantomData, sync::Arc};
+use std::{collections::HashMap, marker::PhantomData, ops::Deref, sync::Arc};
 use alohomora::{bbox::BBox, db::BBoxConn, policy::NoPolicy, rocket::BBoxJson, AlohomoraType};
+use sea_orm_rocket::Database;
 use std::sync::Mutex;
 use ::rocket::http::Status;
 use alohomora::rocket::{BBoxRequest, BBoxRequestOutcome, FromBBoxRequest};
 use ::rocket::outcome::IntoOutcome;
+
+use crate::request::{AdminLoginRequest, LoginRequest};
+
+// pub enum PotentialLoginRequest {
+//     Admin(crate::request::AdminLoginRequest),
+//     Candidate(crate::request::LoginRequest),
+//     None
+// }
 
 // #[derive(Clone)]
 pub struct RealContextDataType<Db: sea_orm_rocket::Database>  {
     pub session_id: Option<BBox<String, NoPolicy>>,
     pub key: Option<BBox<String, NoPolicy>>,
     pub conn: &'static sea_orm::DatabaseConnection,  // sea_orm::DatabaseConnection,
+    pub admin_login: Option<crate::request::AdminLoginRequest>,
+    pub candidate_login: Option<crate::request::LoginRequest>,
     pub phantom: PhantomData<Db>,
-    //pub db: Arc<Mutex<BBoxConn>>,
 }
 
 impl<Db: sea_orm_rocket::Database> Clone for RealContextDataType<Db> {
@@ -19,6 +29,8 @@ impl<Db: sea_orm_rocket::Database> Clone for RealContextDataType<Db> {
         RealContextDataType{
             session_id: self.session_id.clone(),
             key: self.key.clone(),
+            admin_login: None,
+            candidate_login: None,
             conn: self.conn,
             phantom: self.phantom,
         }
@@ -86,11 +98,6 @@ impl<'a, 'r, P: sea_orm_rocket::Pool<Connection = sea_orm::DatabaseConnection>, 
     type BBoxError = ();
     
     async fn from_bbox_request(request: BBoxRequest<'a, 'r>,) -> BBoxRequestOutcome<Self, Self::BBoxError> {
-        // let login: BBoxJson<LoginRequest> = match request.guard().await {
-        //     BBoxRequestOutcome::Success(f) => f,
-        //     _ => panic!(""),
-        // };
-
         let session_id: Option<BBox<String, NoPolicy>> = request.cookies().get("id")
             .and_then(|k| Some(k.value().to_owned()));
         
@@ -111,11 +118,39 @@ impl<'a, 'r, P: sea_orm_rocket::Pool<Connection = sea_orm::DatabaseConnection>, 
                 key,
                 session_id,
                 conn,
+                admin_login: None,
+                candidate_login: None,
                 phantom: PhantomData,
-                //conn,
-                //db: todo!()
             })
         }).into_outcome((Status::InternalServerError, ()))
+    }
+}
+
+#[rocket::async_trait]
+impl <'a, 'r, Db: Database> alohomora::rocket::FromBBoxRequestAndData<'a, 'r, alohomora::rocket::BBoxJson<AdminLoginRequest>> for RealContextDataType<Db> where 
+    RealContextDataType<Db>: FromBBoxRequest<'a, 'r> {
+    type BBoxError = ();
+    async fn from_bbox_request_and_data(
+        request: BBoxRequest<'a, 'r>,
+        data: &'_ alohomora::rocket::BBoxJson<AdminLoginRequest>,
+    ) -> BBoxRequestOutcome<Self, Self::BBoxError> {
+        let mut context = RealContextDataType::<Db>::from_bbox_request(request).await.unwrap();
+        context.admin_login = Some(data.deref().to_owned());
+        rocket::outcome::Outcome::Success(context)
+    }
+}
+
+#[rocket::async_trait]
+impl <'a, 'r, Db: Database> alohomora::rocket::FromBBoxRequestAndData<'a, 'r, alohomora::rocket::BBoxJson<LoginRequest>> for RealContextDataType<Db> where 
+    RealContextDataType<Db>: FromBBoxRequest<'a, 'r> {
+    type BBoxError = ();
+    async fn from_bbox_request_and_data(
+        request: BBoxRequest<'a, 'r>,
+        data: &'_ alohomora::rocket::BBoxJson<LoginRequest>,
+    ) -> BBoxRequestOutcome<Self, Self::BBoxError> {
+        let mut context = RealContextDataType::<Db>::from_bbox_request(request).await.unwrap();
+        context.candidate_login = Some(data.deref().to_owned());
+        rocket::outcome::Outcome::Success(context)
     }
 }
 
