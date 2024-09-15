@@ -401,7 +401,7 @@ impl ApplicationService {
                     .map(|a| a.id.clone().into_any_policy())
                     .collect(),
                 personal_id_number,
-                password: BBox::new(new_password_plain, AnyPolicy::new(FakePolicy::new())),
+                password: BBox::new(new_password_plain, AnyPolicy::new(CandidateDataPolicy::new(None))),
             }
         )
     }
@@ -581,7 +581,7 @@ mod application_tests {
 
         // The ip and password for the login happens with.
         let ip = BBox::new("127.0.0.1".to_string(), FakePolicy::new());
-        let password = BBox::new("test".to_string(), FakePolicy::new());
+        let password = BBox::new("test".to_string(), CandidateDataPolicy::new(None));
         assert!(
             ApplicationService::login(&db, application.id.clone().into_any_policy(), password.clone().into_any_policy(), ip.clone()).await.is_ok()
         );
