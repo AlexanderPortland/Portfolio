@@ -11,6 +11,7 @@ use crate::context::ContextDataTypeOut;
 #[derive(Clone, Serialize, Debug, PartialEq)]
 pub struct CandidateDataPolicy {
     session_id: Option<String>, // only set for data coming from client POST
+    // get
     candidate_id: Option<i32>,  // only set for data coming from DB
 }
 
@@ -68,11 +69,11 @@ fn does_session_exist(is_admin: bool, db: &DatabaseConnection, session_id: Strin
         rocket::tokio::runtime::Handle::current().block_on(res).unwrap()
     });
     
-    if candidate_id.is_some() {
-        println!("res is {:?}", result);
-        println!("id should be {:?}", result.get(0).unwrap().try_get::<i32>("", "candidate_id"));
-        // todo!()
-    }
+    // if candidate_id.is_some() {
+    //     println!("res is {:?}", result);
+    //     println!("id should be {:?}", result.get(0).unwrap().try_get::<i32>("", "candidate_id"));
+    //     // todo!()
+    // }
     result.len() >= 1
 }
 
@@ -145,12 +146,14 @@ impl Policy for CandidateDataPolicy {
                     return true;
                 }
 
-                // candidate check
+                // candidate (same session return result)
                 if let Some(session_id) = self.session_id.clone() {
-                    println!("from cand");
-                    return does_session_exist(false, &context.conn, session_id, None);
+                    println!("cand same session check");
+                    return session_id == context.session_id.clone().unwrap();
                 }
+                // candidate check
                 if let Some(_) = self.candidate_id {
+                    println!("from cand check");
                     return does_session_exist(false, &context.conn, context.session_id.clone().unwrap(), self.candidate_id);
                 }
                 return false

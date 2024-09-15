@@ -2,22 +2,32 @@ use alohomora::{orm::ORMPolicy, policy::{AnyPolicy, FrontendPolicy, Policy, Poli
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum KeySource {
+    // Database(Option<String>), // owner_id
     Database,
     Cookie,
     JustGenerated,
 }
 
-// this'll work, but we could just take the first element of the tuple
-// (we don't need the pk and we dont wanna accidentally policy check it inside our policy yk)
+// [for DB case checking right OWNER]
+// (->) with data we have
+//     - person's id
+// (<-) with request we have
+// * login data (AdminLoginRequest | LoginRequest)
+//     - adminId & password
+//     - applicationId & password
 
-// pub enum AnyAuth {
-//     Application(ApplicationAuth),
-//     Admin(AdminAuth),
-// }
+
+// KeyPolicy use:
+// 1. when coming from DB...
+//    - only goes to COOKIE of right OWNER through right ENDPOINT
+// 2. when coming from user...
+//    - only used in custom
+// 3. after being generated...
+//    - only to db
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct KeyPolicy {
-    pub owner_id: Option<String>,
+    pub owner_id: Option<String>, // either adminId or applicationId!!
     pub source: KeySource,
     // pub auth: Option<()>
     // just generated, orm, or cookie
@@ -41,7 +51,7 @@ impl Policy for KeyPolicy {
     }
 
     fn check(&self, context: &alohomora::context::UnprotectedContext, reason: alohomora::policy::Reason<'_>) -> bool {
-        println!("checking key policy");
+        println!("checking key policy w/ owner {:?}", self.owner_id);
 
         match self.source {
             // 1. if coming from db -> should only go to cookie for right person
@@ -51,6 +61,7 @@ impl Policy for KeyPolicy {
                     println!("NOT A COOKIE");
                     return false;
                 };
+                // todo!();
                 const COOKIE_NAME: &str = "key";
                 println!("for cookie {}", c);
                 if c.ne(COOKIE_NAME) {
@@ -59,6 +70,9 @@ impl Policy for KeyPolicy {
                 }
 
                 // 1b. TODO: right owner
+                // check to make sure login post data contains the right applicationId
+
+                // (potentially) check db to make sure password matches password hash
 
                 // 1c. login endpoint
                 if context.route != "/candidate/login" && context.route != "/admin/login" {
