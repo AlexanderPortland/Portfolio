@@ -2,7 +2,7 @@ use core::panic;
 
 use alohomora::{orm::ORMPolicy, policy::{AnyPolicy, FrontendPolicy, Policy, PolicyAnd}, testing::TestContextData, AlohomoraType};
 use rocket::{data, figment::value::magic::Either, State};
-use sea_orm::{ConnectionTrait, Statement};
+use sea_orm::{ConnectionTrait, DatabaseConnection, Statement};
 use serde::Serialize;
 use mysql::prelude::Queryable;
 
@@ -37,6 +37,32 @@ impl Default for CandidateDataPolicy {
         println!("defaulting!!");
         CandidateDataPolicy { session_id: None, candidate_id: None }
     }
+}
+
+fn does_session_exist(is_admin: bool, db: &DatabaseConnection, session_id: String, candidate_id: Option<i32>) -> bool {
+    println!("seeing if session exists w/ as admin {is_admin}, session_id {session_id}, candidate_id: {:?}", candidate_id);
+    let session_id = sea_orm::prelude::Uuid::parse_str(session_id.as_str()).unwrap();
+    let table_name = if is_admin { String::from("admin_session") } else { String::from("session") };
+    let candidate_id_phrase = if let Some(candidate_id) = candidate_id {
+        // format!(" and candidate_id = {}", candidate_id)
+        // have to do another db query here to get gov id from candidate_id
+        String::from("")
+    } else { String::from("") };
+    let result = rocket::tokio::task::block_in_place(||{
+        let res = db.query_all(Statement::from_string(
+                db.get_database_backend(),
+                // format!("select * from admin_session where id = {};", session_id),
+                format!("select * from {table_name} where id=0x{:x} {candidate_id_phrase};", session_id.as_u128()),
+            ));
+        rocket::tokio::runtime::Handle::current().block_on(res).unwrap()
+    });
+    
+    // if candidate_id.is_some() {
+    //     println!("res is {:?}", result);
+    //     println!("id should be {:?}", result.get(0).unwrap().try_get::<i32>("", "candidate_id"));
+    //     todo!()
+    // }
+    result.len() >= 1
 }
 
 impl Policy for CandidateDataPolicy {
@@ -102,30 +128,21 @@ impl Policy for CandidateDataPolicy {
                 //     println!("len is {:?}", result.len());
                 //     todo!();
                 // }
-                    // println!("session id is {session_id}");
-                    // println!("session id is {}", session_id.as_u128());
-                    // println!("session id is {}", session_id.as_simple());
-                    // println!("session id is 0X{:X}", session_id.as_u128());
 
                 // admin check
-                let result = rocket::tokio::task::block_in_place(||{
-                    let res = context.conn.query_all(Statement::from_string(
-                            context.conn.get_database_backend(),
-                            // format!("select * from admin_session where id = {};", session_id),
-                            format!("select * from admin_session where id=0x{:x};", session_id.as_u128()),
-                        ));
-                    let result = rocket::tokio::runtime::Handle::current().block_on(res);
-                    result.unwrap()
-                });
-                if result.len() >= 1 {
+                if does_session_exist(true, &context.conn, context.session_id.clone().unwrap(), None) {
                     return true;
                 }
-                
-                todo!()
-                // let res = context.conn.execute(Statement::from_string(
-                //     context.conn.get_database_backend(),
-                //     String::from(""),
-                // )).await?;
+
+                // candidate check
+                if let Some(session_id) = self.session_id.clone() {
+                    println!("from cand");
+                    return does_session_exist(false, &context.conn, session_id, None);
+                }
+                if let Some(_) = self.candidate_id {
+                    return does_session_exist(false, &context.conn, context.session_id.clone().unwrap(), self.candidate_id);
+                }
+                return false
             },
             _ => {
                 println!("other");
@@ -209,7 +226,7 @@ impl FrontendPolicy for CandidateDataPolicy {
             // cookie id is a session id which maps in the sessions db table to candidate_id which is what we want
             Some(session_id) => {
                 println!("yahoo i got id {session_id}");
-                let session_id = Some(session_id.to_string());
+                let session_id = Some(session_id.value().to_string());
                 println!("(or as a string) {:?}", session_id);
                 CandidateDataPolicy {
                     session_id,
