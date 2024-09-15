@@ -29,25 +29,21 @@ impl<Db: sea_orm_rocket::Database> Clone for RealContextDataType<Db> {
         RealContextDataType{
             session_id: self.session_id.clone(),
             key: self.key.clone(),
-            admin_login: None,
-            candidate_login: None,
+            admin_login: self.admin_login.clone(),
+            candidate_login: self.candidate_login.clone(),
             conn: self.conn,
             phantom: self.phantom,
         }
     }
 }
 
-// impl<Db> Clone for RealContextDataType<Db> {
-//     fn clone(&self) -> Self {
-//         todo!()
-//     }
-// }
-
 #[derive(Debug)]
 pub struct ContextDataTypeOut {
     pub session_id: Option<String>,
     pub key: Option<String>,
     pub conn: &'static sea_orm::DatabaseConnection,
+    pub admin_login: Option<crate::request::AdminLoginRequestOut>,
+    pub candidate_login: Option<crate::request::LoginRequestOut>,
 }
 
 impl<Db: sea_orm_rocket::Database> AlohomoraType for RealContextDataType<Db> {
@@ -62,21 +58,29 @@ impl<Db: sea_orm_rocket::Database> AlohomoraType for RealContextDataType<Db> {
                     }
                     _ => panic!("bad"),
                 };
-
-                Ok(ContextDataTypeOut {
+                let c = ContextDataTypeOut {
                     session_id: Option::<BBox<String, NoPolicy>>::from_enum(map.remove("session_id").unwrap())?,
                     key: Option::<BBox<String, NoPolicy>>::from_enum(map.remove("key").unwrap())?,
                     conn: *conn,
-                })
+                    admin_login: Option::<AdminLoginRequest>::from_enum(map.remove("admin_login").unwrap())?,
+                    candidate_login: Option::<LoginRequest>::from_enum(map.remove("candidate_login").unwrap())?,
+                };
+                println!("after from we have {:?}", c);
+                Ok(c)
             },
             _ => panic!("bad"),
         }
     }
     fn to_enum(self) -> alohomora::AlohomoraTypeEnum {
+        println!("before to we have admin: {:?}", self.admin_login);
+        println!("before to we have candidate: {:?}", self.candidate_login);
+        // todo!();
         let mut map = HashMap::new();
         map.insert(String::from("session_id"), self.session_id.to_enum());
         map.insert(String::from("key"), self.key.to_enum());
         map.insert(String::from("conn"), alohomora::AlohomoraTypeEnum::Value(Box::new(self.conn)));
+        map.insert(String::from("admin_login"), self.admin_login.to_enum());
+        map.insert(String::from("candidate_login"), self.candidate_login.to_enum());
         alohomora::AlohomoraTypeEnum::Struct(map)
     }
 }
@@ -98,6 +102,9 @@ impl<'a, 'r, P: sea_orm_rocket::Pool<Connection = sea_orm::DatabaseConnection>, 
     type BBoxError = ();
     
     async fn from_bbox_request(request: BBoxRequest<'a, 'r>,) -> BBoxRequestOutcome<Self, Self::BBoxError> {
+
+        println!("in from normal bbox req");
+        // todo!();
         let session_id: Option<BBox<String, NoPolicy>> = request.cookies().get("id")
             .and_then(|k| Some(k.value().to_owned()));
         
@@ -134,8 +141,13 @@ impl <'a, 'r, Db: Database> alohomora::rocket::FromBBoxRequestAndData<'a, 'r, al
         request: BBoxRequest<'a, 'r>,
         data: &'_ alohomora::rocket::BBoxJson<AdminLoginRequest>,
     ) -> BBoxRequestOutcome<Self, Self::BBoxError> {
+        println!("in from with data ADMIN");
         let mut context = RealContextDataType::<Db>::from_bbox_request(request).await.unwrap();
         context.admin_login = Some(data.deref().to_owned());
+        println!("have cointext to prove it{:?}", context.admin_login);
+        println!("have sesh id to prove it{:?}", context.session_id);
+        println!("have key to prove it{:?}", context.key);
+        // todo!();
         rocket::outcome::Outcome::Success(context)
     }
 }
@@ -148,8 +160,11 @@ impl <'a, 'r, Db: Database> alohomora::rocket::FromBBoxRequestAndData<'a, 'r, al
         request: BBoxRequest<'a, 'r>,
         data: &'_ alohomora::rocket::BBoxJson<LoginRequest>,
     ) -> BBoxRequestOutcome<Self, Self::BBoxError> {
+        println!("in from with data CAND");
         let mut context = RealContextDataType::<Db>::from_bbox_request(request).await.unwrap();
         context.candidate_login = Some(data.deref().to_owned());
+        println!("have cointext to prove it {:?}", context.candidate_login);
+        // todo!();
         rocket::outcome::Outcome::Success(context)
     }
 }

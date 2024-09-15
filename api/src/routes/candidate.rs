@@ -26,7 +26,8 @@ use crate::{guards::request::auth::ApplicationAuth, pool::Db, requests};
 
 use super::to_custom_error;
 
-#[post("/login", data = "<login_form>")]
+// #[post("/login", data = "<login_form>")]
+#[route(POST, "/login", data = "<login_form>", with_data = "<context>")]
 pub async fn login(
     conn: Connection<'_, Db>,
     login_form: BBoxJson<LoginRequest>,

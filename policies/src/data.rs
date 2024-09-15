@@ -1,7 +1,7 @@
 use core::panic;
 
-use alohomora::{orm::ORMPolicy, policy::{AnyPolicy, FrontendPolicy, Policy, PolicyAnd}, testing::TestContextData, AlohomoraType};
-use rocket::{data, figment::value::magic::Either, State};
+use alohomora::{orm::ORMPolicy, policy::{AnyPolicy, FrontendPolicy, NoPolicy, Policy, PolicyAnd}, testing::TestContextData, AlohomoraType};
+use rocket::{data, figment::value::magic::Either, futures::stream::Any, State};
 use sea_orm::{ConnectionTrait, DatabaseConnection, Statement};
 use serde::Serialize;
 use mysql::prelude::Queryable;
@@ -168,6 +168,10 @@ impl Policy for CandidateDataPolicy {
             let other = other.specialize().unwrap();
             return Ok(AnyPolicy::new(self.join_logic(other)?));
         } else {
+            println!("data stacking polciies w/ other {:?}", other);
+            if other == AnyPolicy::new(NoPolicy::new()){
+                return Ok(AnyPolicy::new(self.clone()));
+            }
             return Ok(AnyPolicy::new(PolicyAnd::new(
                 AnyPolicy::new(self.clone()), 
                 other)

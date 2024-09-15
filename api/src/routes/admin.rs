@@ -18,8 +18,8 @@ use crate::{guards::request::auth::AdminAuth, pool::{ContextDataType, Db}, reque
 
 use super::to_custom_error;
 
-#[post("/login", data = "<login_form>")]
-// #[route(POST, "/login", data = "<login_form>", with_data = "<context>")]
+// #[post("/login", data = "<login_form>")]
+#[route(POST, "/login", data = "<login_form>", with_data = "<context>")]
 pub async fn login(
     conn: Connection<'_, Db>,
     login_form: BBoxJson<AdminLoginRequest>,

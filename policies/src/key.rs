@@ -1,5 +1,7 @@
 use alohomora::{orm::ORMPolicy, policy::{AnyPolicy, FrontendPolicy, Policy, PolicyAnd}, AlohomoraType};
 
+use crate::context::ContextDataTypeOut;
+
 #[derive(Clone, Debug, PartialEq)]
 pub enum KeySource {
     // Database(Option<String>), // owner_id
@@ -56,6 +58,9 @@ impl Policy for KeyPolicy {
         match self.source {
             // 1. if coming from db -> should only go to cookie for right person
             KeySource::Database => {
+                let spec_context: &ContextDataTypeOut = context.downcast_ref().unwrap();
+                println!("have context {:?}", spec_context);
+                
                 // 1a. it's for a key cookie
                 let crate::Reason::Cookie(c) = reason else {
                     println!("NOT A COOKIE");
@@ -71,12 +76,31 @@ impl Policy for KeyPolicy {
 
                 // 1b. TODO: right owner
                 // check to make sure login post data contains the right applicationId
+                if let Some(req) = spec_context.admin_login.clone() {
+                    if req.adminId.to_string() != self.owner_id.clone().unwrap() {
+                        println!("req id {} isnt my owner id {}", req.adminId.to_string(), self.owner_id.clone().unwrap());
+                        return false; 
+                    } else {
+                        println!("req id {} is my owner id {}! so you chill", req.adminId.to_string(), self.owner_id.clone().unwrap());
+                    }
+                }
+                if let Some(req) = spec_context.candidate_login.clone() {
+                    if req.applicationId.to_string() != self.owner_id.clone().unwrap() {
+                        println!("req id {} isnt my owner id {}", req.applicationId.to_string(), self.owner_id.clone().unwrap());
+                        todo!();
+                        return false; 
+                    } else {
+                        println!("req id {} is my owner id {}! so you chill", req.applicationId.to_string(), self.owner_id.clone().unwrap());
+                    }
+                }
 
+                // todo!();
                 // (potentially) check db to make sure password matches password hash
 
                 // 1c. login endpoint
                 if context.route != "/candidate/login" && context.route != "/admin/login" {
                     println!("{} is not a chill route", context.route);
+                    // todo!();
                     return false;
                 }
             },
@@ -110,6 +134,7 @@ impl Policy for KeyPolicy {
             let other = other.specialize::<KeyPolicy>().unwrap();
             Ok(AnyPolicy::new(self.join_logic(other)?))
         } else {
+            println!("stacking polciies");
             //Policies must be stacked
             Ok(AnyPolicy::new(PolicyAnd::new(
                 AnyPolicy::new(self.clone()),
