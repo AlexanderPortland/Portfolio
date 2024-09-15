@@ -136,23 +136,6 @@ impl Policy for CandidateDataPolicy {
                 let session_id = sea_orm::prelude::Uuid::parse_str(session_id.as_str()).unwrap();
 
                 println!("got it!");
-                
-                // if let Some(candidate_id) = self.candidate_id {
-                //     // candidate check (your session_id exists for the data's candidate_id)
-                //     let session_id = context.session_id.clone().unwrap();
-                //     println!("session id is {session_id}");
-                //     let result = rocket::tokio::task::block_in_place(||{
-                //         let res = context.conn.query_all(Statement::from_string(
-                //                 context.conn.get_database_backend(),
-                //                 format!("select * from session where id = {} and candidate_id = {};", session_id, candidate_id),
-                //             ));
-                //         let result = rocket::tokio::runtime::Handle::current().block_on(res);
-                //         result.unwrap()
-                //     });
-                //     println!("got query response {:?}", result);
-                //     println!("len is {:?}", result.len());
-                //     todo!();
-                // }
 
                 // admin check
                 if does_session_exist(true, &context.conn, context.session_id.clone().unwrap(), None, None) {
@@ -233,9 +216,9 @@ impl ORMPolicy for CandidateDataPolicy {
             // in parent table
             println!("in parent table w/ result {:?}", r);
             CandidateDataPolicy { 
-                application_id: Some(r),
+                candidate_id: Some(r),
                 session_id: None,
-                candidate_id: None,
+                application_id: None,
             }
         } else {
             // in the candidate table table
