@@ -44,9 +44,20 @@ fn does_session_exist(is_admin: bool, db: &DatabaseConnection, session_id: Strin
     let session_id = sea_orm::prelude::Uuid::parse_str(session_id.as_str()).unwrap();
     let table_name = if is_admin { String::from("admin_session") } else { String::from("session") };
     let candidate_id_phrase = if let Some(candidate_id) = candidate_id {
+        // TODO: validate session based on candidate_id
         // format!(" and candidate_id = {}", candidate_id)
         // have to do another db query here to get gov id from candidate_id
+        // let candidate_gov_id = rocket::tokio::task::block_in_place(||{
+        //     let res = db.query_all(Statement::from_string(
+        //             db.get_database_backend(),
+        //             // format!("select * from admin_session where id = {};", session_id),
+        //             // format!("select * from application where id={candidate_id} ;"),
+        //             format!("select * from application;"),
+        //         ));
+        //     rocket::tokio::runtime::Handle::current().block_on(res).unwrap().first().unwrap().try_get::<i32>("", "candidate_id")
+        // }).unwrap();
         String::from("")
+        // format!(" and candidate_id = {}", candidate_gov_id)
     } else { String::from("") };
     let result = rocket::tokio::task::block_in_place(||{
         let res = db.query_all(Statement::from_string(
@@ -57,11 +68,11 @@ fn does_session_exist(is_admin: bool, db: &DatabaseConnection, session_id: Strin
         rocket::tokio::runtime::Handle::current().block_on(res).unwrap()
     });
     
-    // if candidate_id.is_some() {
-    //     println!("res is {:?}", result);
-    //     println!("id should be {:?}", result.get(0).unwrap().try_get::<i32>("", "candidate_id"));
-    //     todo!()
-    // }
+    if candidate_id.is_some() {
+        println!("res is {:?}", result);
+        println!("id should be {:?}", result.get(0).unwrap().try_get::<i32>("", "candidate_id"));
+        // todo!()
+    }
     result.len() >= 1
 }
 
@@ -103,9 +114,9 @@ impl Policy for CandidateDataPolicy {
                     println!("test context data");
                     todo!()
                 } else {
-                    println!("real context data");
                     context.downcast_ref().unwrap()
                 };
+                println!("real context data {:?}", context);
 
                 let session_id = context.session_id.clone().unwrap();
                 let session_id = sea_orm::prelude::Uuid::parse_str(session_id.as_str()).unwrap();
@@ -183,14 +194,19 @@ impl Policy for CandidateDataPolicy {
 
 impl ORMPolicy for CandidateDataPolicy {
     fn from_result(result: &sea_orm::prelude::QueryResult) -> Self {
-        let candidate_id: i32 = match result.try_get("", "candidate_id") {
-            Ok(r) => r,
+        let candidate_id = match result.try_get::<i32>("", "candidate_id") {
+            Ok(r) => {
+                println!("from 1st");
+                r
+            },
             Err(_) => {
                 // so either we are in the candidate table where it's just called `id`
+                // todo!();
+                println!("from 2nd");
                 match result.try_get("", "id") {
                     Ok(r) => r,
                     // or something went wrong
-                    Err(_) => panic!("issue making candidate data policy from db"),
+                    Err(e) => panic!("issue making candidate data policy from db {e}"),
                 }
             }
         };

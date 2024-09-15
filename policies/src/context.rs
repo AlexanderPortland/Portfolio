@@ -31,6 +31,7 @@ impl<Db: sea_orm_rocket::Database> Clone for RealContextDataType<Db> {
 //     }
 // }
 
+#[derive(Debug)]
 pub struct ContextDataTypeOut {
     pub session_id: Option<String>,
     pub key: Option<String>,
