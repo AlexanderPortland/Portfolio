@@ -147,9 +147,6 @@ impl<P: Policy + Clone + 'static> TryFrom<Option<BBox<NaiveDate, P>>> for Encryp
 }
 
 pub fn naive_date_str_caller(date: BBox<NaiveDate, AnyPolicy>, format: bool) -> BBox<String, AnyPolicy> {
-    // date.into_ppr(PrivacyPureRegion::new(|date: NaiveDate|{
-    //     naive_date_str((date, format))
-    // }))
     execute_sandbox::<naive_date_str, _, _>((date, format))
 }
 
@@ -167,8 +164,6 @@ fn serde_grade_sandbox_caller(t: BBox<GradeList, AnyPolicy>) -> BBox<String, Any
         s.to_sandbox()
     }));
     execute_sandbox::<portfolio_sandbox::serde_from_grade, _, _>(s)
-
-    // execute_sandbox::<portfolio_sandbox::serde_from_grade, _, _>(t)
 }
 
 // FIXME: this will go in SANDBOX lib
@@ -178,9 +173,6 @@ fn serde_grade_sandbox_caller(t: BBox<GradeList, AnyPolicy>) -> BBox<String, Any
 // }
 
 fn serde_school_sandbox_caller(t: BBox<School, AnyPolicy>) -> BBox<String, AnyPolicy> {
-    // t.into_ppr(PrivacyPureRegion::new(|t|{
-    //     serde_school_sandbox(t)
-    // }))
     let s: BBox<portfolio_sandbox::School, AnyPolicy> = t.into_ppr(PrivacyPureRegion::new(|s: School|{
         s.to_sandbox()
     }));

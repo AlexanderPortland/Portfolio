@@ -277,8 +277,7 @@ pub async fn encrypt_password_with_recipients(
         password_plain_text.as_bytes(),
         &mut encrypt_buffer,
         recipients,
-    )
-    .await?;
+    ).await?;
 
     Ok(base64.encode(encrypt_buffer))
 }
