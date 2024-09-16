@@ -169,7 +169,7 @@ impl Policy for CandidateDataPolicy {
             return Ok(AnyPolicy::new(self.join_logic(other)?));
         } else {
             println!("data stacking polciies w/ other {:?}", other);
-            if other == AnyPolicy::new(NoPolicy::new()){
+            if other == AnyPolicy::new(NoPolicy::new()){ // TODO: why do I need this??
                 return Ok(AnyPolicy::new(self.clone()));
             }
             return Ok(AnyPolicy::new(PolicyAnd::new(
