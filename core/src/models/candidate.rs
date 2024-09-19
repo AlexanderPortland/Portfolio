@@ -22,7 +22,7 @@ pub enum FieldOfStudy {
     KB,
 }
 
-fn from_option(o: Option<FieldOfStudy>) -> Option<portfolio_sandbox::FieldOfStudy>{
+fn from_option(o: Option<FieldOfStudy>) -> Option<portfolio_types::FieldOfStudy>{
     match o {
         None => None,
         Some(b) => { Some(b.into()) }
@@ -30,12 +30,12 @@ fn from_option(o: Option<FieldOfStudy>) -> Option<portfolio_sandbox::FieldOfStud
 }
 
 // convert to sandbox equivalent
-impl From<FieldOfStudy> for portfolio_sandbox::FieldOfStudy {
+impl From<FieldOfStudy> for portfolio_types::FieldOfStudy {
     fn from(value: FieldOfStudy) -> Self {
         match value {
-            FieldOfStudy::G => portfolio_sandbox::FieldOfStudy::G,
-            FieldOfStudy::IT => portfolio_sandbox::FieldOfStudy::IT,
-            FieldOfStudy::KB => portfolio_sandbox::FieldOfStudy::KB,
+            FieldOfStudy::G => portfolio_types::FieldOfStudy::G,
+            FieldOfStudy::IT => portfolio_types::FieldOfStudy::IT,
+            FieldOfStudy::KB => portfolio_types::FieldOfStudy::KB,
             _ => todo!()
         }
     }
@@ -210,21 +210,21 @@ pub enum FieldsCombination {
     ItKb,
 }
 
-fn from_combo(b: FieldsCombination) -> portfolio_sandbox::FieldsCombination{
+fn from_combo(b: FieldsCombination) -> portfolio_types::FieldsCombination{
     b.into()
 }
 
 // convert to sandbox equivalent
-impl From<FieldsCombination> for portfolio_sandbox::FieldsCombination {
+impl From<FieldsCombination> for portfolio_types::FieldsCombination {
     fn from(value: FieldsCombination) -> Self {
         match value {
-            FieldsCombination::Unknown => portfolio_sandbox::FieldsCombination::Unknown,
-            FieldsCombination::G => portfolio_sandbox::FieldsCombination::G,
-            FieldsCombination::IT => portfolio_sandbox::FieldsCombination::IT,
-            FieldsCombination::KB => portfolio_sandbox::FieldsCombination::KB,
-            FieldsCombination::GIt => portfolio_sandbox::FieldsCombination::GIt,
-            FieldsCombination::GKb => portfolio_sandbox::FieldsCombination::GKb,
-            FieldsCombination::ItKb => portfolio_sandbox::FieldsCombination::ItKb,
+            FieldsCombination::Unknown => portfolio_types::FieldsCombination::Unknown,
+            FieldsCombination::G => portfolio_types::FieldsCombination::G,
+            FieldsCombination::IT => portfolio_types::FieldsCombination::IT,
+            FieldsCombination::KB => portfolio_types::FieldsCombination::KB,
+            FieldsCombination::GIt => portfolio_types::FieldsCombination::GIt,
+            FieldsCombination::GKb => portfolio_types::FieldsCombination::GKb,
+            FieldsCombination::ItKb => portfolio_types::FieldsCombination::ItKb,
             _ => todo!()
         }
     }
@@ -280,8 +280,8 @@ pub struct CandidateRow {
     pub parent_telephone: Option<BBox<String, AnyPolicy>>,
 }
 
-impl From<CandidateRowOut> for portfolio_sandbox::CandidateRow {
+impl From<CandidateRowOut> for portfolio_types::CandidateRow {
     fn from(value: CandidateRowOut) -> Self {
-        portfolio_sandbox::CandidateRow { id: value.id, first_application: value.first_application, second_application: value.second_application, personal_id_number: value.personal_id_number, first_day_admissions: value.first_day_admissions, second_day_admissions: value.second_day_admissions, first_day_field: from_option(value.first_day_field), second_day_field: from_option(value.second_day_field), fields_combination: from_combo(value.fields_combination), first_school: value.first_school, first_school_field: value.first_school_field, second_school: value.second_school, second_school_field: value.second_school_field, fields_match: value.fields_match, name: value.name, surname: value.surname, email: value.email, telephone: value.telephone, parent_email: value.parent_email, parent_telephone: value.parent_telephone }
+        portfolio_types::CandidateRow { id: value.id, first_application: value.first_application, second_application: value.second_application, personal_id_number: value.personal_id_number, first_day_admissions: value.first_day_admissions, second_day_admissions: value.second_day_admissions, first_day_field: from_option(value.first_day_field), second_day_field: from_option(value.second_day_field), fields_combination: from_combo(value.fields_combination), first_school: value.first_school, first_school_field: value.first_school_field, second_school: value.second_school, second_school_field: value.second_school_field, fields_match: value.fields_match, name: value.name, surname: value.surname, email: value.email, telephone: value.telephone, parent_email: value.parent_email, parent_telephone: value.parent_telephone }
     }
 }

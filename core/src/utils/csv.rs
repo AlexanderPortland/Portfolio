@@ -85,14 +85,14 @@ impl TryFrom<(BBox<i32, CandidateDataPolicy>, ApplicationDetails)> for Applicati
     }
 }
 
-pub fn error_map(err: portfolio_sandbox::ServiceError) -> ServiceError { err.into() }
+pub fn error_map(err: portfolio_types::ServiceError) -> ServiceError { err.into() }
 
 pub fn serialize_cand_row_caller(rows: Vec<CandidateRow>) -> Result<BBox<Vec<u8>, AnyPolicy>, ServiceError> {
     let sandbox_rows = rows.into_iter().map(|row|{
         execute_pure(row, PrivacyPureRegion::new(|row: CandidateRowOut|{
             row.into()
         })).unwrap()
-    }).collect::<Vec<BBox<portfolio_sandbox::CandidateRow, AnyPolicy>>>();
+    }).collect::<Vec<BBox<portfolio_types::CandidateRow, AnyPolicy>>>();
 
     let b: Result<BBox<Vec<u8>, AnyPolicy>, ServiceError> = execute_pure(sandbox_rows, PrivacyPureRegion::new(|rows|{
         portfolio_sandbox::serialize_cand_row(rows).map_err(error_map)
@@ -105,7 +105,7 @@ pub fn serialize_app_row_caller(rows: Vec<ApplicationRow>) -> Result<BBox<Vec<u8
         execute_pure(row, PrivacyPureRegion::new(|row: ApplicationRowOut|{
             row.into()
         })).unwrap()
-    }).collect::<Vec<BBox<portfolio_sandbox::ApplicationRow, AnyPolicy>>>();
+    }).collect::<Vec<BBox<portfolio_types::ApplicationRow, AnyPolicy>>>();
 
     let b: Result<BBox<Vec<u8>, AnyPolicy>, ServiceError> = execute_pure(sandbox_rows, PrivacyPureRegion::new(|rows|{
         portfolio_sandbox::serialize_app_row(rows).map_err(error_map)

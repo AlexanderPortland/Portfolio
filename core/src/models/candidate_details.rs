@@ -160,7 +160,7 @@ pub fn naive_date_str_caller(date: BBox<NaiveDate, AnyPolicy>, format: bool) -> 
 // }
 
 fn serde_grade_sandbox_caller(t: BBox<GradeList, AnyPolicy>) -> BBox<String, AnyPolicy> {
-    let s: BBox<portfolio_sandbox::GradeList, AnyPolicy> = t.into_ppr(PrivacyPureRegion::new(|s: GradeList|{
+    let s: BBox<portfolio_types::GradeList, AnyPolicy> = t.into_ppr(PrivacyPureRegion::new(|s: GradeList|{
         s.to_sandbox()
     }));
     execute_sandbox::<portfolio_sandbox::serde_from_grade, _, _>(s)
@@ -173,7 +173,7 @@ fn serde_grade_sandbox_caller(t: BBox<GradeList, AnyPolicy>) -> BBox<String, Any
 // }
 
 fn serde_school_sandbox_caller(t: BBox<School, AnyPolicy>) -> BBox<String, AnyPolicy> {
-    let s: BBox<portfolio_sandbox::School, AnyPolicy> = t.into_ppr(PrivacyPureRegion::new(|s: School|{
+    let s: BBox<portfolio_types::School, AnyPolicy> = t.into_ppr(PrivacyPureRegion::new(|s: School|{
         s.to_sandbox()
     }));
     execute_sandbox::<portfolio_sandbox::serde_from_school, _, _>(s)

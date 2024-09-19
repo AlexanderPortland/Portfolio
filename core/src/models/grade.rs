@@ -41,21 +41,21 @@ impl Semester {
         }
     }
 
-    pub fn to_sandbox(self) -> portfolio_sandbox::Semester {
+    pub fn to_sandbox(self) -> portfolio_types::Semester {
         match self {
-            Self::FirstEighth => portfolio_sandbox::Semester::FirstEighth,
-            Self::SecondEighth => portfolio_sandbox::Semester::SecondEighth,
-            Self::FirstNinth => portfolio_sandbox::Semester::FirstNinth,
-            Self::SecondNinth => portfolio_sandbox::Semester::SecondNinth,
+            Self::FirstEighth => portfolio_types::Semester::FirstEighth,
+            Self::SecondEighth => portfolio_types::Semester::SecondEighth,
+            Self::FirstNinth => portfolio_types::Semester::FirstNinth,
+            Self::SecondNinth => portfolio_types::Semester::SecondNinth,
         }
     }
 
-    pub fn from_sandbox(s: portfolio_sandbox::Semester) -> Self {
+    pub fn from_sandbox(s: portfolio_types::Semester) -> Self {
         match s {
-            portfolio_sandbox::Semester::FirstEighth => Self::FirstEighth,
-            portfolio_sandbox::Semester::SecondEighth => Self::SecondEighth,
-            portfolio_sandbox::Semester::FirstNinth => Self::FirstNinth,
-            portfolio_sandbox::Semester::SecondNinth => Self::SecondNinth,
+            portfolio_types::Semester::FirstEighth => Self::FirstEighth,
+            portfolio_types::Semester::SecondEighth => Self::SecondEighth,
+            portfolio_types::Semester::FirstNinth => Self::FirstNinth,
+            portfolio_types::Semester::SecondNinth => Self::SecondNinth,
         }
     }
 }
@@ -75,15 +75,15 @@ impl Grade {
             .map_err(ServiceError::ValidationError)
     }
 
-    pub fn to_sandbox(self) -> portfolio_sandbox::Grade {
-        portfolio_sandbox::Grade{
+    pub fn to_sandbox(self) -> portfolio_types::Grade {
+        portfolio_types::Grade{
             subject: self.subject,
             semester: self.semester.to_sandbox(),
             value: self.value,
         }
     }
 
-    pub fn from_sandbox(g: portfolio_sandbox::Grade) -> Self {
+    pub fn from_sandbox(g: portfolio_types::Grade) -> Self {
         Self {
             subject: g.subject,
             semester: Semester::from_sandbox(g.semester),
@@ -102,9 +102,9 @@ impl ResponseBBoxJson for GradeList {
 }
 
 pub fn serde_to_grade_caller<P: Policy + Clone + 'static>(t: BBox<String, P>) -> BBox<GradeList, P> {
-    let s: BBox<portfolio_sandbox::GradeList, P> = execute_sandbox::<portfolio_sandbox::serde_to_grade, _, _>(t).specialize_policy().unwrap();
+    let s: BBox<portfolio_types::GradeList, P> = execute_sandbox::<portfolio_sandbox::serde_to_grade, _, _>(t).specialize_policy().unwrap();
 
-    s.into_ppr(PrivacyPureRegion::new(|gl: portfolio_sandbox::GradeList|{
+    s.into_ppr(PrivacyPureRegion::new(|gl: portfolio_types::GradeList|{
         GradeList::from_sandbox(gl)
     }))
 }
@@ -149,14 +149,14 @@ impl GradeList {
         )
     }
 
-    pub fn to_sandbox(self) -> portfolio_sandbox::GradeList {
+    pub fn to_sandbox(self) -> portfolio_types::GradeList {
         let l = self.0.into_iter().map(|g|{
             g.to_sandbox()
-        }).collect::<Vec<portfolio_sandbox::Grade>>();
-        portfolio_sandbox::GradeList(l)
+        }).collect::<Vec<portfolio_types::Grade>>();
+        portfolio_types::GradeList(l)
     }
 
-    pub fn from_sandbox(gl: portfolio_sandbox::GradeList) -> Self {
+    pub fn from_sandbox(gl: portfolio_types::GradeList) -> Self {
         let l = gl.0.into_iter().map(|g|{
             Grade::from_sandbox(g)
         }).collect::<Vec<Grade>>();

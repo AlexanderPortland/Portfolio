@@ -55,6 +55,7 @@ alohomora = { path = "../../alohomora/alohomora", features = ["default", "orm"] 
 alohomora_derive = { path = "../../alohomora/alohomora_derive" }
 portfolio-policies = { path = "../policies" }
 portfolio_sandbox ={ path = "../sandbox" }
+portfolio-types = { path = "../types" }
 
 rocket = { git = "https://github.com/KinanBab/Rocket.git", branch = "main" }
 
