@@ -179,12 +179,6 @@ fn serde_school_sandbox_caller(t: BBox<School, AnyPolicy>) -> BBox<String, AnyPo
     execute_sandbox::<portfolio_sandbox::serde_from_school, _, _>(s)
 }
 
-// FIXME: this will go in SANDBOX lib
-// drafted
-// fn serde_school_sandbox(t: School) -> String {
-//     serde_json::to_string(&t).unwrap()
-// }
-
 impl EncryptedCandidateDetails {
     pub async fn new(
         form: &CandidateDetails,

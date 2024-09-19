@@ -94,10 +94,7 @@ pub fn serialize_cand_row_caller(rows: Vec<CandidateRow>) -> Result<BBox<Vec<u8>
         })).unwrap()
     }).collect::<Vec<BBox<portfolio_types::CandidateRow, AnyPolicy>>>();
 
-    let b: Result<BBox<Vec<u8>, AnyPolicy>, ServiceError> = execute_pure(sandbox_rows, PrivacyPureRegion::new(|rows|{
-        portfolio_sandbox::serialize_cand_row(rows).map_err(error_map)
-    })).unwrap().transpose();
-    b
+    execute_sandbox::<portfolio_sandbox::serialize_cand_row, _, _>(sandbox_rows).transpose().map_err(error_map)
 }
 
 pub fn serialize_app_row_caller(rows: Vec<ApplicationRow>) -> Result<BBox<Vec<u8>, AnyPolicy>, ServiceError> {
@@ -107,10 +104,7 @@ pub fn serialize_app_row_caller(rows: Vec<ApplicationRow>) -> Result<BBox<Vec<u8
         })).unwrap()
     }).collect::<Vec<BBox<portfolio_types::ApplicationRow, AnyPolicy>>>();
 
-    let b: Result<BBox<Vec<u8>, AnyPolicy>, ServiceError> = execute_pure(sandbox_rows, PrivacyPureRegion::new(|rows|{
-        portfolio_sandbox::serialize_app_row(rows).map_err(error_map)
-    })).unwrap().transpose();
-    b
+    execute_sandbox::<portfolio_sandbox::serialize_app_row, _, _>(sandbox_rows).transpose().map_err(error_map)
 }
 
 #[async_trait]
