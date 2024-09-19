@@ -30,9 +30,7 @@ path = "src/lib.rs"
 
 [package.metadata]
 sandboxes = [
-  "naive_date_str",
-  "serde_from_grade", # this one definitely works
-  "serde_from_school",
+  "serde_from_grade",
   "serde_to_school",
   "serde_to_grade",
   "serde_from_tuple",

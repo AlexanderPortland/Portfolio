@@ -11,7 +11,6 @@ use entity::{candidate, parent};
 use futures::future;
 use portfolio_policies::key::KeyPolicy;
 use portfolio_policies::FakePolicy;
-use portfolio_sandbox::naive_date_str;
 use serde::Serialize;
 
 use crate::{crypto, models::candidate::ApplicationDetails, error::ServiceError, utils::date::parse_naive_date_from_opt_str};
@@ -147,17 +146,13 @@ impl<P: Policy + Clone + 'static> TryFrom<Option<BBox<NaiveDate, P>>> for Encryp
 }
 
 pub fn naive_date_str_caller(date: BBox<NaiveDate, AnyPolicy>, format: bool) -> BBox<String, AnyPolicy> {
-    execute_sandbox::<naive_date_str, _, _>((date, format))
+    date.into_ppr(PrivacyPureRegion::new(|date: NaiveDate|{
+        match format {
+            true => date.to_string(),
+            false => date.format(NAIVE_DATE_FMT).to_string(),
+        }
+    }))
 }
-
-// FIXME: this will go in SANDBOX 
-// (DRAFTED)
-// fn naive_date_str((date, format): (chrono::NaiveDate, bool)) -> String {
-//     match format {
-//         true => date.to_string(),
-//         false => date.format(NAIVE_DATE_FMT).to_string(),
-//     }
-// }
 
 fn serde_grade_sandbox_caller(t: BBox<GradeList, AnyPolicy>) -> BBox<String, AnyPolicy> {
     let s: BBox<portfolio_types::GradeList, AnyPolicy> = t.into_ppr(PrivacyPureRegion::new(|s: GradeList|{
@@ -166,17 +161,15 @@ fn serde_grade_sandbox_caller(t: BBox<GradeList, AnyPolicy>) -> BBox<String, Any
     execute_sandbox::<portfolio_sandbox::serde_from_grade, _, _>(s)
 }
 
-// FIXME: this will go in SANDBOX lib
-// drafted
-// fn serde_grade_sandbox(t: GradeList) -> String {
-//     serde_json::to_string(&t).unwrap()
-// }
-
 fn serde_school_sandbox_caller(t: BBox<School, AnyPolicy>) -> BBox<String, AnyPolicy> {
+    // FIXME: conversion might not be required?
+    // depends on scrutinizer w/ validation trait for `protfolio_core::School`
     let s: BBox<portfolio_types::School, AnyPolicy> = t.into_ppr(PrivacyPureRegion::new(|s: School|{
         s.to_sandbox()
     }));
-    execute_sandbox::<portfolio_sandbox::serde_from_school, _, _>(s)
+    s.into_ppr(PrivacyPureRegion::new(|t: portfolio_types::School|{
+        serde_json::to_string(&t).unwrap()
+    }))
 }
 
 impl EncryptedCandidateDetails {

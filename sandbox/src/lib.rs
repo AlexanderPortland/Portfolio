@@ -1,32 +1,17 @@
-// use alohomora::{bbox::BBox, policy::AnyPolicy, AlohomoraType};
-// use alohomora::sandbox::AlohomoraSandbox;
 use alohomora_derive::AlohomoraSandbox;
 use portfolio_types::*;
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
-
-// extern crate alohomora;
-// extern crate chrono;
 
 pub const NAIVE_DATE_FMT: &str = "%Y-%m-%d";
 
-#[AlohomoraSandbox]
-fn naive_date_str((date, format): (chrono::NaiveDate, bool)) -> String {
-    println!("in da sandbox w naive {:?}", date);
-    match format {
-        true => date.to_string(),
-        false => date.format(NAIVE_DATE_FMT).to_string(),
-    }
-}
+// #[AlohomoraSandbox]
+// fn naive_date_str((date, format): (chrono::NaiveDate, bool)) -> String {
+//     println!("in da sandbox w naive {:?}", date);
+    
+// }
 
 #[AlohomoraSandbox()]
 fn serde_from_grade(t: GradeList) -> String {
     println!("in da sandbox from grade");
-    serde_json::to_string(&t).unwrap()
-}
-
-#[AlohomoraSandbox()]
-fn serde_from_school(t: School) -> String {
-    println!("in da sandbox from school");
     serde_json::to_string(&t).unwrap()
 }
 
