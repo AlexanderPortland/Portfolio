@@ -1,24 +1,17 @@
-use std::{collections::HashMap, marker::PhantomData, ops::Deref, sync::Arc};
-use alohomora::{bbox::BBox, db::BBoxConn, policy::NoPolicy, rocket::BBoxJson, AlohomoraType};
+use std::{collections::HashMap, marker::PhantomData, ops::Deref};
+use alohomora::{bbox::BBox, policy::NoPolicy, AlohomoraType};
 use sea_orm_rocket::Database;
-use std::sync::Mutex;
 use ::rocket::http::Status;
 use alohomora::rocket::{BBoxRequest, BBoxRequestOutcome, FromBBoxRequest};
 use ::rocket::outcome::IntoOutcome;
 
 use crate::request::{AdminLoginRequest, LoginRequest};
 
-// pub enum PotentialLoginRequest {
-//     Admin(crate::request::AdminLoginRequest),
-//     Candidate(crate::request::LoginRequest),
-//     None
-// }
-
 // #[derive(Clone)]
 pub struct RealContextDataType<Db: sea_orm_rocket::Database>  {
     pub session_id: Option<BBox<String, NoPolicy>>,
     pub key: Option<BBox<String, NoPolicy>>,
-    pub conn: &'static sea_orm::DatabaseConnection,  // sea_orm::DatabaseConnection,
+    pub conn: &'static sea_orm::DatabaseConnection, 
     pub admin_login: Option<crate::request::AdminLoginRequest>,
     pub candidate_login: Option<crate::request::LoginRequest>,
     pub phantom: PhantomData<Db>,

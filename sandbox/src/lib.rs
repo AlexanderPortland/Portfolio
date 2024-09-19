@@ -3,12 +3,6 @@ use portfolio_types::*;
 
 pub const NAIVE_DATE_FMT: &str = "%Y-%m-%d";
 
-// #[AlohomoraSandbox]
-// fn naive_date_str((date, format): (chrono::NaiveDate, bool)) -> String {
-//     println!("in da sandbox w naive {:?}", date);
-    
-// }
-
 #[AlohomoraSandbox()]
 fn serde_from_grade(t: GradeList) -> String {
     println!("in da sandbox from grade");

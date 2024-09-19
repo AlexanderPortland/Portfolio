@@ -1,10 +1,8 @@
 use core::panic;
 
 use alohomora::{orm::ORMPolicy, policy::{AnyPolicy, FrontendPolicy, NoPolicy, Policy, PolicyAnd}, testing::TestContextData, AlohomoraType};
-use rocket::{data, figment::value::magic::Either, futures::stream::Any, State};
 use sea_orm::{ConnectionTrait, DatabaseConnection, Statement};
 use serde::Serialize;
-use mysql::prelude::Queryable;
 
 use crate::context::ContextDataTypeOut;
 

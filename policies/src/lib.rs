@@ -23,30 +23,30 @@ impl Policy for FakePolicy {
     fn name(&self) -> String {
         String::from("FakePolicy")
     }
-    fn check(&self, context: &UnprotectedContext, reason: Reason<'_>) -> bool {
+    fn check(&self, _: &UnprotectedContext, _: Reason<'_>) -> bool {
         // println!("IN FAKE POLICY");
         true
     }
-    fn join(&self, other: AnyPolicy) -> Result<AnyPolicy, ()> {
+    fn join(&self, _: AnyPolicy) -> Result<AnyPolicy, ()> {
         Ok(AnyPolicy::new(FakePolicy {}))
     }
-    fn join_logic(&self, other: Self) -> Result<Self, ()> where Self: Sized {
+    fn join_logic(&self, _: Self) -> Result<Self, ()> where Self: Sized {
         Ok(FakePolicy {})
     }
 }
 
 impl FrontendPolicy for FakePolicy {
-    fn from_request<'a, 'r>(request: &'a Request<'r>) -> Self where Self: Sized {
+    fn from_request<'a, 'r>(_: &'a Request<'r>) -> Self where Self: Sized {
         FakePolicy {}
     }
 
-    fn from_cookie<'a, 'r>(name: &str, cookie: &'a Cookie<'static>, request: &'a Request<'r>) -> Self where Self: Sized {
+    fn from_cookie<'a, 'r>(_: &str, _: &'a Cookie<'static>, _: &'a Request<'r>) -> Self where Self: Sized {
         FakePolicy {}
     }
 }
 
 impl ORMPolicy for FakePolicy {
-    fn from_result(result: &QueryResult) -> Self where Self: Sized {
+    fn from_result(_: &QueryResult) -> Self where Self: Sized {
         FakePolicy {}
     }
     fn empty() -> Self where Self: Sized { FakePolicy {} }
@@ -55,54 +55,5 @@ impl ORMPolicy for FakePolicy {
 impl Default for FakePolicy {
     fn default() -> Self {
         FakePolicy {}
-    }
-}
-
-
-
-#[derive(Clone, Debug, PartialEq)]
-pub struct ACLPolicy {}
-
-impl ACLPolicy {
-    pub fn new() -> Self {
-        Self {}
-    }
-}
-
-impl Policy for ACLPolicy {
-    fn name(&self) -> String {
-        String::from("ACLPolicy")
-    }
-    fn check(&self, context: &UnprotectedContext, reason: Reason<'_>) -> bool {
-        true
-    }
-    fn join(&self, other: AnyPolicy) -> Result<AnyPolicy, ()> {
-        Ok(AnyPolicy::new(ACLPolicy {}))
-    }
-    fn join_logic(&self, other: Self) -> Result<Self, ()> where Self: Sized {
-        Ok(ACLPolicy {})
-    }
-}
-
-impl FrontendPolicy for ACLPolicy {
-    fn from_request<'a, 'r>(request: &'a Request<'r>) -> Self where Self: Sized {
-        ACLPolicy {}
-    }
-
-    fn from_cookie<'a, 'r>(name: &str, cookie: &'a Cookie<'static>, request: &'a Request<'r>) -> Self where Self: Sized {
-        ACLPolicy {}
-    }
-}
-
-impl ORMPolicy for ACLPolicy {
-    fn from_result(result: &QueryResult) -> Self where Self: Sized {
-        ACLPolicy {}
-    }
-    fn empty() -> Self where Self: Sized { ACLPolicy {} }
-}
-
-impl Default for ACLPolicy {
-    fn default() -> Self {
-        ACLPolicy {}
     }
 }
