@@ -8,7 +8,7 @@ use crate::{
 use alohomora::{context::Context, pcr::PrivacyCriticalRegion, policy::NoPolicy};
 use sea_orm::DbConn;
 use async_trait::async_trait;
-use chrono::NaiveDate;
+use chrono::{naive::serde::ts_microseconds::serialize, NaiveDate};
 use serde::Serialize;
 use portfolio_policies::{data::CandidateDataPolicy, key::KeyPolicy, FakePolicy};
 use crate::models::candidate::{CandidateRow, FieldOfStudy, FieldsCombination};
@@ -113,17 +113,6 @@ pub fn serialize_app_row_caller(rows: Vec<ApplicationRow>) -> Result<BBox<Vec<u8
     b
 }
 
-// This should be a Sandboxed region.
-pub fn serialize_in_sandbox<T: AlohomoraType>(rows: Vec<T>) -> Result<BBox<Vec<u8>, AnyPolicy>, ServiceError> where T::Out: Serialize {
-    execute_pure(rows, PrivacyPureRegion::new(|rows| {
-        let mut wtr = csv::Writer::from_writer(vec![]);
-        for row in rows {
-            wtr.serialize(row).unwrap();
-        }
-        wtr.into_inner().map_err(|_| ServiceError::CsvIntoInnerError)
-    })).unwrap().transpose()
-}
-
 #[async_trait]
 pub trait CsvExporter {
     async fn export(db: &DbConn, private_key: BBox<String, KeyPolicy>) -> Result<BBox<Vec<u8>, AnyPolicy>, ServiceError>;
@@ -160,7 +149,7 @@ impl CsvExporter for ApplicationCsv {
             };
             rows.push(row);
         }
-        serialize_in_sandbox(rows)
+        serialize_app_row_caller(rows)
     }
 }
 
@@ -251,7 +240,7 @@ impl CsvExporter for CandidateCsv {
 
 
         // This should be a Sandboxed region.
-        serialize_in_sandbox(rows)
+        serialize_cand_row_caller(rows)
     }
 }
 
