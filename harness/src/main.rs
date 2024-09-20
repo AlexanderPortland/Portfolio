@@ -1,16 +1,16 @@
 use alohomora::testing::BBoxClient;
 use portfolio_api::*;
+use portfolio_core::models::candidate::CleanCreateCandidateResponse;
 use rocket::{http::{Cookie, Status}, local::blocking::Client};
 
 fn get_portfolio() -> BBoxClient {
     BBoxClient::tracked(portfolio_api::rocket()).expect("invalid rocket")
 }
 
-    pub const ADMIN_ID: i32 = 3;
-    pub const ADMIN_PASSWORD: &'static str = "test";
+pub const ADMIN_ID: i32 = 3;
+pub const ADMIN_PASSWORD: &'static str = "test";
 
 pub fn admin_login(client: &Client) -> (Cookie, Cookie) {
-    // let _ = client.post("/admin/logout").dispatch();
     let response = client
         .post("/admin/login")
         .body(format!(
@@ -21,32 +21,51 @@ pub fn admin_login(client: &Client) -> (Cookie, Cookie) {
             ADMIN_ID, ADMIN_PASSWORD
         ))
         .dispatch();
-    assert!(response.status() == Status::Ok);
+    assert_eq!(response.status(), Status::Ok);
     (response.cookies().get("id").unwrap().to_owned(), response.cookies().get("key").unwrap().to_owned())
 }
 
-#[test]
-fn test_thing(){
-    test();
+fn create_candidate(
+    client: &Client,
+    cookies: (Cookie, Cookie),
+    id: i32,
+    pid: String,
+) -> CleanCreateCandidateResponse {
+    let response = client
+        .post("/admin/create")
+        .body(format!(
+            "{{
+        \"applicationId\": {},
+        \"personalIdNumber\": \"{}\"
+    }}",
+            id, pid
+        ))
+        .cookie(cookies.0)
+        .cookie(cookies.1)
+        .dispatch();
+
+    assert_eq!(response.status(), Status::Ok);
+
+    response.into_json::<CleanCreateCandidateResponse>().unwrap()
 }
+
+fn make_candidates(client: &Client) {
+    let cookies = admin_login(&client);
+    let id_to_make = 103152;
+    let mut success = 0;
+    for id in 103152..103160 {
+        let response = create_candidate(&client, cookies.clone(), id, "0".to_string());
+        println!("res is {:?}", response);
+        success += 1;
+    }
+    println!("{success} successes!");
+}
+
+
 
 fn main(){
-    test();
-}
-
-fn test() {
-    println!("init");
     let client = get_portfolio();
-    println!("init done");
-    let to_create = vec![(1019132, "40"), (1019133, "10"), (1029193, "20"), (1019678, "90"), (1019456, "120"), (1029234, "230")];
-        
-    for (app_id, pid) in to_create {
-        let cookies = admin_login(&client);
+    make_candidates(&client);
 
-        // let response = create_candidate(&client, cookies.clone(), app_id, pid.to_string());
-        // assert_eq!(response.password.len(), 12);
-
-        // // test the candidate exists, but is incomplete
-        // check_incomplete_candidate(&client, cookies, app_id);
-    }
+    // test();
 }

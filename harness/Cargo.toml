@@ -6,5 +6,6 @@ publish = false
 
 [dependencies]
 portfolio-api = { path = "../api" }
+portfolio-core = { path = "../core" }
 alohomora = { path = "../../alohomora/alohomora" }
 rocket = { git = "https://github.com/KinanBab/Rocket.git", branch = "main" }

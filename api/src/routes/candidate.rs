@@ -243,6 +243,7 @@ pub async fn get_details(
 
     MyResult::Ok(JsonResponse::from((details, context)))
 }
+
 #[post("/cover_letter", data = "<letter>")]
 pub async fn upload_cover_letter(
     session: ApplicationAuth,
@@ -565,19 +566,19 @@ pub mod tests {
         assert_eq!(details_orig, details_resp);
     }
 
-    // #[test]
-    // fn test_candidate_upload() {
-    //     let client = test_client().lock().unwrap();
-    //     let cookies = candidate_login(&client);
+    #[test]
+    fn test_candidate_upload() {
+        let client = test_client().lock().unwrap();
+        let cookies = candidate_login(&client);
 
-    //     let response = client
-    //         .post("/candidate/add/cover_letter")
-    //         .cookie(cookies.0.clone())
-    //         .cookie(cookies.1.clone())
-    //         .body(CANDIDATE_COVER_LETTER.as_bytes())
-    //         .dispatch();
-    //     assert_eq!(response.status(), Status::Ok);
-    // }
+        // let response = client
+        //     .post("/candidate/add/cover_letter")
+        //     .cookie(cookies.0.clone())
+        //     .cookie(cookies.1.clone())
+        //     .body(CANDIDATE_COVER_LETTER.as_bytes())
+        //     .dispatch();
+        // assert_eq!(response.status(), Status::Ok);
+    }
 
     #[test]
     fn test_invalid_token_every_secured_endpoint() {

@@ -260,6 +260,12 @@ impl FrontendPolicy for CandidateDataPolicy {
     fn from_request<'a, 'r>(request: &'a rocket::Request<'r>) -> Self
             where
                 Self: Sized {
+        println!("in route {}", request.uri());
+        if request.uri() == "/candidate/login" || request.route().unwrap().to_string() == "" {
+            println!("special route");
+        } else {
+            println!("unspecial route");
+        }
         match request.cookies().get("id") {
             // cookie id is a session id which maps in the sessions db table to candidate_id which is what we want
             Some(session_id) => {
@@ -273,8 +279,17 @@ impl FrontendPolicy for CandidateDataPolicy {
                 }
             },
             None => {
-                println!("no such luck with the id cookie strategy");
-                panic!();
+                // legally won't have cookie set yet on login
+                if request.uri() == "/candidate/login" {
+                    CandidateDataPolicy {
+                        session_id: None,
+                        candidate_id: None,
+                        application_id: None,
+                    }
+                } else {
+                    println!("no candidate id cookie at endpoint that needs it");
+                    panic!();
+                }
             }
         }
     }

@@ -13,6 +13,10 @@ check: check-api check-core
 harness:
 	export PORTFOLIO_DATABASE_URL=mysql://root:@127.0.0.1/ && \
 	cd harness && cargo run
+
+upload: 
+	export PORTFOLIO_DATABASE_URL=mysql://root:@127.0.0.1/ && \
+	cd api; cargo test candidate_upload -- --test-threads=1
 	
 backend:
 	export PORTFOLIO_DATABASE_URL=mysql://root:@127.0.0.1/; \
