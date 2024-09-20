@@ -19,3 +19,5 @@ target/
 
 Rocket.toml
 output.log
+
+**/cache

@@ -250,13 +250,19 @@ pub async fn upload_cover_letter(
     letter: Letter<FakePolicy>,
     context: Context<ContextDataType>,
 ) -> MyResult<(), (rocket::http::Status, String)> {
+    println!("hi there");
     let application: entity::application::Model = session.into();
 
+    println!("hello");
+
     let a: BBox<Vec<u8>, FakePolicy> = letter.into();
+
+    println!("hi");
 
     PortfolioService::add_cover_letter_to_cache(context, application.candidate_id, a)
         .await
         .map_err(to_custom_error)?;
+    println!("done");
     MyResult::Ok(())
 }
 
@@ -411,7 +417,7 @@ pub mod tests {
     use chrono::NaiveDate;
     use portfolio_core::{crypto, models::candidate::CleanNewCandidateResponse, sea_orm::prelude::Uuid};
     use rocket::{
-        http::{Cookie, Status},
+        http::{Cookie, Header, Status},
         local::blocking::Client,
     };
     use rocket::serde::{Deserialize, Serialize};
@@ -571,13 +577,28 @@ pub mod tests {
         let client = test_client().lock().unwrap();
         let cookies = candidate_login(&client);
 
-        // let response = client
-        //     .post("/candidate/add/cover_letter")
-        //     .cookie(cookies.0.clone())
-        //     .cookie(cookies.1.clone())
-        //     .body(CANDIDATE_COVER_LETTER.as_bytes())
-        //     .dispatch();
-        // assert_eq!(response.status(), Status::Ok);
+        let filename = String::from("../cover_letter.pdf");
+
+        let mut f = std::fs::File::open(&filename).expect("no file found");
+        let metadata = std::fs::metadata(&filename).expect("unable to read metadata");
+        let mut buffer = vec![0; metadata.len() as usize];
+        std::io::Read::read(&mut f, &mut buffer).expect("buffer overflow");
+
+        assert_eq!(buffer.len(), 681555);
+        // let bind = "hello".to_string();
+        // let buffer = bind.as_bytes();
+        // println!("sending {:?}", buffer);
+
+        println!("len of buffer is {} bytes", buffer.len());
+
+        let response = client
+            .post("/candidate/add/portfolio_letter")
+            .cookie(cookies.0.clone())
+            .cookie(cookies.1.clone())
+            .body(buffer)
+            .header(Header::new("Content-Type", "application/pdf"))
+            .dispatch();
+        assert_eq!(response.status(), Status::Ok);
     }
 
     #[test]
