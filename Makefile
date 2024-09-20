@@ -1,4 +1,4 @@
-.PHONY: check api check-api test frontend backend back front
+.PHONY: check api check-api test frontend backend back front harness
 
 check-api:
 	export PORTFOLIO_DATABASE_URL=mysql://root:@127.0.0.1/ && \
@@ -10,6 +10,9 @@ check-core:
 
 check: check-api check-core
 	
+harness:
+	export PORTFOLIO_DATABASE_URL=mysql://root:@127.0.0.1/ && \
+	cd harness && cargo run
 	
 backend:
 	export PORTFOLIO_DATABASE_URL=mysql://root:@127.0.0.1/; \

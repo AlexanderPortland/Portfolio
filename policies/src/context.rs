@@ -58,15 +58,15 @@ impl<Db: sea_orm_rocket::Database> AlohomoraType for RealContextDataType<Db> {
                     admin_login: Option::<AdminLoginRequest>::from_enum(map.remove("admin_login").unwrap())?,
                     candidate_login: Option::<LoginRequest>::from_enum(map.remove("candidate_login").unwrap())?,
                 };
-                println!("after from we have {:?}", c);
+                // println!("after from we have {:?}", c);
                 Ok(c)
             },
             _ => panic!("bad"),
         }
     }
     fn to_enum(self) -> alohomora::AlohomoraTypeEnum {
-        println!("before to we have admin: {:?}", self.admin_login);
-        println!("before to we have candidate: {:?}", self.candidate_login);
+        // println!("before to we have admin: {:?}", self.admin_login);
+        // println!("before to we have candidate: {:?}", self.candidate_login);
         // todo!();
         let mut map = HashMap::new();
         map.insert(String::from("session_id"), self.session_id.to_enum());
@@ -96,7 +96,7 @@ impl<'a, 'r, P: sea_orm_rocket::Pool<Connection = sea_orm::DatabaseConnection>, 
     
     async fn from_bbox_request(request: BBoxRequest<'a, 'r>,) -> BBoxRequestOutcome<Self, Self::BBoxError> {
 
-        println!("in from normal bbox req");
+        // println!("in from normal bbox req");
         // todo!();
         let session_id: Option<BBox<String, NoPolicy>> = request.cookies().get("id")
             .and_then(|k| Some(k.value().to_owned()));
@@ -134,12 +134,12 @@ impl <'a, 'r, Db: Database> alohomora::rocket::FromBBoxRequestAndData<'a, 'r, al
         request: BBoxRequest<'a, 'r>,
         data: &'_ alohomora::rocket::BBoxJson<AdminLoginRequest>,
     ) -> BBoxRequestOutcome<Self, Self::BBoxError> {
-        println!("in from with data ADMIN");
+        // println!("in from with data ADMIN");
         let mut context = RealContextDataType::<Db>::from_bbox_request(request).await.unwrap();
         context.admin_login = Some(data.deref().to_owned());
-        println!("have cointext to prove it{:?}", context.admin_login);
-        println!("have sesh id to prove it{:?}", context.session_id);
-        println!("have key to prove it{:?}", context.key);
+        // println!("have cointext to prove it{:?}", context.admin_login);
+        // println!("have sesh id to prove it{:?}", context.session_id);
+        // println!("have key to prove it{:?}", context.key);
         // todo!();
         rocket::outcome::Outcome::Success(context)
     }
@@ -153,10 +153,10 @@ impl <'a, 'r, Db: Database> alohomora::rocket::FromBBoxRequestAndData<'a, 'r, al
         request: BBoxRequest<'a, 'r>,
         data: &'_ alohomora::rocket::BBoxJson<LoginRequest>,
     ) -> BBoxRequestOutcome<Self, Self::BBoxError> {
-        println!("in from with data CAND");
+        // println!("in from with data CAND");
         let mut context = RealContextDataType::<Db>::from_bbox_request(request).await.unwrap();
         context.candidate_login = Some(data.deref().to_owned());
-        println!("have cointext to prove it {:?}", context.candidate_login);
+        // println!("have cointext to prove it {:?}", context.candidate_login);
         // todo!();
         rocket::outcome::Outcome::Success(context)
     }

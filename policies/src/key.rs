@@ -53,7 +53,7 @@ impl Policy for KeyPolicy {
     }
 
     fn check(&self, context: &alohomora::context::UnprotectedContext, reason: alohomora::policy::Reason<'_>) -> bool {
-        println!("checking key policy w/ owner {:?}", self.owner_id);
+        // println!("checking key policy w/ owner {:?}", self.owner_id);
 
         match self.source {
             // 1. if coming from db -> should only go to cookie for right person

@@ -44,10 +44,10 @@ impl Default for CandidateDataPolicy {
 
 fn does_session_exist(is_admin: bool, db: &DatabaseConnection, session_id: String, candidate_id: Option<i32>, application_id: Option<i32>) -> bool {
     let application_id = if let Some(id) = application_id { 
-        println!("already have app id {id}");
+        // println!("already have app id {id}");
         Some(id) 
     } else if let Some(candidate_id) = candidate_id {
-        println!("trying to get app id for cand {candidate_id}");
+        // println!("trying to get app id for cand {candidate_id}");
         let result = rocket::tokio::task::block_in_place(||{
             let res = db.query_all(Statement::from_string(
                     db.get_database_backend(),
@@ -56,7 +56,7 @@ fn does_session_exist(is_admin: bool, db: &DatabaseConnection, session_id: Strin
                 ));
             rocket::tokio::runtime::Handle::current().block_on(res).unwrap()
         }).first().unwrap().try_get::<i32>("", "id");
-        println!("result {:?}", result);
+        // println!("result {:?}", result);
         match result {
             Ok(ok) => Some(ok),
             Err(_) => None
@@ -103,7 +103,7 @@ impl Policy for CandidateDataPolicy {
     // EVERYTHING ELSE -> nuh uh
 
     fn check(&self, context: &alohomora::context::UnprotectedContext, reason: alohomora::policy::Reason<'_>) -> bool {
-        println!("thank you sir! you've given me {:?}", context);
+        // println!("thank you sir! you've given me {:?}", context);
         
 
         match reason {
@@ -119,16 +119,16 @@ impl Policy for CandidateDataPolicy {
             }
             // 2. if rendering, we must either be a) an admin, or b) the right candidate
             alohomora::policy::Reason::TemplateRender(_) | alohomora::policy::Reason::Response => {
-                println!("render reason for me {:?}", self);
+                // println!("render reason for me {:?}", self);
                 let context: &ContextDataTypeOut = if let Some(test) = context.downcast_ref::<TestContextData<ContextDataTypeOut>>() {
                     // test.0
                     // FIXME: how to downcast to testcontext data here
-                    println!("test context data");
+                    // println!("test context data");
                     todo!()
                 } else {
                     context.downcast_ref().unwrap()
                 };
-                println!("real context data {:?}", context);
+                // println!("real context data {:?}", context);
 
                 let session_id = context.session_id.clone().unwrap();
                 let session_id = sea_orm::prelude::Uuid::parse_str(session_id.as_str()).unwrap();

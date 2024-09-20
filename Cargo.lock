@@ -3734,6 +3734,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "portfolio-harness"
+version = "0.1.0"
+dependencies = [
+ "alohomora",
+ "portfolio-api",
+ "rocket",
+]
+
+[[package]]
 name = "portfolio-migration"
 version = "2.0.0"
 dependencies = [

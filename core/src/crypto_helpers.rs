@@ -104,6 +104,9 @@ pub async fn my_verify_password<P1: Policy + Clone + 'static, P2: Policy + Clone
 ) -> Result<bool, ServiceError> {
     let res = execute_pcr((password_plain_text.clone(), hash.clone()), 
     PrivacyCriticalRegion::new(|(unboxed_password_plain, unboxed_hash): (String, String), _, _|{
+        // println!("password {:?}", unboxed_password_plain);
+        // println!("hash {:?}", unboxed_hash);
+        // todo!();
         crate::crypto::verify_password(unboxed_password_plain, unboxed_hash)
     },
     Signature{username: "AlexanderPortland", signature: ""}, 

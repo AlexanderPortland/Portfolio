@@ -1,4 +1,4 @@
-#[cfg(test)]
+// #[cfg(test)]
 pub mod tests {
     use crate::rocket;
     use alohomora::{bbox::BBox, context::Context, policy::NoPolicy, testing::{BBoxClient, TestContextData}};
@@ -14,7 +14,7 @@ pub mod tests {
     
     use std::{marker::PhantomData, sync::Mutex};
 
-    pub const ADMIN_ID: i32 = 1;
+    pub const ADMIN_ID: i32 = 3;
     pub const ADMIN_PASSWORD: &'static str = "test";
 
     pub const APPLICATION_ID: i32 = 103151;
@@ -37,6 +37,7 @@ pub mod tests {
     }
 
     pub async fn run_test_migrations(db: &DbConn) {
+        // println!("migratingg");
         let (pubkey, priv_key) = crypto::create_identity();
         let priv_key = crypto::encrypt_password(priv_key, ADMIN_PASSWORD.to_string())
             .await
@@ -44,6 +45,7 @@ pub mod tests {
         let password_hash = crypto::hash_password(ADMIN_PASSWORD.to_string())
             .await
             .unwrap();
+        // println!("password is {} for {}", password_hash, ADMIN_PASSWORD.to_string());
 
         admin::ActiveModel {
             id: Set(BBox::new(ADMIN_ID, FakePolicy::new())),
