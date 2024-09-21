@@ -1,4 +1,4 @@
-#[cfg(test)]
+// #[cfg(test)]
 pub mod tests {
     use crate::rocket;
     use entity::admin;
@@ -13,7 +13,7 @@ pub mod tests {
     };
     use std::sync::Mutex;
 
-    pub const ADMIN_ID: i32 = 1;
+    pub const ADMIN_ID: i32 = 3;
     pub const ADMIN_PASSWORD: &'static str = "test";
 
     pub const APPLICATION_ID: i32 = 103151;
@@ -21,6 +21,7 @@ pub mod tests {
     pub const PERSONAL_ID_NUMBER: &'static str = "0101010000";
 
     pub async fn run_test_migrations(db: &DbConn) {
+        println!("migrating");
         let (pubkey, priv_key) = crypto::create_identity();
         let priv_key = crypto::encrypt_password(priv_key, ADMIN_PASSWORD.to_string())
             .await

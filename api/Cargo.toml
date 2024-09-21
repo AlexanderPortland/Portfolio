@@ -27,9 +27,10 @@ portfolio-entity = { path = "../entity" }
 portfolio-migration = { path = "../migration" }
 portfolio-core = { path = "../core" }
 
+once_cell = "^1.17"
+
 [dependencies.sea-orm-rocket]
 version = "^0.5"
 
 
-[dev-dependencies]
-once_cell = "^1.17"
+

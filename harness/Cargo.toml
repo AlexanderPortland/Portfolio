@@ -1,0 +1,14 @@
+[package]
+name = "portfolio-harness"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+portfolio-api = { path = "../api" }
+portfolio-core = { path = "../core" }
+alohomora = { path = "../../alohomora/alohomora" }
+rocket = { version = "^0.5.0-rc.3", features = [
+  "json",
+  "secrets",
+] }

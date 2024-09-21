@@ -17,6 +17,12 @@ pub struct SeaOrmPool {
     pub conn: sea_orm::DatabaseConnection,
 }
 
+async fn test_init(_figment: &Figment) -> Result<SeaOrmPool, <SeaOrmPool as sea_orm_rocket::Pool>::Error> {
+    let conn = portfolio_core::utils::db::get_memory_sqlite_connection().await;
+    crate::test::tests::run_test_migrations(&conn).await;
+    return Ok(SeaOrmPool { conn });
+}
+
 #[async_trait]
 impl sea_orm_rocket::Pool for SeaOrmPool {
     type Error = sea_orm::DbErr;
@@ -25,13 +31,12 @@ impl sea_orm_rocket::Pool for SeaOrmPool {
 
     #[cfg(test)]
     async fn init(_figment: &Figment) -> Result<Self, Self::Error> {
-        let conn = portfolio_core::utils::db::get_memory_sqlite_connection().await;
-        crate::test::tests::run_test_migrations(&conn).await;
-        return Ok(Self { conn });
+        test_init(_figment).await
     }
 
     #[cfg(not(test))]
     async fn init(_figment: &Figment) -> Result<Self, Self::Error> {
+        return test_init(_figment).await;
         let init = false;
 
         dotenv::dotenv().ok();
