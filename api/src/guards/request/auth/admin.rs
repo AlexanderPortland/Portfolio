@@ -53,11 +53,11 @@ impl<'r> FromRequest<'r> for AdminAuth {
 
         match session {
             Ok(model) => {
-                warn!("{}: ADMIN {} AUTHENTICATED", format_request(req), model.id);
+                // warn!("{}: ADMIN {} AUTHENTICATED", format_request(req), model.id);
                 Outcome::Success(AdminAuth(model, private_key.to_string()))
             },
             Err(e) => {
-                info!("{}: ADMIN AUTHENTICATION FAILED: {}", format_request(req), e);
+                // info!("{}: ADMIN AUTHENTICATION FAILED: {}", format_request(req), e);
                 Outcome::Failure((Status::Unauthorized, None))
         },
         }

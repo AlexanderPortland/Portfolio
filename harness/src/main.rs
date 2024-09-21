@@ -138,7 +138,7 @@ fn main(){
     let PORTFOLIO = read_portfolio("../cover_letter.pdf".to_string());
     let client = get_portfolio();
     
-    let ids: Vec<i32> = (103152..103260).collect();
+    let ids: Vec<i32> = (103152..103302).collect();
     let ids_len = ids.len();
 
     let start = Instant::now();
