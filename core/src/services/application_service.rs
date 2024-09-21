@@ -42,12 +42,12 @@ impl ApplicationService {
         
         let hashed_password = hash_password(plain_text_password.to_string()).await?;
         let (pubkey, priv_key_plain_text) = crypto::create_identity();
-        println!("poassing word");
+        // println!("poassing word");
         let encrypted_priv_key = crypto::encrypt_password(
             priv_key_plain_text,
             plain_text_password.to_string()
         ).await?;
-        println!("done passing word");
+        // println!("done passing word");
     
 
         let (candidate, enc_personal_id_number) = Self::find_or_create_candidate_with_personal_id(
@@ -58,7 +58,7 @@ impl ApplicationService {
             &pubkey,
         ).await?;
 
-        println!("done creating candidate");
+        // println!("done creating candidate");
         
 
         let application = Mutation::create_application(
@@ -71,7 +71,7 @@ impl ApplicationService {
             encrypted_priv_key,
         ).await?;
 
-        println!("done creating app");
+        // println!("done creating app");
 
         let applications = Query::find_applications_by_candidate_id(db, candidate.id).await?;
         if applications.len() >= 3 {
@@ -108,7 +108,7 @@ impl ApplicationService {
         pubkey: &String,
         // enc_personal_id_number: &EncryptedString,
     ) -> Result<(candidate::Model, String), ServiceError> {
-        println!("doing some wacky shit");
+        // println!("doing some wacky shit");
         let candidates = Query::list_candidates_full(db).await?;
         let ids_decrypted = futures::future::join_all(
         candidates.iter().map(|c| async {(
@@ -121,17 +121,17 @@ impl ApplicationService {
         ))
             .await;
 
-        println!("doing some more wacky shit for id {}", personal_id_number);
+        // println!("doing some more wacky shit for id {}", personal_id_number);
 
         let found_ids: Vec<&(i32, String)> = ids_decrypted
             .iter()
             .filter(|(_, id)| id == personal_id_number)
             .collect();
 
-        println!("doing even more wacky shit found {:?}", found_ids);
+        // println!("doing even more wacky shit found {:?}", found_ids);
             
         if let Some((candidate_id, _)) = found_ids.first() {
-            println!("a");
+            // println!("a");
             Ok(
                 Self::find_linkable_candidate(db, 
                     application_id,
@@ -141,17 +141,17 @@ impl ApplicationService {
                 ).await?
             )
         } else {
-            println!("b");
+            // println!("b");
             let recipients = get_recipients(db, pubkey).await?;
-            println!("c");
+            // println!("c");
             let enc_personal_id_number = EncryptedString::new(
                 personal_id_number,
                 &recipients,
             ).await?;
 
-            println!("d");
+            // println!("d");
             let s = enc_personal_id_number.to_owned().to_string();
-            println!("stringy string is {:?}", s.clone());
+            // println!("stringy string is {:?}", s.clone());
             Ok(
                 (
                     CandidateService::create(db, s).await?,
@@ -168,13 +168,13 @@ impl ApplicationService {
         pubkey: &String,
         personal_id_number: String,
     ) -> Result<(candidate::Model, String), ServiceError> {
-        println!("\t- linkin that shit");
+        // println!("\t- linkin that shit");
         let candidate = Query::find_candidate_by_id(db, candidate_id)
             .await?
             .ok_or(ServiceError::CandidateNotFound)?;
-        println!("\t- a");
+        // println!("\t- a");
         let linked_applications = Query::find_applications_by_candidate_id(db, candidate.id).await?;
-        println!("\t- b");
+        // println!("\t- b");
         if linked_applications.len() > 1 {
             return Err(ServiceError::TooManyApplications);
         }
@@ -187,13 +187,13 @@ impl ApplicationService {
 
         let mut recipients = Query::get_all_admin_public_keys(db).await?;
         recipients.append(&mut vec![linked_application.public_key.to_owned(), pubkey.to_owned()]);
-        println!("\t- c");
+        // println!("\t- c");
             
         let enc_personal_id_number = EncryptedString::new(
             &personal_id_number,
             &recipients,
         ).await?;
-        println!("\t- d");
+        // println!("\t- d");
 
         let candidate = Mutation::update_personal_id(db, candidate, &enc_personal_id_number.to_owned().to_string()).await?;
         println!("APPLICATIONS {} AND {} ARE LINKED (CANDIDATE {})", new_application_id, linked_application.id, candidate.id);
@@ -290,17 +290,17 @@ impl ApplicationService {
         page: Option<u64>,
         sort: Option<String>,
     ) -> Result<Vec<ApplicationResponse>, ServiceError> {
-        println!("a");
+        // println!("a");
         let applications = Query::list_applications(db, field_of_study, page, sort).await?;
-        println!("aaa");
+        // println!("aaa");
         futures::future::try_join_all(
             applications
                 .iter()
                 .map(|c| async move {
-                    println!("b");
+                    // println!("b");
                     let related_applications = Query::find_applications_by_candidate_id(db, c.candidate_id).await?.iter()
                         .map(|a| a.id).collect();
-                    println!("bbb");
+                    // println!("bbb");
                     ApplicationResponse::from_encrypted(
                         private_key,
                         c.to_owned(),

@@ -89,14 +89,14 @@ pub async fn create_candidate(
     session: AdminAuth,
     request: Json<RegisterRequest>,
 ) -> Result<Json<CreateCandidateResponse>, Custom<String>> {
-    println!("\t- a");
+    // println!("\t- a");
     let db = conn.into_inner();
     let form = request.into_inner();
     let private_key = session.get_private_key();
 
     let plain_text_password = random_12_char_string();
 
-    println!("trying to did the thing");
+    // println!("trying to did the thing");
 
     let (application, applications, personal_id_number) = ApplicationService::create(
         &private_key,
@@ -108,7 +108,7 @@ pub async fn create_candidate(
         .await
         .map_err(to_custom_error)?;
 
-    println!("did the thing");
+    // println!("did the thing");
     Ok(
         Json(
             CreateCandidateResponse {

@@ -1,16 +1,12 @@
 use std::sync::{Arc, Mutex};
 
-use alohomora::testing::BBoxClient;
 use portfolio_api::*;
-use portfolio_core::models::application::ApplicationResponse;
-use portfolio_core::models::candidate::CreateCandidateResponse;
-// use portfolio_core::models::{application::CleanApplicationResponse, candidate::CleanCreateCandidateResponse};
+use portfolio_core::models::{application::ApplicationResponse, candidate::CreateCandidateResponse};
 use rocket::{http::{Cookie, Header, Status}, local::blocking::Client};
+use std::time::Instant;
 
 fn get_portfolio() -> Client {
-    let b = portfolio_api::rocket();
-    println!("built");
-    Client::tracked(b).expect("invalid rocket")
+    Client::tracked(portfolio_api::rocket()).expect("invalid rocket")
 }
 
 pub const ADMIN_ID: i32 = 3;
@@ -79,7 +75,7 @@ fn make_candidates(client: &Client, ids: Vec<i32>) -> Vec<(i32, String)> {
 
     for id in ids {
         let personal_id = id % 1000;
-        println!("[+] creating candidate for {} {}", id, personal_id);
+        // println!("[+] creating candidate for {} {}", id, personal_id);
         let response = create_candidate(&client, cookies.clone(), id, personal_id.to_string());
         // println!("res is {:?}", response);
         cands.push((id, response.password));
@@ -106,6 +102,7 @@ fn list_candidates(client: &Client, len: usize) {
     let cookies = admin_login(&client);
     let res = do_list_candidates(&client, cookies);
     assert_eq!(res.len(), len + 1);
+    println!("list assert passed!");
 }
 
 fn upload_letters(client: &Client, cands: Vec<(i32, String)>, letter: Vec<u8>) {
@@ -141,11 +138,21 @@ fn main(){
     let PORTFOLIO = read_portfolio("../cover_letter.pdf".to_string());
     let client = get_portfolio();
     
-    // let ids: Vec<i32> = (103152..103260).collect();
-    let ids: Vec<i32> = (103152..103254).collect();
+    let ids: Vec<i32> = (103152..103260).collect();
     let ids_len = ids.len();
 
+    let start = Instant::now();
     let candidates = make_candidates(&client, ids);
+    let t_make = start.elapsed();
+
+    let start = Instant::now();
     upload_letters(&client, candidates, PORTFOLIO);
-    list_candidates(&client, ids_len);
+    let t_upload = start.elapsed();
+
+    println!("{:?} for make, {:?} for upload", t_make, t_upload);
+
+    let (t_per_make, t_per_upload) = (t_make.as_nanos() / (ids_len as u128), t_upload.as_nanos() / (ids_len as u128));
+    println!("{:?}ns/cand for make, {:?}ns/cand for upload", t_per_make, t_per_upload);
+
+    // list_candidates(&client, ids_len);
 }

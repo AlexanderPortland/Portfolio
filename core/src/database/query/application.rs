@@ -111,15 +111,15 @@ impl Query {
         db: &DbConn,
         candidate_id: i32,
     ) -> Result<Vec<application::Model>, DbErr> {
-        println!("in here");
+        // println!("in here");
         let applications_res = application::Entity::find()
             .filter(application::Column::CandidateId.eq(candidate_id))
             .all(db)
             .await;
 
-        println!("gonna be in beer");
+        // println!("gonna be in beer");
         let applications = applications_res.unwrap();
-        println!("in beer");
+        // println!("in beer");
         Ok(applications)
     }
 }

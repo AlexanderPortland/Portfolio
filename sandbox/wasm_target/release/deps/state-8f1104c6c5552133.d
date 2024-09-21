@@ -1,0 +1,12 @@
+/home/aportlan/etos/Portfolio/sandbox/wasm_target/release/deps/libstate-8f1104c6c5552133.rmeta: /home/aportlan/.cargo/registry/src/index.crates.io-6f17d22bba15001f/state-0.5.3/src/lib.rs /home/aportlan/.cargo/registry/src/index.crates.io-6f17d22bba15001f/state-0.5.3/src/ident_hash.rs /home/aportlan/.cargo/registry/src/index.crates.io-6f17d22bba15001f/state-0.5.3/src/storage.rs /home/aportlan/.cargo/registry/src/index.crates.io-6f17d22bba15001f/state-0.5.3/src/init.rs /home/aportlan/.cargo/registry/src/index.crates.io-6f17d22bba15001f/state-0.5.3/src/shim.rs /home/aportlan/.cargo/registry/src/index.crates.io-6f17d22bba15001f/state-0.5.3/src/container.rs
+
+/home/aportlan/etos/Portfolio/sandbox/wasm_target/release/deps/libstate-8f1104c6c5552133.rlib: /home/aportlan/.cargo/registry/src/index.crates.io-6f17d22bba15001f/state-0.5.3/src/lib.rs /home/aportlan/.cargo/registry/src/index.crates.io-6f17d22bba15001f/state-0.5.3/src/ident_hash.rs /home/aportlan/.cargo/registry/src/index.crates.io-6f17d22bba15001f/state-0.5.3/src/storage.rs /home/aportlan/.cargo/registry/src/index.crates.io-6f17d22bba15001f/state-0.5.3/src/init.rs /home/aportlan/.cargo/registry/src/index.crates.io-6f17d22bba15001f/state-0.5.3/src/shim.rs /home/aportlan/.cargo/registry/src/index.crates.io-6f17d22bba15001f/state-0.5.3/src/container.rs
+
+/home/aportlan/etos/Portfolio/sandbox/wasm_target/release/deps/state-8f1104c6c5552133.d: /home/aportlan/.cargo/registry/src/index.crates.io-6f17d22bba15001f/state-0.5.3/src/lib.rs /home/aportlan/.cargo/registry/src/index.crates.io-6f17d22bba15001f/state-0.5.3/src/ident_hash.rs /home/aportlan/.cargo/registry/src/index.crates.io-6f17d22bba15001f/state-0.5.3/src/storage.rs /home/aportlan/.cargo/registry/src/index.crates.io-6f17d22bba15001f/state-0.5.3/src/init.rs /home/aportlan/.cargo/registry/src/index.crates.io-6f17d22bba15001f/state-0.5.3/src/shim.rs /home/aportlan/.cargo/registry/src/index.crates.io-6f17d22bba15001f/state-0.5.3/src/container.rs
+
+/home/aportlan/.cargo/registry/src/index.crates.io-6f17d22bba15001f/state-0.5.3/src/lib.rs:
+/home/aportlan/.cargo/registry/src/index.crates.io-6f17d22bba15001f/state-0.5.3/src/ident_hash.rs:
+/home/aportlan/.cargo/registry/src/index.crates.io-6f17d22bba15001f/state-0.5.3/src/storage.rs:
+/home/aportlan/.cargo/registry/src/index.crates.io-6f17d22bba15001f/state-0.5.3/src/init.rs:
+/home/aportlan/.cargo/registry/src/index.crates.io-6f17d22bba15001f/state-0.5.3/src/shim.rs:
+/home/aportlan/.cargo/registry/src/index.crates.io-6f17d22bba15001f/state-0.5.3/src/container.rs:
