@@ -150,5 +150,8 @@ fn main(){
 
     println!("{:?} for make, {:?} for upload", t_make, t_upload);
 
+    let (t_per_make, t_per_upload) = (t_make.as_nanos() / (ids_len as u128), t_upload.as_nanos() / (ids_len as u128));
+    println!("{:?}ns/cand for make, {:?}ns/cand for upload", t_per_make, t_per_upload);
+
     // list_candidates(&client, ids_len);
 }
