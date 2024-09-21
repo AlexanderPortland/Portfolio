@@ -43,8 +43,8 @@ impl AuthenticableTrait for AdminService {
             .await?;
         println!("session id is {:?}", session_id);
         
-        //let private_key = Self::decrypt_private_key(db, admin.id, password).await?;
-        let private_key = "13".to_string();
+        let private_key = Self::decrypt_private_key(db, admin.id, password).await?;
+        // let private_key = "13".to_string();
         //println!("private key is {:?}", private_key);
         Ok((session_id, private_key))
     }

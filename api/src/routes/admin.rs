@@ -89,6 +89,7 @@ pub async fn create_candidate(
     session: AdminAuth,
     request: Json<RegisterRequest>,
 ) -> Result<Json<CreateCandidateResponse>, Custom<String>> {
+    println!("\t- a");
     let db = conn.into_inner();
     let form = request.into_inner();
     let private_key = session.get_private_key();
@@ -133,16 +134,20 @@ pub async fn list_candidates(
     sort: Option<String>,
 ) -> Result<Json<Vec<ApplicationResponse>>, Custom<String>> {
     let db = conn.into_inner();
+    println!("hello");
     let private_key = session.get_private_key();
+    println!("hi");
     if let Some(field) = field.clone() {
         if !(field == "KB".to_string() || field == "IT".to_string() || field == "G") {
             return Err(Custom(Status::BadRequest, "Invalid field of study".to_string()));
         }
     }
 
+    println!("and hey");
+
     let candidates = ApplicationService::list_applications(&private_key, db, field, page, sort)
         .await.map_err(to_custom_error)?;
-
+    println!("it's time");
     Ok(
         Json(candidates)
     )

@@ -121,14 +121,14 @@ impl ApplicationService {
         ))
             .await;
 
-        println!("doing some more wacky shit");
+        println!("doing some more wacky shit for id {}", personal_id_number);
 
         let found_ids: Vec<&(i32, String)> = ids_decrypted
             .iter()
             .filter(|(_, id)| id == personal_id_number)
             .collect();
 
-        println!("doing even more wacky shit");
+        println!("doing even more wacky shit found {:?}", found_ids);
             
         if let Some((candidate_id, _)) = found_ids.first() {
             println!("a");
@@ -168,12 +168,13 @@ impl ApplicationService {
         pubkey: &String,
         personal_id_number: String,
     ) -> Result<(candidate::Model, String), ServiceError> {
+        println!("\t- linkin that shit");
         let candidate = Query::find_candidate_by_id(db, candidate_id)
             .await?
             .ok_or(ServiceError::CandidateNotFound)?;
-                
+        println!("\t- a");
         let linked_applications = Query::find_applications_by_candidate_id(db, candidate.id).await?;
-
+        println!("\t- b");
         if linked_applications.len() > 1 {
             return Err(ServiceError::TooManyApplications);
         }
@@ -186,12 +187,13 @@ impl ApplicationService {
 
         let mut recipients = Query::get_all_admin_public_keys(db).await?;
         recipients.append(&mut vec![linked_application.public_key.to_owned(), pubkey.to_owned()]);
-
+        println!("\t- c");
             
         let enc_personal_id_number = EncryptedString::new(
             &personal_id_number,
             &recipients,
         ).await?;
+        println!("\t- d");
 
         let candidate = Mutation::update_personal_id(db, candidate, &enc_personal_id_number.to_owned().to_string()).await?;
         println!("APPLICATIONS {} AND {} ARE LINKED (CANDIDATE {})", new_application_id, linked_application.id, candidate.id);
@@ -288,14 +290,17 @@ impl ApplicationService {
         page: Option<u64>,
         sort: Option<String>,
     ) -> Result<Vec<ApplicationResponse>, ServiceError> {
+        println!("a");
         let applications = Query::list_applications(db, field_of_study, page, sort).await?;
-
+        println!("aaa");
         futures::future::try_join_all(
             applications
                 .iter()
                 .map(|c| async move {
+                    println!("b");
                     let related_applications = Query::find_applications_by_candidate_id(db, c.candidate_id).await?.iter()
                         .map(|a| a.id).collect();
+                    println!("bbb");
                     ApplicationResponse::from_encrypted(
                         private_key,
                         c.to_owned(),

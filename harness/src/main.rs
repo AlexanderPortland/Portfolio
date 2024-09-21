@@ -78,7 +78,9 @@ fn make_candidates(client: &Client, ids: Vec<i32>) -> Vec<(i32, String)> {
     let cookies = admin_login(&client);
 
     for id in ids {
-        let response = create_candidate(&client, cookies.clone(), id, "0".to_string());
+        let personal_id = id % 1000;
+        println!("[+] creating candidate for {} {}", id, personal_id);
+        let response = create_candidate(&client, cookies.clone(), id, personal_id.to_string());
         // println!("res is {:?}", response);
         cands.push((id, response.password));
     }
@@ -139,7 +141,8 @@ fn main(){
     let PORTFOLIO = read_portfolio("../cover_letter.pdf".to_string());
     let client = get_portfolio();
     
-    let ids: Vec<i32> = (103152..103260).collect();
+    // let ids: Vec<i32> = (103152..103260).collect();
+    let ids: Vec<i32> = (103152..103254).collect();
     let ids_len = ids.len();
 
     let candidates = make_candidates(&client, ids);
