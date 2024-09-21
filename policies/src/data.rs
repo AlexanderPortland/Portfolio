@@ -37,7 +37,7 @@ impl CandidateDataPolicy {
 
 impl Default for CandidateDataPolicy {
     fn default() -> Self {
-        println!("defaulting!!");
+        // println!("defaulting!!");
         CandidateDataPolicy { session_id: None, candidate_id: None, application_id: None }
     }
 }
@@ -65,7 +65,7 @@ fn does_session_exist(is_admin: bool, db: &DatabaseConnection, session_id: Strin
         None
     };
 
-    println!("seeing if session exists w/ as admin {is_admin}, session_id {session_id}, candidate_id: {:?}, application_id: {:?}", candidate_id, application_id);
+    // println!("seeing if session exists w/ as admin {is_admin}, session_id {session_id}, candidate_id: {:?}, application_id: {:?}", candidate_id, application_id);
     let session_id = sea_orm::prelude::Uuid::parse_str(session_id.as_str()).unwrap();
     let table_name = if is_admin { String::from("admin_session") } else { String::from("session") };
     let id_phrase = if let Some(application_id) = application_id {
@@ -109,12 +109,12 @@ impl Policy for CandidateDataPolicy {
         match reason {
             // 0. we trust the custom reviewers
             alohomora::policy::Reason::Custom(_) => {
-                println!("Custom reason");
+                // println!("Custom reason");
                 return true
             },
             // 1. if writing to DB, make sure it's from the same session as data
             alohomora::policy::Reason::DB(_, _) => {
-                println!("DB reason");
+                // println!("DB reason");
                 return true;
             }
             // 2. if rendering, we must either be a) an admin, or b) the right candidate
@@ -133,7 +133,7 @@ impl Policy for CandidateDataPolicy {
                 let session_id = context.session_id.clone().unwrap();
                 let session_id = sea_orm::prelude::Uuid::parse_str(session_id.as_str()).unwrap();
 
-                println!("got it!");
+                // println!("got it!");
 
                 // admin check
                 if does_session_exist(true, &context.conn, context.session_id.clone().unwrap(), None, None) {
@@ -142,12 +142,12 @@ impl Policy for CandidateDataPolicy {
 
                 // candidate (same session return result)
                 if let Some(session_id) = self.session_id.clone() {
-                    println!("cand same session check");
+                    // println!("cand same session check");
                     return session_id == context.session_id.clone().unwrap();
                 }
                 // candidate check
                 if let Some(_) = self.candidate_id {
-                    println!("from cand check");
+                    // println!("from cand check");
                     return does_session_exist(false, &context.conn, context.session_id.clone().unwrap(), self.candidate_id, None);
                 }
                 return false
@@ -166,7 +166,7 @@ impl Policy for CandidateDataPolicy {
             let other = other.specialize().unwrap();
             return Ok(AnyPolicy::new(self.join_logic(other)?));
         } else {
-            println!("data stacking polciies w/ other {:?}", other);
+            // println!("data stacking polciies w/ other {:?}", other);
             if other == AnyPolicy::new(NoPolicy::new()){ // TODO: why do I need this??
                 return Ok(AnyPolicy::new(self.clone()));
             }
@@ -205,7 +205,7 @@ impl ORMPolicy for CandidateDataPolicy {
             todo!()
         } else if let Ok(r) = result.try_get::<i32>("", "password") {
             // in application table
-            println!("in application table w/ result {:?}", r);
+            // println!("in application table w/ result {:?}", r);
             match result.try_get::<i32>("", "id") {
                 Ok(application_id) => CandidateDataPolicy { 
                     application_id: Some(application_id),
@@ -216,7 +216,7 @@ impl ORMPolicy for CandidateDataPolicy {
             }
         } else if let Ok(r) = result.try_get::<i32>("", "candidate_id") {
             // in parent table
-            println!("in parent table w/ result {:?}", r);
+            // println!("in parent table w/ result {:?}", r);
             CandidateDataPolicy { 
                 candidate_id: Some(r),
                 session_id: None,
@@ -224,7 +224,7 @@ impl ORMPolicy for CandidateDataPolicy {
             }
         } else {
             // in the candidate table table
-            println!("in candidate table");
+            // println!("in candidate table");
             match result.try_get("", "id") {
                 Ok(candidate_id) => CandidateDataPolicy { 
                     candidate_id: Some(candidate_id),
@@ -236,7 +236,7 @@ impl ORMPolicy for CandidateDataPolicy {
             }
         };
 
-        println!("found policy {:?}", policy);
+        // println!("found policy {:?}", policy);
         policy
     }
 
@@ -260,18 +260,18 @@ impl FrontendPolicy for CandidateDataPolicy {
     fn from_request<'a, 'r>(request: &'a rocket::Request<'r>) -> Self
             where
                 Self: Sized {
-        println!("in route {}", request.uri());
-        if request.uri() == "/candidate/login" || request.route().unwrap().to_string() == "" {
-            println!("special route");
-        } else {
-            println!("unspecial route");
-        }
+        // println!("in route {}", request.uri());
+        // if request.uri() == "/candidate/login" || request.route().unwrap().to_string() == "" {
+        //     // println!("special route");
+        // } else {
+        //     // println!("unspecial route");
+        // }
         match request.cookies().get("id") {
             // cookie id is a session id which maps in the sessions db table to candidate_id which is what we want
             Some(session_id) => {
-                println!("yahoo i got id {session_id}");
+                // println!("yahoo i got id {session_id}");
                 let session_id = Some(session_id.value().to_string());
-                println!("(or as a string) {:?}", session_id);
+                // println!("(or as a string) {:?}", session_id);
                 CandidateDataPolicy {
                     session_id,
                     candidate_id: None,

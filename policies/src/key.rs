@@ -59,18 +59,18 @@ impl Policy for KeyPolicy {
             // 1. if coming from db -> should only go to cookie for right person
             KeySource::Database => {
                 let spec_context: &ContextDataTypeOut = context.downcast_ref().unwrap();
-                println!("have context {:?}", spec_context);
+                // println!("have context {:?}", spec_context);
                 
                 // 1a. it's for a key cookie
                 let crate::Reason::Cookie(c) = reason else {
-                    println!("NOT A COOKIE");
+                    // println!("NOT A COOKIE");
                     return false;
                 };
                 // todo!();
                 const COOKIE_NAME: &str = "key";
-                println!("for cookie {}", c);
+                // println!("for cookie {}", c);
                 if c.ne(COOKIE_NAME) {
-                    println!("NOT FOR THE {COOKIE_NAME} COOKIE");
+                    // println!("NOT FOR THE {COOKIE_NAME} COOKIE");
                     return false;
                 }
 
@@ -78,19 +78,19 @@ impl Policy for KeyPolicy {
                 // check to make sure login post data contains the right applicationId
                 if let Some(req) = spec_context.admin_login.clone() {
                     if req.adminId.to_string() != self.owner_id.clone().unwrap() {
-                        println!("req id {} isnt my owner id {}", req.adminId.to_string(), self.owner_id.clone().unwrap());
+                        // println!("req id {} isnt my owner id {}", req.adminId.to_string(), self.owner_id.clone().unwrap());
                         return false; 
                     } else {
-                        println!("req id {} is my owner id {}! so you chill", req.adminId.to_string(), self.owner_id.clone().unwrap());
+                        // println!("req id {} is my owner id {}! so you chill", req.adminId.to_string(), self.owner_id.clone().unwrap());
                     }
                 }
                 if let Some(req) = spec_context.candidate_login.clone() {
                     if req.applicationId.to_string() != self.owner_id.clone().unwrap() {
-                        println!("req id {} isnt my owner id {}", req.applicationId.to_string(), self.owner_id.clone().unwrap());
+                        // println!("req id {} isnt my owner id {}", req.applicationId.to_string(), self.owner_id.clone().unwrap());
                         todo!();
                         return false; 
                     } else {
-                        println!("req id {} is my owner id {}! so you chill", req.applicationId.to_string(), self.owner_id.clone().unwrap());
+                        // println!("req id {} is my owner id {}! so you chill", req.applicationId.to_string(), self.owner_id.clone().unwrap());
                     }
                 }
 
@@ -134,7 +134,7 @@ impl Policy for KeyPolicy {
             let other = other.specialize::<KeyPolicy>().unwrap();
             Ok(AnyPolicy::new(self.join_logic(other)?))
         } else {
-            println!("stacking polciies");
+            // println!("stacking polciies");
             //Policies must be stacked
             Ok(AnyPolicy::new(PolicyAnd::new(
                 AnyPolicy::new(self.clone()),
@@ -158,10 +158,10 @@ impl ORMPolicy for KeyPolicy {
     fn from_result(result: &sea_orm::QueryResult) -> Self
         where
             Self: Sized {
-        println!("getting from result for ORM POLICy");
+        // println!("getting from result for ORM POLICy");
         let id: i32 = result.try_get("", "id").unwrap();
         // should this panic? or should this just return with None?
-        println!("got id {}", id);
+        // println!("got id {}", id);
         KeyPolicy{
             owner_id: Some(id.to_string()),
             source: KeySource::Database,

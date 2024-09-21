@@ -4,6 +4,7 @@ use alohomora::testing::BBoxClient;
 use portfolio_api::*;
 use portfolio_core::models::{application::CleanApplicationResponse, candidate::CleanCreateCandidateResponse};
 use rocket::{http::{Cookie, Header, Status}, local::blocking::Client};
+use std::time::Instant;
 
 fn get_portfolio() -> BBoxClient {
     BBoxClient::tracked(portfolio_api::rocket()).expect("invalid rocket")
@@ -139,7 +140,15 @@ fn main(){
     let ids: Vec<i32> = (103152..103260).collect();
     let ids_len = ids.len();
 
+    let start = Instant::now();
     let candidates = make_candidates(&client, ids);
+    let t_make = start.elapsed();
+
+    let start = Instant::now();
     upload_letters(&client, candidates, PORTFOLIO);
-    list_candidates(&client, ids_len);
+    let t_upload = start.elapsed();
+
+    println!("{:?} for make, {:?} for upload", t_make, t_upload);
+
+    // list_candidates(&client, ids_len);
 }

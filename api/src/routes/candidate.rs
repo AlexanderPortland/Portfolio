@@ -250,19 +250,19 @@ pub async fn upload_cover_letter(
     letter: Letter<FakePolicy>,
     context: Context<ContextDataType>,
 ) -> MyResult<(), (rocket::http::Status, String)> {
-    println!("hi there");
+    // println!("hi there");
     let application: entity::application::Model = session.into();
 
-    println!("hello");
+    // println!("hello");
 
     let a: BBox<Vec<u8>, FakePolicy> = letter.into();
 
-    println!("hi");
+    // println!("hi");
 
     PortfolioService::add_cover_letter_to_cache(context, application.candidate_id, a)
         .await
         .map_err(to_custom_error)?;
-    println!("done");
+    // println!("done");
     MyResult::Ok(())
 }
 
@@ -589,7 +589,7 @@ pub mod tests {
         // let buffer = bind.as_bytes();
         // println!("sending {:?}", buffer);
 
-        println!("len of buffer is {} bytes", buffer.len());
+        // println!("len of buffer is {} bytes", buffer.len());
 
         let response = client
             .post("/candidate/add/portfolio_letter")
