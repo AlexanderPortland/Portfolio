@@ -100,6 +100,7 @@ fn list_candidates(client: &Client, len: usize) {
     let cookies = admin_login(&client);
     let res = do_list_candidates(&client, cookies);
     assert_eq!(res.len(), len + 1);
+    println!("list assert passed!");
 }
 
 fn upload_letters(client: &Client, cands: Vec<(i32, String)>, letter: Vec<u8>) {
