@@ -45,8 +45,8 @@ pub async fn login(
     let session_token = session_token_key.0;
     let private_key = session_token_key.1;
 
-    cookies.add_private(Cookie::new("id", session_token.clone()));
-    cookies.add_private(Cookie::new("key", private_key.clone()));
+    cookies.add(Cookie::new("id", session_token.clone()));
+    cookies.add(Cookie::new("key", private_key.clone()));
 
     return Ok(());
 }
@@ -55,7 +55,7 @@ pub async fn login(
 pub async fn logout(conn: Connection<'_, Db>, _session: AdminAuth, cookies: &CookieJar<'_>,) -> Result<(), Custom<String>> {
     let db = conn.into_inner();
 
-    let cookie = cookies.get_private("id") // unwrap would be safe here because of the auth guard
+    let cookie = cookies.get("id") // unwrap would be safe here because of the auth guard
         .ok_or(Custom(Status::Unauthorized, "No session cookie".to_string()))?;
     let session_id = Uuid::try_parse(cookie.value()) // unwrap would be safe here because of the auth guard
         .map_err(|e| Custom(Status::BadRequest, e.to_string()))?;
@@ -65,8 +65,8 @@ pub async fn logout(conn: Connection<'_, Db>, _session: AdminAuth, cookies: &Coo
         .await
         .map_err(to_custom_error)?;
 
-    cookies.remove_private(Cookie::named("id"));
-    cookies.remove_private(Cookie::named("key"));
+    cookies.remove(Cookie::named("id"));
+    cookies.remove(Cookie::named("key"));
 
     Ok(())
 }

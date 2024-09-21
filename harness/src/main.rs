@@ -8,7 +8,9 @@ use portfolio_core::models::candidate::CreateCandidateResponse;
 use rocket::{http::{Cookie, Header, Status}, local::blocking::Client};
 
 fn get_portfolio() -> Client {
-    Client::tracked(portfolio_api::rocket()).expect("invalid rocket")
+    let b = portfolio_api::rocket();
+    println!("built");
+    Client::tracked(b).expect("invalid rocket")
 }
 
 pub const ADMIN_ID: i32 = 3;

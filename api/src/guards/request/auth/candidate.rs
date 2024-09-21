@@ -29,8 +29,8 @@ impl<'r> FromRequest<'r> for ApplicationAuth {
     async fn from_request(
         req: &'r Request<'_>,
     ) -> Outcome<ApplicationAuth, (Status, Self::Error), ()> {
-        let cookie_id = req.cookies().get_private("id");
-        let cookie_private_key = req.cookies().get_private("key");
+        let cookie_id = req.cookies().get("id");
+        let cookie_private_key = req.cookies().get("key");
 
         let Some(cookie_id) = cookie_id else {
             return Outcome::Failure((Status::Unauthorized, None));

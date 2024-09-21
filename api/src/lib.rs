@@ -105,7 +105,7 @@ pub fn rocket() -> Rocket<Build> {
         .attach(CORS)
         .attach(Db::init())
         .attach(AdHoc::try_on_ignite("Migrations", run_migrations))
-        .mount("/", routes![hello, all_options])
+        .mount("/", routes![hello])
         .mount(
             "/candidate/",
             routes![

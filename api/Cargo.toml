@@ -7,7 +7,7 @@ publish = false
 [dependencies]
 rocket = { version = "^0.5.0-rc.3", features = [
   "json",
-  "secrets",
+  # "secrets",
 ] }
 
 async-trait = { version = "^0.1" }

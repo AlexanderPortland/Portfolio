@@ -39,8 +39,8 @@ pub async fn login(
     .await
     .map_err(to_custom_error)?;
 
-    cookies.add_private(Cookie::new("id", session_token.clone()));
-    cookies.add_private(Cookie::new("key", private_key.clone()));
+    cookies.add(Cookie::new("id", session_token.clone()));
+    cookies.add(Cookie::new("key", private_key.clone()));
 
     return Ok(());
 }
@@ -54,7 +54,7 @@ pub async fn logout(
     let db = conn.into_inner();
 
     let cookie = cookies
-        .get_private("id") // unwrap would be safe here because of the auth guard
+        .get("id") // unwrap would be safe here because of the auth guard
         .ok_or(Custom(
             Status::Unauthorized,
             "No session cookie".to_string(),
@@ -66,8 +66,8 @@ pub async fn logout(
         .await
         .map_err(to_custom_error)?;
 
-    cookies.remove_private(Cookie::named("id"));
-    cookies.remove_private(Cookie::named("key"));
+    cookies.remove(Cookie::named("id"));
+    cookies.remove(Cookie::named("key"));
 
     Ok(())
 }

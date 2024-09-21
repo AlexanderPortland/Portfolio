@@ -13,7 +13,7 @@ check: check-api check-core
 	
 harness:
 	export PORTFOLIO_DATABASE_URL=mysql://root:@127.0.0.1/ && \
-	cd harness && cargo run
+	cd harness && cargo run --release
 
 upload: 
 	export PORTFOLIO_DATABASE_URL=mysql://root:@127.0.0.1/ && \

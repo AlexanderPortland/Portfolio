@@ -17,6 +17,7 @@ pub struct SeaOrmPool {
     pub conn: sea_orm::DatabaseConnection,
 }
 
+
 async fn test_init(_figment: &Figment) -> Result<SeaOrmPool, <SeaOrmPool as sea_orm_rocket::Pool>::Error> {
     let conn = portfolio_core::utils::db::get_memory_sqlite_connection().await;
     crate::test::tests::run_test_migrations(&conn).await;

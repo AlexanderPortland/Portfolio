@@ -10,5 +10,5 @@ portfolio-core = { path = "../core" }
 alohomora = { path = "../../alohomora/alohomora" }
 rocket = { version = "^0.5.0-rc.3", features = [
   "json",
-  "secrets",
+  # "secrets",
 ] }
