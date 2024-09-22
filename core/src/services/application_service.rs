@@ -16,6 +16,7 @@ use alohomora::policy::AnyPolicy;
 use alohomora::pure::{execute_pure, PrivacyPureRegion};
 use entity::session_trait::UserSession;
 use portfolio_policies::FakePolicy;
+use alohomora::fold::fold;
 
 use crate::{error::ServiceError, Query, utils::db::get_recipients, models::candidate_details::EncryptedApplicationDetails, models::{candidate::{ApplicationDetails, CreateCandidateResponse}, candidate_details::{EncryptedString, EncryptedCandidateDetails}, auth::AuthenticableTrait, application::ApplicationResponse}, Mutation, crypto};
 use crate::crypto_helpers::{my_decrypt_password, my_encrypt_password, my_hash_password, my_verify_password};
@@ -284,7 +285,7 @@ impl ApplicationService {
         field_of_study: Option<String>,
         page: Option<u64>,
         sort: Option<String>,
-    ) -> Result<Vec<ApplicationResponse>, ServiceError> {
+    ) -> Result<Vec<BBox<crate::models::application::ApplicationResponseOut, AnyPolicy>>, ServiceError> {
         let applications = Query::list_applications(db, field_of_study, page, sort).await?;
 
         futures::future::try_join_all(
@@ -293,11 +294,23 @@ impl ApplicationService {
                 .map(|c: &crate::database::query::application::ApplicationCandidateJoin| async move {
                     let related_applications = Query::find_applications_by_candidate_id(db, c.candidate_id.clone()).await?.iter()
                         .map(|a| a.id.clone()).collect();
-                    ApplicationResponse::from_encrypted(
+                    // fold here
+                    let res = ApplicationResponse::from_encrypted(
                         private_key,
                         c.to_owned(),
                         related_applications,
-                ).await
+                ).await;
+                match res {
+                    Ok(res) => {
+                        Ok(fold(res).unwrap())
+                    }
+                    Err(se) => Err(se)
+                }
+            //     ApplicationResponse::from_encrypted(
+            //         private_key,
+            //         c.to_owned(),
+            //         related_applications,
+            // ).await
                 })
         ).await
     }

@@ -147,6 +147,8 @@ pub async fn create_candidate(
     MyResult::Ok(JsonResponse::from((cand, context)))
 }
 
+use portfolio_core::models::application::ApplicationResponseOut;
+use alohomora::fold::fold;
 #[allow(unused_variables)]
 #[get("/candidates?<field>&<page>&<sort>")]
 pub async fn list_candidates(
@@ -157,7 +159,7 @@ pub async fn list_candidates(
     page: Option<BBox<u64, NoPolicy>>,
     sort: Option<BBox<String, NoPolicy>>,
     context: Context<ContextDataType>
-) -> MyResult<JsonResponse<Vec<ApplicationResponse>, ContextDataType>, (rocket::http::Status, String)> {
+) -> MyResult<JsonResponse<BBox<Vec<ApplicationResponseOut>, AnyPolicy>, ContextDataType>, (rocket::http::Status, String)> {
     let db = conn.into_inner();
     let private_key = session.get_private_key();
 
@@ -170,8 +172,9 @@ pub async fn list_candidates(
         }
     }
 
-    let candidates = ApplicationService::list_applications(&private_key, db, field, page, sort)
+    let candidates: Vec<BBox<ApplicationResponseOut, AnyPolicy>> = ApplicationService::list_applications(&private_key, db, field, page, sort)
         .await.map_err(to_custom_error)?;
+    let candidates = fold(candidates).unwrap();
 
     let a = MyResult::Ok(JsonResponse::from((candidates, context)));
     a

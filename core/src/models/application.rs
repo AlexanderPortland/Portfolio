@@ -12,7 +12,8 @@ use crate::{database::query::application::ApplicationCandidateJoin, error::Servi
 use super::candidate_details::EncryptedString;
 
 //#[derive(Debug, Serialize, Deserialize)]
-#[derive(ResponseBBoxJson)]
+#[derive(ResponseBBoxJson, AlohomoraType, Debug)]
+#[alohomora_out_type(to_derive = [ResponseBBoxJson])]
 pub struct ApplicationResponse {
     pub application_id: BBox<i32, AnyPolicy>,
     pub candidate_id: BBox<i32, AnyPolicy>,

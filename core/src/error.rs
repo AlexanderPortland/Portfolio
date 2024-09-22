@@ -1,3 +1,4 @@
+use alohomora::AlohomoraType;
 use log::error;
 use thiserror::Error;
 

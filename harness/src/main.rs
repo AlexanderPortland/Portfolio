@@ -4,7 +4,7 @@ use alohomora::testing::BBoxClient;
 use portfolio_api::*;
 use portfolio_core::models::{application::CleanApplicationResponse, candidate::CleanCreateCandidateResponse};
 use rocket::{http::{Cookie, Header, Status}, local::blocking::Client};
-use std::time::Instant;
+use std::time::{Instant, Duration};
 
 fn get_portfolio() -> BBoxClient {
     BBoxClient::tracked(portfolio_api::rocket()).expect("invalid rocket")
@@ -75,51 +75,126 @@ fn make_candidates(client: &Client, ids: Vec<i32>) -> Vec<(i32, String)> {
     let cookies = admin_login(&client);
 
     for id in ids {
-        let response = create_candidate(&client, cookies.clone(), id, "0".to_string());
+        let personal_id = id % 1000;
+        let response = create_candidate(&client, cookies.clone(), id, personal_id.to_string());
         // println!("res is {:?}", response);
         cands.push((id, response.password));
+        println!("{}", cands.len());
     }
     // println!("{:?} successes!", cands);
     cands
 }
 
-fn do_list_candidates(
+fn list_candidates(
+    times_to_list: u64,
     client: &Client,
-    cookies: (Cookie, Cookie)
-) -> Vec<CleanApplicationResponse> {
-    let response = client
-        .get("/admin/list/candidates")
-        .cookie(cookies.0)
-        .cookie(cookies.1)
-        .dispatch();
+    response_len: usize,
+) -> Vec<Duration> {
+    let mut times = vec![];
+    println!(".start_log");
+        let cookies = admin_login(&client);
+        println!(".logged");
+    for i in 0..times_to_list {
+        // let status = Status::from_code(401);
+        
+        let request = client
+            .get("/admin/list/candidates")
+            .cookie(cookies.clone().0)
+            .cookie(cookies.clone().1);
 
-    assert_eq!(response.status(), Status::Ok);
-    response.into_json::<Vec<CleanApplicationResponse>>().unwrap()
+            
+        while true {
+            // println!(".start w/ cookies {:?}", cookies);
+            println!("start");
+            let timer = Instant::now();
+            let response = request.clone().dispatch();
+            if response.status() == Status::Ok {
+                times.push(timer.elapsed());
+                println!(".end");
+                assert_eq!(response.status(), Status::Ok);
+                let vec = response.into_json::<Vec<CleanApplicationResponse>>().unwrap();
+                assert_eq!(vec.len(), response_len);
+                println!(".");
+                break;
+            }
+            println!(".retry");
+            panic!();
+        }
+    }
+    times
 }
 
-fn list_candidates(client: &Client, len: usize) {
-    let cookies = admin_login(&client);
-    let res = do_list_candidates(&client, cookies);
-    assert_eq!(res.len(), len + 1);
-    println!("list assert passed!");
-}
-
-fn upload_letters(client: &Client, cands: Vec<(i32, String)>, letter: Vec<u8>) {
+fn upload_letters(client: &Client, cands: Vec<(i32, String)>, letter: Vec<u8>) -> Vec<Duration> {
+    let mut times = vec![];
     for (id, password) in cands {
         // login
         let cookies = candidate_login(&client, id, password);
 
-
         // post letter
-        let response = client
+        let request = client
             .post("/candidate/add/portfolio_letter")
             .cookie(cookies.0.clone())
             .cookie(cookies.1.clone())
             .body(letter.clone()) // TODO: this clone is probably shitty
-            .header(Header::new("Content-Type", "application/pdf"))
-            .dispatch();
+            .header(Header::new("Content-Type", "application/pdf"));
+        
+        let timer = Instant::now();
+        let response = request.dispatch();
+        times.push(timer.elapsed());
         assert_eq!(response.status(), Status::Ok);
     }
+    times
+}
+
+pub const CANDIDATE_DETAILS: &'static str = "{
+    \"candidate\": {
+        \"name\": \"idk\",
+        \"surname\": \"idk\",
+        \"birthSurname\": \"surname\",
+        \"birthplace\": \"Praha 1\",
+        \"birthdate\": \"2015-09-18\",
+        \"address\": \"Stefanikova jidelna\",
+        \"letterAddress\": \"Stefanikova jidelna\",
+        \"telephone\": \"000111222333\",
+        \"citizenship\": \"Czech Republic\",
+        \"email\": \"magor@magor.cz\",
+        \"sex\": \"MALE\",
+        \"personalIdNumber\": \"0101010000\",
+        \"schoolName\": \"29988383\",
+        \"healthInsurance\": \"000\",
+        \"grades\": [],
+        \"firstSchool\": {\"name\": \"SSPŠ\", \"field\": \"KB\"},
+        \"secondSchool\": {\"name\": \"SSPŠ\", \"field\": \"IT\"},
+        \"testLanguage\": \"CZ\"
+    },
+    \"parents\": [
+        {
+            \"name\": \"maminka\",
+            \"surname\": \"chad\",
+            \"telephone\": \"420111222333\",
+            \"email\": \"maminka@centrum.cz\"
+        }
+    ]
+}";
+
+fn upload_details(client: &Client, cands: Vec<(i32, String)>) -> Vec<Duration> {
+    let mut times = vec![];
+    for (id, password) in cands {
+        // login
+        let cookies = candidate_login(&client, id, password);
+        let request = client
+            .post("/candidate/details")
+            .cookie(cookies.0.clone())
+            .cookie(cookies.1.clone())
+            .body(CANDIDATE_DETAILS.to_string());
+
+        let timer = Instant::now();
+        let response = request.dispatch();
+        times.push(timer.elapsed());
+        println!("{:?}", id);
+        assert_eq!(response.status(), Status::Ok);
+    }
+    times
 }
 
 fn read_portfolio(filename: String) -> Vec<u8> {
@@ -132,27 +207,32 @@ fn read_portfolio(filename: String) -> Vec<u8> {
     buffer
 }
 
+fn compute_times(mut times: Vec<Duration>) -> (u64, u64, u64) {
+    times.sort();
+    let median = times[times.len() / 2].as_micros() as u64;
+    let ninty = times[times.len() * 95 / 100].as_micros() as u64;
+    let avg = times.iter().map(|t| t.as_micros() as u64).sum::<u64>() / times.len() as u64;
+    (median, ninty, avg)
+}
+
 fn main(){
     // setup
     let PORTFOLIO = read_portfolio("../cover_letter.pdf".to_string());
     let client = get_portfolio();
     
-    //let ids: Vec<i32> = (103152..103260).collect();
-    let ids: Vec<i32> = (103152..103302).collect();
+    let ids: Vec<i32> = (102151..(102151 + 10)).collect();
     let ids_len = ids.len();
 
-    let start = Instant::now();
+    println!("making cands");
     let candidates = make_candidates(&client, ids);
-    let t_make = start.elapsed();
+    println!("done making cands");
 
-    let start = Instant::now();
-    upload_letters(&client, candidates, PORTFOLIO);
-    let t_upload = start.elapsed();
+    // let upload_times = upload_letters(&client, candidates, PORTFOLIO);
+    // println!("upload: {:?}", compute_times(upload_times));
 
-    println!("{:?} for make, {:?} for upload", t_make, t_upload);
+    // let upload_times = upload_details(&client, candidates);
+    // println!("details: {:?}", compute_times(upload_times));
 
-    let (t_per_make, t_per_upload) = (t_make.as_nanos() / (ids_len as u128), t_upload.as_nanos() / (ids_len as u128));
-    println!("{:?}ns/cand for make, {:?}ns/cand for upload", t_per_make, t_per_upload);
-
-    // list_candidates(&client, ids_len);
+    let list_times = list_candidates(100, &client, ids_len + 1);
+    println!("list: {:?}", compute_times(list_times));
 }
