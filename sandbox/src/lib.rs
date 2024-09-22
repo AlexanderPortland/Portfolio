@@ -5,26 +5,22 @@ pub const NAIVE_DATE_FMT: &str = "%Y-%m-%d";
 
 #[AlohomoraSandbox()]
 fn serde_from_grade(t: GradeList) -> String {
-    println!("in da sandbox from grade");
     serde_json::to_string(&t).unwrap()
 }
 
 #[AlohomoraSandbox()]
 fn serde_to_school(t: String) -> School {
-    println!("in da sandbox to school");
     serde_json::from_str(t.as_str()).unwrap()
 }
 
 #[AlohomoraSandbox()]
 fn serde_to_grade(t: String) -> GradeList {
-    println!("in da sandbox to grade");
     serde_json::from_str(t.as_str()).unwrap()
 }
 
 type Tup = (GradeList, GradeList, GradeList, GradeList);
 #[AlohomoraSandbox()]
 pub fn serde_from_tuple((t, i): (Tup, u8)) -> String {
-    println!("in da sandbox for from tuple");
     match i {
         0 => serde_json::to_string(&t.0).unwrap(),
         1 => serde_json::to_string(&t.1).unwrap(),
