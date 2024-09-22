@@ -75,16 +75,21 @@ fn does_session_exist(is_admin: bool, db: &DatabaseConnection, session_id: Strin
         let res = db.query_all(Statement::from_string(
                 db.get_database_backend(),
                 // format!("select * from admin_session where id = {};", session_id),
-                format!("select * from {table_name} where id=0x{:x} {id_phrase};", session_id.as_u128()),
+                format!("select * from {table_name} where id=0x{:032x} {id_phrase};", session_id.as_u128()),
             ));
         rocket::tokio::runtime::Handle::current().block_on(res).unwrap()
     });
+
+    if result.len() < 1 && !is_admin {
+        println!("hit em with query {}", format!("select * from {table_name} where id=0x{:x} {id_phrase};", session_id.as_u128()));
+    }
     
     // if candidate_id.is_some() {
     //     println!("res is {:?}", result);
     //     println!("id should be {:?}", result.get(0).unwrap().try_get::<i32>("", "candidate_id"));
     //     // todo!()
     // }
+    // println!("results len is {}", result.len());
     result.len() >= 1
 }
 
@@ -104,7 +109,7 @@ impl Policy for CandidateDataPolicy {
 
     fn check(&self, context: &alohomora::context::UnprotectedContext, reason: alohomora::policy::Reason<'_>) -> bool {
         // println!("thank you sir! you've given me {:?}", context);
-        
+        // println!("data policy check");
 
         match reason {
             // 0. we trust the custom reviewers
@@ -143,13 +148,16 @@ impl Policy for CandidateDataPolicy {
                 // candidate (same session return result)
                 if let Some(session_id) = self.session_id.clone() {
                     // println!("cand same session check");
+                    // println!("same session check");
                     return session_id == context.session_id.clone().unwrap();
                 }
                 // candidate check
                 if let Some(_) = self.candidate_id {
                     // println!("from cand check");
+                    // println!("does candidate session exist?");
                     return does_session_exist(false, &context.conn, context.session_id.clone().unwrap(), self.candidate_id, None);
                 }
+                // println!("fail render");
                 return false
             },
             _ => {
@@ -157,7 +165,7 @@ impl Policy for CandidateDataPolicy {
                 return false
             },
         }
-
+        // println!("failing by default");
         return false;
     }
 
