@@ -1,4 +1,4 @@
-use alohomora::bbox::BBox;
+use alohomora::{bbox::BBox, policy::NoPolicy};
 use chrono::NaiveDateTime;
 use entity::{application, candidate};
 use sea_orm::{EntityTrait, DbErr, DbConn, ModelTrait, FromQueryResult, QuerySelect, JoinType, RelationTrait, QueryFilter, ColumnTrait, QueryOrder, PaginatorTrait};
@@ -17,7 +17,7 @@ pub struct ApplicationCandidateJoin {
     pub email: Option<BBox<String, CandidateDataPolicy>>,
     pub telephone: Option<BBox<String, CandidateDataPolicy>>,
     pub field_of_study: Option<BBox<String, CandidateDataPolicy>>,
-    pub created_at: BBox<NaiveDateTime, FakePolicy>,
+    pub created_at: BBox<NaiveDateTime, NoPolicy>,
 }
 
 fn get_ordering(sort: String) -> (application::Column, sea_orm::Order)

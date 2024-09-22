@@ -2,7 +2,7 @@ use std::any::Any;
 use std::default;
 
 use alohomora::context::{Context, ContextData};
-use alohomora::policy::NoPolicy;
+use alohomora::policy::{Policy, NoPolicy};
 use async_trait::async_trait;
 use chrono::{Duration, NaiveDateTime};
 use entity::{candidate, parent, application, session};
@@ -299,19 +299,22 @@ impl ApplicationService {
                         private_key,
                         c.to_owned(),
                         related_applications,
-                ).await;
-                match res {
-                    Ok(res) => {
-                        Ok(fold(res).unwrap())
+                    ).await;
+                    match res {
+                        Ok(res) => {
+                            let result = fold(res).unwrap();
+                            println!("TESTTEST {}", result.policy().name());
+                            Ok(result)
+                        }
+                        Err(se) => Err(se)
                     }
-                    Err(se) => Err(se)
-                }
             //     ApplicationResponse::from_encrypted(
             //         private_key,
             //         c.to_owned(),
             //         related_applications,
             // ).await
-                })
+                }
+            )
         ).await
     }
 

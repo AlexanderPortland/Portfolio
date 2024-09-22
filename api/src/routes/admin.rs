@@ -159,7 +159,7 @@ pub async fn list_candidates(
     page: Option<BBox<u64, NoPolicy>>,
     sort: Option<BBox<String, NoPolicy>>,
     context: Context<ContextDataType>
-) -> MyResult<JsonResponse<BBox<Vec<ApplicationResponseOut>, AnyPolicy>, ContextDataType>, (rocket::http::Status, String)> {
+) -> MyResult<JsonResponse<Vec<BBox<ApplicationResponseOut, AnyPolicy>>, ContextDataType>, (rocket::http::Status, String)> {
     let db = conn.into_inner();
     let private_key = session.get_private_key();
 
@@ -174,7 +174,9 @@ pub async fn list_candidates(
 
     let candidates: Vec<BBox<ApplicationResponseOut, AnyPolicy>> = ApplicationService::list_applications(&private_key, db, field, page, sort)
         .await.map_err(to_custom_error)?;
-    let candidates = fold(candidates).unwrap();
+    // let candidates = fold(candidates).unwrap();
+    // println!("final policy is {:?}", candidates.policy());
+    // todo!();
 
     let a = MyResult::Ok(JsonResponse::from((candidates, context)));
     a
