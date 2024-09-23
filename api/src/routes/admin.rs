@@ -133,23 +133,22 @@ pub async fn list_candidates(
     page: Option<u64>, 
     sort: Option<String>,
 ) -> Result<Json<Vec<ApplicationResponse>>, Custom<String>> {
+    let timer = std::time::Instant::now();
     let db = conn.into_inner();
-    println!("hello");
     let private_key = session.get_private_key();
-    println!("hi");
-    if let Some(field) = field.clone() {
-        if !(field == "KB".to_string() || field == "IT".to_string() || field == "G") {
+    if let Some(field) = field.as_ref() {
+        if !(field == "KB" || field == "IT" || field == "G") {
             return Err(Custom(Status::BadRequest, "Invalid field of study".to_string()));
         }
     }
 
-    println!("and hey");
 
     let candidates = ApplicationService::list_applications(&private_key, db, field, page, sort)
         .await.map_err(to_custom_error)?;
-    println!("it's time");
+    let json = Json(candidates);
+    println!("{:?}", timer.elapsed());
     Ok(
-        Json(candidates)
+        json
     )
 }
 

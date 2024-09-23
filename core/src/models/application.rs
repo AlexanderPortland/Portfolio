@@ -26,17 +26,17 @@ impl ApplicationResponse {
         c: ApplicationCandidateJoin,
         related_applications: Vec<i32>,
     ) -> Result<Self, ServiceError> {
-        println!("from encrypted w/ pid {} & key {}", c.personal_id_number.clone(), private_key);
+        // println!("from encrypted w/ pid {} & key {}", c.personal_id_number.clone(), private_key);
         let personal_id_number = EncryptedString::from(c.personal_id_number.to_owned()).decrypt(private_key).await?;
-        println!("pid done");
+        // println!("pid done");
         let name = EncryptedString::decrypt_option(&EncryptedString::try_from(&c.name).ok(), private_key).await?;
-        println!("name");
+        // println!("name");
         let surname = EncryptedString::decrypt_option(&EncryptedString::try_from(&c.surname).ok(), private_key).await?;
-        println!("surname");
+        // println!("surname");
         let email = EncryptedString::decrypt_option(&EncryptedString::try_from(&c.email).ok(), private_key).await?;
-        println!("email");
+        // println!("email");
         let telephone = EncryptedString::decrypt_option(&EncryptedString::try_from(&c.telephone).ok(), private_key).await?;
-        println!("drom encrypted");
+        // println!("drom encrypted");
         Ok(
             Self {
                 application_id: c.application_id,

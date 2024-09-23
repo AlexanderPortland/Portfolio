@@ -67,16 +67,21 @@ impl Query {
         sort: Option<String>,
     ) -> Result<Vec<ApplicationCandidateJoin>, DbErr> {
         let select = application::Entity::find();
-        let (column, order) = if let Some(sort) = sort {
-            get_ordering(sort)
-        } else {
-            (application::Column::Id, sea_orm::Order::Asc)
+
+        // Are we sorting?
+        let (column, order) = match sort {
+            None => (application::Column::Id, sea_orm::Order::Asc),
+            Some(sort) => get_ordering(sort),
         };
-        let query = if let Some(field) = field_of_study {
-            select.filter(application::Column::FieldOfStudy.eq(field)) 
-         } else {
-             select
-         }
+
+        // Are we filtering out by field_of_study?
+        let select = match field_of_study {
+            None => select,
+            Some(field_of_study) => select.filter(application::Column::FieldOfStudy.eq(field_of_study)),
+        };
+
+        // Rest of the query.
+        let query = select
             .order_by(column, order)
             .join(JoinType::InnerJoin, application::Relation::Candidate.def())
             .column_as(application::Column::Id, "application_id")
@@ -88,13 +93,13 @@ impl Query {
             .column_as(application::Column::CreatedAt, "created_at")
             .into_model::<ApplicationCandidateJoin>();
 
-        if let Some(page) = page {
-            query
+        // Do we have pagination?
+        match page {
+            None => query.all(db).await,
+            Some(page) => query
                 .paginate(db, PAGE_SIZE)
-                .fetch_page(page).await
-        } else {
-            query
-                .all(db).await
+                .fetch_page(page)
+                .await,
         }
     }
 
@@ -111,15 +116,11 @@ impl Query {
         db: &DbConn,
         candidate_id: i32,
     ) -> Result<Vec<application::Model>, DbErr> {
-        // println!("in here");
-        let applications_res = application::Entity::find()
+        let applications = application::Entity::find()
             .filter(application::Column::CandidateId.eq(candidate_id))
             .all(db)
-            .await;
+            .await?;
 
-        // println!("gonna be in beer");
-        let applications = applications_res.unwrap();
-        // println!("in beer");
         Ok(applications)
     }
 }
