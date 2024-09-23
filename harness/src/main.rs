@@ -1,7 +1,7 @@
-extern crate flame;
-#[macro_use] extern crate flamer;
+// extern crate flame;
+// #[macro_use] extern crate flamer;
 use std::sync::{Arc, Mutex};
-use std::fs::File;
+// use std::fs::File;
 
 use alohomora::testing::BBoxClient;
 use portfolio_api::*;
@@ -95,9 +95,9 @@ fn list_candidates(
     response_len: usize,
 ) -> Vec<Duration> {
     let mut times = vec![];
-    println!(".start_log");
+    // println!(".start_log");
         let cookies = admin_login(&client);
-        println!(".logged");
+        // println!(".logged");
     for i in 0..times_to_list {
         // let status = Status::from_code(401);
         
@@ -106,15 +106,15 @@ fn list_candidates(
             .cookie(cookies.clone().0)
             .cookie(cookies.clone().1);
 
-        println!("start");
+        // println!("start");
         let timer = Instant::now();
         let response = request.dispatch();
         times.push(timer.elapsed());
-        println!(".end");
+        // println!(".end");
         assert_eq!(response.status(), Status::Ok);
         let vec = response.into_json::<Vec<CleanApplicationResponse>>().unwrap();
         assert_eq!(vec.len(), response_len);
-        println!(".");
+        // println!(".");
     }
     times
 }
@@ -212,15 +212,15 @@ fn compute_times(mut times: Vec<Duration>) -> (u64, u64, u64) {
 
 fn main(){
     // setup
-    let PORTFOLIO = read_portfolio("../cover_letter.pdf".to_string());
+    // let PORTFOLIO = read_portfolio("../cover_letter.pdf".to_string());
     let client = get_portfolio();
     
-    let ids: Vec<i32> = (102151..(102151 + 10)).collect();
-    let ids_len = ids.len();
+    // let ids: Vec<i32> = (102151..(102151 + 1000)).collect();
+    // let ids_len = ids.len();
 
-    println!("making cands");
-    let candidates = make_candidates(&client, ids);
-    println!("done making cands");
+    // println!("making cands");
+    // let candidates = make_candidates(&client, ids);
+    // println!("done making cands");
 
     // let upload_times = upload_letters(&client, candidates, PORTFOLIO);
     // println!("upload: {:?}", compute_times(upload_times));
@@ -231,8 +231,8 @@ fn main(){
     // let upload_times = upload_details(&client, candidates);
     // println!("details: {:?}", compute_times(upload_times));
 
-    let list_times = list_candidates(10, &client, ids_len + 1);
-    println!("list: {:?}", compute_times(list_times));
+    let list_times = list_candidates(30, &client, 1000 + 1);
+    // println!("list: {:?}", compute_times(list_times));
 
-    flame::dump_html(&mut File::create("flame-graph.html").unwrap()).unwrap();
+    // flame::dump_html(&mut File::create("flame-graph.html").unwrap()).unwrap();
 }
