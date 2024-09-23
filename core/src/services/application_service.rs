@@ -286,23 +286,32 @@ impl ApplicationService {
         page: Option<u64>,
         sort: Option<String>,
     ) -> Result<Vec<BBox<crate::models::application::ApplicationResponseOut, AnyPolicy>>, ServiceError> {
+        // let timer = std::time::Instant::now();
         let applications = Query::list_applications(db, field_of_study, page, sort).await?;
+        // println!("{:?} for query list app", timer.elapsed());
 
-        futures::future::try_join_all(
+        // let timer = std::time::Instant::now();
+        let res = futures::future::try_join_all(
             applications
                 .iter()
                 .map(|c: &crate::database::query::application::ApplicationCandidateJoin| async move {
+                    // let timer = std::time::Instant::now();
                     let related_applications = Query::find_applications_by_candidate_id(db, c.candidate_id.clone()).await?.iter()
                         .map(|a| a.id.clone()).collect();
+                    // println!("{:?} ASYNC found app", timer.elapsed());
                     // fold here
+                    // let timer = std::time::Instant::now();
                     let res = ApplicationResponse::from_encrypted(
                         private_key,
                         c.to_owned(),
                         related_applications,
                     ).await;
+                    // println!("{:?} ASYNC decrypted", timer.elapsed());
                     match res {
                         Ok(res) => {
+                            // let timer = std::time::Instant::now();
                             let result = fold(res).unwrap();
+                            // println!("{:?} ASYNC foldy poldy", timer.elapsed());
                             // println!("TESTTEST {}", result.policy().name());
                             Ok(result)
                         }
@@ -315,7 +324,9 @@ impl ApplicationService {
             // ).await
                 }
             )
-        ).await
+        ).await;
+        // println!("{:?} for joining all those futures", timer.elapsed());
+        res
     }
 
     async fn decrypt_private_key(

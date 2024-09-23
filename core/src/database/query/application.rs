@@ -67,8 +67,11 @@ impl Query {
         page: Option<u64>,
         sort: Option<String>,
     ) -> Result<Vec<ApplicationCandidateJoin>, DbErr> {
+        // let timer = std::time::Instant::now();
         let select = application::Entity::find();
+        // println!("{:?} for finding entity", timer.elapsed());
 
+        // let timer = std::time::Instant::now();
         // Are we sorting?
         let (column, order) = match sort {
             None => (application::Column::Id, sea_orm::Order::Asc),
@@ -80,8 +83,10 @@ impl Query {
             None => select,
             Some(field_of_study) => select.filter(application::Column::FieldOfStudy.eq(field_of_study)),
         };
+        // println!("{:?} sorted all that shit", timer.elapsed());
 
         // Rest of the query.
+        // let timer = std::time::Instant::now();
         let query = select
             .order_by(column, order)
             .join(JoinType::InnerJoin, application::Relation::Candidate.def())
@@ -93,6 +98,7 @@ impl Query {
             .column_as(candidate::Column::Telephone, "telephone")
             .column_as(application::Column::CreatedAt, "created_at")
             .into_model::<ApplicationCandidateJoin>();
+        // println!("{:?} query", timer.elapsed());
 
         // Do we have pagination?
         match page {
@@ -117,11 +123,12 @@ impl Query {
         db: &DbConn,
         candidate_id: BBox<i32, CandidateDataPolicy>,
     ) -> Result<Vec<application::Model>, DbErr> {
+        // let timer = std::time::Instant::now();
         let applications = application::Entity::find()
             .filter(application::Column::CandidateId.eq(candidate_id))
             .all(db)
             .await?;
-
+        // println!("{:?} found apps", timer.elapsed());
         Ok(applications)
     }
 }
