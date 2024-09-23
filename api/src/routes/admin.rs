@@ -160,6 +160,7 @@ pub async fn list_candidates(
     sort: Option<BBox<String, NoPolicy>>,
     context: Context<ContextDataType>
 ) -> MyResult<JsonResponse<BBox<Vec<ApplicationResponseOut>, AnyPolicy>, ContextDataType>, (rocket::http::Status, String)> {
+    let timer = std::time::Instant::now();
     let db = conn.into_inner();
     let private_key = session.get_private_key();
 
@@ -179,6 +180,7 @@ pub async fn list_candidates(
     // todo!();
 
     let a = MyResult::Ok(JsonResponse::from((candidates, context)));
+    println!("{:?}", timer.elapsed());
     a
 }
 

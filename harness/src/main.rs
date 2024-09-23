@@ -1,4 +1,7 @@
+extern crate flame;
+#[macro_use] extern crate flamer;
 use std::sync::{Arc, Mutex};
+use std::fs::File;
 
 use alohomora::testing::BBoxClient;
 use portfolio_api::*;
@@ -85,6 +88,7 @@ fn make_candidates(client: &Client, ids: Vec<i32>) -> Vec<(i32, String)> {
     cands
 }
 
+// #[flame]
 fn list_candidates(
     times_to_list: u64,
     client: &Client,
@@ -102,24 +106,15 @@ fn list_candidates(
             .cookie(cookies.clone().0)
             .cookie(cookies.clone().1);
 
-            
-        while true {
-            // println!(".start w/ cookies {:?}", cookies);
-            println!("start");
-            let timer = Instant::now();
-            let response = request.clone().dispatch();
-            if response.status() == Status::Ok {
-                times.push(timer.elapsed());
-                println!(".end");
-                assert_eq!(response.status(), Status::Ok);
-                let vec = response.into_json::<Vec<CleanApplicationResponse>>().unwrap();
-                assert_eq!(vec.len(), response_len);
-                println!(".");
-                break;
-            }
-            println!(".retry");
-            panic!();
-        }
+        println!("start");
+        let timer = Instant::now();
+        let response = request.dispatch();
+        times.push(timer.elapsed());
+        println!(".end");
+        assert_eq!(response.status(), Status::Ok);
+        let vec = response.into_json::<Vec<CleanApplicationResponse>>().unwrap();
+        assert_eq!(vec.len(), response_len);
+        println!(".");
     }
     times
 }
@@ -233,6 +228,11 @@ fn main(){
     // let upload_times = upload_details(&client, candidates);
     // println!("details: {:?}", compute_times(upload_times));
 
-    let list_times = list_candidates(100, &client, ids_len + 1);
+    // let upload_times = upload_details(&client, candidates);
+    // println!("details: {:?}", compute_times(upload_times));
+
+    let list_times = list_candidates(10, &client, ids_len + 1);
     println!("list: {:?}", compute_times(list_times));
+
+    flame::dump_html(&mut File::create("flame-graph.html").unwrap()).unwrap();
 }

@@ -9,3 +9,9 @@ portfolio-api = { path = "../api" }
 portfolio-core = { path = "../core" }
 alohomora = { path = "../../alohomora/alohomora" }
 rocket = { git = "https://github.com/KinanBab/Rocket.git", branch = "main" }
+flame = "0.2.2"
+flamer = "0.5"
+
+[profile.release]
+strip = false
+debug = true

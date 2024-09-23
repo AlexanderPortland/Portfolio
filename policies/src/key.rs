@@ -53,7 +53,8 @@ impl Policy for KeyPolicy {
     }
 
     fn check(&self, context: &alohomora::context::UnprotectedContext, reason: alohomora::policy::Reason<'_>) -> bool {
-        return true;
+        // return true;
+        // println!("checking key");
         // println!("checking key policy w/ owner {:?}", self.owner_id);
 
         match self.source {

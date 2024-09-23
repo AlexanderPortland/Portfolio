@@ -108,7 +108,7 @@ impl Policy for CandidateDataPolicy {
     // EVERYTHING ELSE -> nuh uh
 
     fn check(&self, context: &alohomora::context::UnprotectedContext, reason: alohomora::policy::Reason<'_>) -> bool {
-        return true;
+        // return true;
         // println!("thank you sir! you've given me {:?}", context);
         // println!("data policy check");
 
@@ -126,6 +126,7 @@ impl Policy for CandidateDataPolicy {
             // 2. if rendering, we must either be a) an admin, or b) the right candidate
             alohomora::policy::Reason::TemplateRender(_) | alohomora::policy::Reason::Response => {
                 // println!("render reason for me {:?}", self);
+                // println!("checking for render or response");
                 let context: &ContextDataTypeOut = if let Some(test) = context.downcast_ref::<TestContextData<ContextDataTypeOut>>() {
                     // test.0
                     // FIXME: how to downcast to testcontext data here

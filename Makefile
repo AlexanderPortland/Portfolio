@@ -14,6 +14,11 @@ harness:
 	export PORTFOLIO_DATABASE_URL=mysql://root:@127.0.0.1/ && \
 	cd harness && cargo run --release
 
+flamegraph:
+	#export LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:$(pwd)/target/release/"
+	export PORTFOLIO_DATABASE_URL=mysql://root:@127.0.0.1/ && \
+	cd harness && cargo flamegraph -o flamegraph.svg
+
 upload: 
 	export PORTFOLIO_DATABASE_URL=mysql://root:@127.0.0.1/ && \
 	cd api; cargo test candidate_upload -- --test-threads=1

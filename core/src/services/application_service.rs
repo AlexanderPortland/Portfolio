@@ -303,7 +303,7 @@ impl ApplicationService {
                     match res {
                         Ok(res) => {
                             let result = fold(res).unwrap();
-                            println!("TESTTEST {}", result.policy().name());
+                            // println!("TESTTEST {}", result.policy().name());
                             Ok(result)
                         }
                         Err(se) => Err(se)
