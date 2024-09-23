@@ -6,12 +6,19 @@ edition = "2021"
 publish = false
 
 [workspace]
-members = [".", "api", "core", "entity", "migration", "cli", "harness"]
+members = [".", "api", "core", "entity", "migration", "harness"]
 
 [dependencies]
 portfolio-api = { path = "api" }
-alohomora = { path = "../alohomora/alohomora" }
-alohomora_derive = { path = "../alohomora/alohomora_derive" }
+
+[dependencies.sea-orm-rocket]
+git = "https://github.com/KinanBab/sea-orm.git"
+branch = "main"
+# features = [
+#     #"sqlx-mysql",
+#     # TODO: Migrate to rustls for better compatibility with various OS
+#     #"runtime-tokio-native-tls"
+# ]
 
 [patch.crates-io]
 funty = { git = "https://github.com/bitvecto-rs/funty/", rev = "7ef0d890fbcd8b3def1635ac1a877fc298488446" }

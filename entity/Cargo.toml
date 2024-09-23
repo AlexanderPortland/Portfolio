@@ -11,8 +11,12 @@ path = "src/lib.rs"
 [dependencies]
 chrono = "^0.4"
 async-trait = "^0.1"
+portfolio-policies = { path = "../policies" }
+alohomora = { path = "../../alohomora/alohomora" }
+alohomora_derive = { path = "../../alohomora/alohomora_derive" }
 
 [dependencies.sea-orm]
 git = "https://github.com/KinanBab/sea-orm.git"
 branch = "main"
 features = [ "sqlx-mysql", "sqlx-sqlite", "runtime-tokio-native-tls", "macros" ]
+# version = "^0.11"
