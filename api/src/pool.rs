@@ -140,7 +140,7 @@ impl alohomora::orm::Pool for SeaOrmPool {
             }
         }
 
-        crate::test::tests::run_test_migrations(&db).await;
+        // crate::test::tests::run_test_migrations(&db).await;
 
         Ok(SeaOrmPool { conn: db })
     }

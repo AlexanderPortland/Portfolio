@@ -160,10 +160,14 @@ pub async fn list_candidates(
     sort: Option<BBox<String, NoPolicy>>,
     context: Context<ContextDataType>
 ) -> MyResult<JsonResponse<BBox<Vec<ApplicationResponseOut>, AnyPolicy>, ContextDataType>, (rocket::http::Status, String)> {
-    let timer = std::time::Instant::now();
+    // let total_timer = std::time::Instant::now();
+
+    // let timer = std::time::Instant::now();
     let db = conn.into_inner();
     let private_key = session.get_private_key();
+    // println!("{:?} for conn & pk", timer.elapsed());
 
+    // let timer = std::time::Instant::now();
     let field = field.map(|b| b.discard_box());
     let page = page.map(|b| b.discard_box());
     let sort = sort.map(|b| b.discard_box());
@@ -172,15 +176,25 @@ pub async fn list_candidates(
             return MyResult::Err((Status::BadRequest, "Invalid field of study".to_string()));
         }
     }
+    // println!("{:?} for mappy shit", timer.elapsed());
 
+    // let timer = std::time::Instant::now();
     let candidates: Vec<BBox<ApplicationResponseOut, AnyPolicy>> = ApplicationService::list_applications(&private_key, db, field, page, sort)
         .await.map_err(to_custom_error)?;
+    // println!("{:?} for application_service list apps", timer.elapsed());
+
+
+    // let timer = std::time::Instant::now();
     let candidates = fold(candidates).unwrap();
+    // println!("{:?} folding (not in pre)", timer.elapsed());
     // println!("final policy is {:?}", candidates.policy());
     // todo!();
 
+    // let timer = std::time::Instant::now();
     let a = MyResult::Ok(JsonResponse::from((candidates, context)));
-    println!("{:?}", timer.elapsed());
+    // println!("{:?} wrapping", timer.elapsed());
+
+    // println!("{:?} total", total_timer.elapsed());
     a
 }
 
