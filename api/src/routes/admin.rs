@@ -133,20 +133,32 @@ pub async fn list_candidates(
     page: Option<u64>, 
     sort: Option<String>,
 ) -> Result<Json<Vec<ApplicationResponse>>, Custom<String>> {
-    let timer = std::time::Instant::now();
+    // let total_timer = std::time::Instant::now();
+
+    // let timer = std::time::Instant::now();
     let db = conn.into_inner();
     let private_key = session.get_private_key();
+    // println!("{:?} for conn & pk", timer.elapsed());
+
+
+    // let timer = std::time::Instant::now();
     if let Some(field) = field.as_ref() {
         if !(field == "KB" || field == "IT" || field == "G") {
             return Err(Custom(Status::BadRequest, "Invalid field of study".to_string()));
         }
     }
+    // println!("{:?} for mappy shit", timer.elapsed());
 
-
+    // let timer = std::time::Instant::now();
     let candidates = ApplicationService::list_applications(&private_key, db, field, page, sort)
         .await.map_err(to_custom_error)?;
+    // println!("{:?} for application_service list apps", timer.elapsed());
+
+    // let timer = std::time::Instant::now();
     let json = Json(candidates);
-    println!("{:?}", timer.elapsed());
+    // println!("{:?} wrapping", timer.elapsed());
+    // println!("{:?}", timer.elapsed());
+    // println!("{:?} total", total_timer.elapsed());
     Ok(
         json
     )

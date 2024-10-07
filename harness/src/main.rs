@@ -91,35 +91,27 @@ fn list_candidates(
     response_len: usize,
 ) -> Vec<Duration> {
     let mut times = vec![];
-    println!(".start_log");
+    // println!(".start_log");
         let cookies = admin_login(&client);
-        println!(".logged");
+        // println!(".logged");
     for i in 0..times_to_list {
         // let status = Status::from_code(401);
         
         let request = client
-            .get("/admin/list/candidates")
+            .get(format!("/admin/list/candidates?page={}", i % 50))
             .cookie(cookies.clone().0)
             .cookie(cookies.clone().1);
 
-            
-        while true {
-            // println!(".start w/ cookies {:?}", cookies);
-            println!("start");
-            let timer = Instant::now();
-            let response = request.clone().dispatch();
-            if response.status() == Status::Ok {
-                times.push(timer.elapsed());
-                println!(".end");
-                assert_eq!(response.status(), Status::Ok);
-                let vec = response.into_json::<Vec<ApplicationResponse>>().unwrap();
-                assert_eq!(vec.len(), response_len);
-                println!(".");
-                break;
-            }
-            println!(".retry");
-            panic!();
-        }
+        // println!("start");
+        let timer = Instant::now();
+        let response = request.dispatch();
+        // println!(".end");
+        assert_eq!(response.status(), Status::Ok);
+        times.push(timer.elapsed());
+        // println!("response is {}", response.into_string().unwrap());
+        let vec = response.into_json::<Vec<ApplicationResponse>>().unwrap();
+        assert_eq!(vec.len(), 20);
+        // println!(".");
     }
     times
 }
@@ -223,15 +215,21 @@ fn main(){
     let ids: Vec<i32> = (102151..(102151 + 1000)).collect();
     let ids_len = ids.len();
 
-    // let start = Instant::now();
     println!("making cands");
     let candidates = make_candidates(&client, ids);
     println!("done making cands");
-    // let t_make = start.elapsed();
+
+    // let upload_times = upload_letters(&client, candidates, PORTFOLIO);
+    // println!("upload: {:?}", compute_times(upload_times));
+
+    // let upload_times = upload_details(&client, candidates);
+    // println!("details: {:?}", compute_times(upload_times));
 
     // let upload_times = upload_details(&client, candidates);
     // println!("details: {:?}", compute_times(upload_times));
 
     let list_times = list_candidates(100, &client, ids_len + 1);
     println!("list: {:?}", compute_times(list_times));
+
+    // flame::dump_html(&mut File::create("flame-graph.html").unwrap()).unwrap();
 }

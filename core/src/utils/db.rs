@@ -17,7 +17,6 @@ pub async fn get_memory_sqlite_connection() -> sea_orm::DbConn {
     use sea_orm::{sea_query::TableCreateStatement, ConnectionTrait, DbBackend};
 
     
-    let base_url = "mysql::memory:";
     let database_url = std::env::var("PORTFOLIO_DATABASE_URL").unwrap();
     println!("TRYING TO CONNECT TO {}", database_url);
     let db: DbConn = Database::connect(database_url.clone()).await.unwrap();
