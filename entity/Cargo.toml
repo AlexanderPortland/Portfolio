@@ -11,7 +11,7 @@ path = "src/lib.rs"
 [dependencies]
 chrono = "^0.4"
 async-trait = "^0.1"
-portfolio-policies = { path = "../policies" }
+# portfolio-policies = { path = "../policies" }
 alohomora = { path = "../../alohomora/alohomora" }
 alohomora_derive = { path = "../../alohomora/alohomora_derive" }
 

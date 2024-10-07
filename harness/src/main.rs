@@ -220,7 +220,7 @@ fn main(){
     let PORTFOLIO = read_portfolio("../cover_letter.pdf".to_string());
     let client = get_portfolio();
     
-    let ids: Vec<i32> = (102151..(102151 + 10)).collect();
+    let ids: Vec<i32> = (102151..(102151 + 1000)).collect();
     let ids_len = ids.len();
 
     // let start = Instant::now();
@@ -232,6 +232,6 @@ fn main(){
     // let upload_times = upload_details(&client, candidates);
     // println!("details: {:?}", compute_times(upload_times));
 
-    let list_times = list_candidates(10, &client, ids_len + 1);
+    let list_times = list_candidates(100, &client, ids_len + 1);
     println!("list: {:?}", compute_times(list_times));
 }

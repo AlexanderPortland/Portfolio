@@ -14,7 +14,7 @@ tokio = { version = "^1.28", features = ["macros"] }
 serde = { version = "^1.0", features = ["derive"] }
 chrono = "^0.4"
 portfolio-entity = { path = "../entity" }
-portfolio-policies = { path = "../policies" }
+# portfolio-policies = { path = "../policies" }
 alohomora = { path = "../../alohomora/alohomora" }
 alohomora_derive = { path = "../../alohomora/alohomora_derive" }
 
