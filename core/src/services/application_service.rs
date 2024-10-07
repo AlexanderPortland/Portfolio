@@ -291,23 +291,33 @@ impl ApplicationService {
         sort: Option<String>,
     ) -> Result<Vec<ApplicationResponse>, ServiceError> {
         // println!("a");
+        // let timer = std::time::Instant::now();
         let applications = Query::list_applications(db, field_of_study, page, sort).await?;
+        // println!("{:?} for query list app", timer.elapsed());
         // println!("aaa");
-        futures::future::try_join_all(
+        // let timer = std::time::Instant::now();
+        let res = futures::future::try_join_all(
             applications
                 .iter()
                 .map(|c| async move {
                     // println!("b");
+                    // let timer = std::time::Instant::now();
                     let related_applications = Query::find_applications_by_candidate_id(db, c.candidate_id).await?.iter()
                         .map(|a| a.id).collect();
+                    // println!("{:?} ASYNC found app", timer.elapsed());
                     // println!("bbb");
-                    ApplicationResponse::from_encrypted(
+                    // let timer = std::time::Instant::now();
+                    let res = ApplicationResponse::from_encrypted(
                         private_key,
                         c.to_owned(),
                         related_applications,
-                ).await
+                ).await;
+                // println!("{:?} ASYNC decrypted", timer.elapsed());
+                res
                 })
-        ).await
+        ).await;
+        // println!("{:?} for joining all those futures", timer.elapsed());
+        res
     }
 
     async fn decrypt_private_key(

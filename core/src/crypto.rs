@@ -270,6 +270,7 @@ pub async fn encrypt_password_with_recipients(
     password_plain_text: &str,
     recipients: &Vec<&str>,
 ) -> Result<String, ServiceError> {
+    // return Ok(password_plain_text.to_string());
     let mut encrypt_buffer = Vec::new();
 
     age_encrypt_with_recipients(
@@ -286,6 +287,7 @@ pub async fn decrypt_password_with_private_key(
     password_encrypted: &str,
     key: &str,
 ) -> Result<String, ServiceError> {
+    // return Ok(password_encrypted.to_string());
     let encrypted = base64.decode(password_encrypted)?;
 
     let mut decrypt_buffer = Vec::new();
