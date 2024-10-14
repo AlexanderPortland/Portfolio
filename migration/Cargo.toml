@@ -15,8 +15,8 @@ serde = { version = "^1.0", features = ["derive"] }
 chrono = "^0.4"
 portfolio-entity = { path = "../entity" }
 # portfolio-policies = { path = "../policies" }
-alohomora = { path = "../../alohomora/alohomora" }
-alohomora_derive = { path = "../../alohomora/alohomora_derive" }
+alohomora = { path = "../../alohomora" }
+alohomora_derive = { path = "../../alohomora_derive" }
 
 [dependencies.sea-orm-migration]
 git = "https://github.com/KinanBab/sea-orm.git"

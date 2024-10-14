@@ -12,8 +12,8 @@ path = "src/lib.rs"
 chrono = "^0.4"
 async-trait = "^0.1"
 # portfolio-policies = { path = "../policies" }
-alohomora = { path = "../../alohomora/alohomora" }
-alohomora_derive = { path = "../../alohomora/alohomora_derive" }
+alohomora = { path = "../../alohomora" }
+alohomora_derive = { path = "../../alohomora_derive" }
 
 [dependencies.sea-orm]
 git = "https://github.com/KinanBab/sea-orm.git"
