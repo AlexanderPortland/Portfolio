@@ -49,4 +49,4 @@ branch = "main"
 portfolio-core = { path = "../core" }
 
 [build-dependencies]
-alohomora_build = { path = "../../alohomora/alohomora_build" }
+alohomora_build = { path = "../../alohomora_build" }
