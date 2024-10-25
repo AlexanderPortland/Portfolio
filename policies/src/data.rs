@@ -5,6 +5,36 @@ use sea_orm::{ConnectionTrait, DatabaseConnection, Statement};
 use serde::Serialize;
 
 use crate::context::ContextDataTypeOut;
+// trace_macros!(true);
+alohomora_policy::access_control_policy!(Hello, [true, alohomora_policy::to_db!()]);
+// trace_macros!(false);
+
+// pub struct Hello2 {}
+// impl ::core::clone::Clone for Hello2 {
+//     #[inline]
+//     fn clone(&self) -> Hello2 {
+//         Hello2 {}
+//     }
+// }
+// impl alohomora::policy::Policy for Hello2 {
+//     fn name(&self) -> String {
+//         panic!("not yet implemented")
+//     }
+//     fn check(
+//         &self,
+//         context: &alohomora::context::UnprotectedContext,
+//         reason: alohomora::policy::Reason<'_>,
+//     ) -> bool {
+//         if true {
+//             return alohomora_policy::to_db!(reason);
+//         }
+//         return false;
+//     }
+//     fn join_logic(&self, other: Self) -> Result<Self, ()> where Self: Sized {
+//         todo!()
+//     }
+//     alohomora_policy::default_policy_join!();
+// }
 
 #[derive(Clone, Serialize, Debug, PartialEq)]
 pub struct CandidateDataPolicy {
@@ -84,12 +114,6 @@ fn does_session_exist(is_admin: bool, db: &DatabaseConnection, session_id: Strin
         println!("hit em with query {}", format!("select * from {table_name} where id=0x{:x} {id_phrase};", session_id.as_u128()));
     }
     
-    // if candidate_id.is_some() {
-    //     println!("res is {:?}", result);
-    //     println!("id should be {:?}", result.get(0).unwrap().try_get::<i32>("", "candidate_id"));
-    //     // todo!()
-    // }
-    // println!("results len is {}", result.len());
     result.len() >= 1
 }
 
@@ -101,46 +125,31 @@ impl Policy for CandidateDataPolicy {
         }
     }
 
-    // right client (cand_id) render -> ok
-    // any admin render -> ok
-    // right client (in session) db -> ok
-    // custom region -> okay
-    // EVERYTHING ELSE -> nuh uh
-
     fn check(&self, context: &alohomora::context::UnprotectedContext, reason: alohomora::policy::Reason<'_>) -> bool {
         // return true;
         // println!("thank you sir! you've given me {:?}", context);
-        // println!("data policy check");
+        println!("data policy check");
 
         match reason {
             // 0. we trust the custom reviewers
             alohomora::policy::Reason::Custom(_) => {
-                // println!("Custom reason");
                 return true
             },
             // 1. if writing to DB, make sure it's from the same session as data
             alohomora::policy::Reason::DB(_, _) => {
-                // println!("DB reason");
                 return true;
             }
             // 2. if rendering, we must either be a) an admin, or b) the right candidate
             alohomora::policy::Reason::TemplateRender(_) | alohomora::policy::Reason::Response => {
-                // println!("render reason for me {:?}", self);
-                // println!("checking for render or response");
                 let context: &ContextDataTypeOut = if let Some(test) = context.downcast_ref::<TestContextData<ContextDataTypeOut>>() {
-                    // test.0
                     // FIXME: how to downcast to testcontext data here
-                    // println!("test context data");
                     todo!()
                 } else {
                     context.downcast_ref().unwrap()
                 };
-                // println!("real context data {:?}", context);
 
                 let session_id = context.session_id.clone().unwrap();
                 let session_id = sea_orm::prelude::Uuid::parse_str(session_id.as_str()).unwrap();
-
-                // println!("got it!");
 
                 // admin check
                 if does_session_exist(true, &context.conn, context.session_id.clone().unwrap(), None, None) {
@@ -149,14 +158,10 @@ impl Policy for CandidateDataPolicy {
 
                 // candidate (same session return result)
                 if let Some(session_id) = self.session_id.clone() {
-                    // println!("cand same session check");
-                    // println!("same session check");
                     return session_id == context.session_id.clone().unwrap();
                 }
                 // candidate check
                 if let Some(_) = self.candidate_id {
-                    // println!("from cand check");
-                    // println!("does candidate session exist?");
                     return does_session_exist(false, &context.conn, context.session_id.clone().unwrap(), self.candidate_id, None);
                 }
                 // println!("fail render");
@@ -167,25 +172,9 @@ impl Policy for CandidateDataPolicy {
                 return false
             },
         }
-        // println!("failing by default");
-        return false;
     }
 
-    fn join(&self, other: alohomora::policy::AnyPolicy) -> Result<alohomora::policy::AnyPolicy, ()> {
-        if other.is::<CandidateDataPolicy>() {
-            let other = other.specialize().unwrap();
-            return Ok(AnyPolicy::new(self.join_logic(other)?));
-        } else {
-            // println!("data stacking polciies w/ other {:?}", other);
-            if other == AnyPolicy::new(NoPolicy::new()){ // TODO: why do I need this??
-                return Ok(AnyPolicy::new(self.clone()));
-            }
-            return Ok(AnyPolicy::new(PolicyAnd::new(
-                AnyPolicy::new(self.clone()), 
-                other)
-            ));
-        }
-    }
+    alohomora_policy::default_policy_join!();
 
     fn join_logic(&self, other: Self) -> Result<Self, ()> where Self: Sized {
         let (mut candidate_id, mut session_id, mut application_id) = (None, None, None);

@@ -9,6 +9,7 @@ rocket = { git = "https://github.com/KinanBab/Rocket.git", branch = "main" }
 async-trait = { version = "^0.1" }
 alohomora = { path = "../../alohomora", features = ["default", "orm"] }
 alohomora_derive = { path = "../../alohomora_derive" }
+alohomora_policy = { path = "../../alohomora_policy" }
 #portfolio-entity = { path = "../entity" }
 
 # mysql

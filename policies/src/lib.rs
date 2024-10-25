@@ -1,3 +1,4 @@
+#![feature(trace_macros)]
 use alohomora::context::UnprotectedContext;
 use alohomora::orm::ORMPolicy;
 use alohomora::policy::{AnyPolicy, FrontendPolicy, Policy, Reason};

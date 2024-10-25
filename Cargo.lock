@@ -200,6 +200,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "alohomora_policy"
+version = "0.1.0"
+dependencies = [
+ "alohomora",
+]
+
+[[package]]
 name = "alohomora_sandbox"
 version = "0.1.0"
 dependencies = [
@@ -3762,6 +3769,7 @@ version = "2.0.0"
 dependencies = [
  "alohomora",
  "alohomora_derive",
+ "alohomora_policy",
  "async-trait",
  "mysql",
  "mysql_common 0.22.2",
