@@ -34,7 +34,7 @@ pub struct KeyPolicy {
     // pub auth: Option<()>
     // just generated, orm, or cookie
 
-        // custom accessible everywhere
+    // custom accessible everywhere
 }
 
 impl KeyPolicy {
@@ -53,15 +53,10 @@ impl Policy for KeyPolicy {
     }
 
     fn check(&self, context: &alohomora::context::UnprotectedContext, reason: alohomora::policy::Reason<'_>) -> bool {
-        // return true;
-        // println!("checking key");
-        // println!("checking key policy w/ owner {:?}", self.owner_id);
-
         match self.source {
             // 1. if coming from db -> should only go to cookie for right person
             KeySource::Database => {
                 let spec_context: &ContextDataTypeOut = context.downcast_ref().unwrap();
-                // println!("have context {:?}", spec_context);
                 
                 // 1a. it's for a key cookie
                 let crate::Reason::Cookie(c) = reason else {

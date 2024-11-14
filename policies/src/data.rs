@@ -1,45 +1,62 @@
 use core::panic;
 
-use alohomora::{orm::ORMPolicy, policy::{AnyPolicy, FrontendPolicy, NoPolicy, Policy, PolicyAnd}, testing::TestContextData, AlohomoraType};
+use alohomora::{orm::ORMPolicy, policy::{AccessControlPolicy, AnyPolicy, FromFrontend, FrontendPolicy, NoPolicy, Policy, PolicyAnd}, testing::TestContextData, AlohomoraType};
+use alohomora_policy::never_leaked;
 use sea_orm::{ConnectionTrait, DatabaseConnection, Statement};
 use serde::Serialize;
 
 use crate::context::ContextDataTypeOut;
 // trace_macros!(true);
-alohomora_policy::access_control_policy!(Hello, [true, alohomora_policy::to_db!()]);
+alohomora_policy::access_control_policy!(TestAccessPolicy,
+    TestUserContext,
+    TestUser,
+    [is_admin, alohomora_policy::match_reasons!(
+        [crate::Reason::DB(stmt, _), (stmt == "hello")]
+        [crate::Reason::TemplateRender(endpoint), (endpoint == "send.html")])],
+    [is_owner, alohomora_policy::to_pcr!()]
+    [never_leaked!()]);
 // trace_macros!(false);
 
-// pub struct Hello2 {}
-// impl ::core::clone::Clone for Hello2 {
-//     #[inline]
-//     fn clone(&self) -> Hello2 {
-//         Hello2 {}
-//     }
-// }
-// impl alohomora::policy::Policy for Hello2 {
-//     fn name(&self) -> String {
-//         panic!("not yet implemented")
-//     }
-//     fn check(
-//         &self,
-//         context: &alohomora::context::UnprotectedContext,
-//         reason: alohomora::policy::Reason<'_>,
-//     ) -> bool {
-//         if true {
-//             return alohomora_policy::to_db!(reason);
-//         }
-//         return false;
-//     }
-//     fn join_logic(&self, other: Self) -> Result<Self, ()> where Self: Sized {
-//         todo!()
-//     }
-//     alohomora_policy::default_policy_join!();
-// }
+// app developer will provide this part
+#[derive(Clone, Debug)]
+struct TestUser {
+    session_id: i32,
+    candidate_id: i32,
+}
+
+alohomora_policy::generate_context!(TestUserContext, TestUser);
+
+impl TestUser {
+    fn is_admin(&self, context: &TestUserContext) -> bool {
+        todo!()
+    }
+
+    fn is_owner(&self, context: &TestUserContext) -> bool {
+        todo!()
+    }
+}
+
+fn hey(a: TestAccessPolicy, request: rocket::Request) {
+    <TestAccessPolicy as FrontendPolicy>::from_request(&request);
+}
+
+impl FromFrontend for TestUser {
+    fn from_request<'a, 'r>(request: &'a rocket::Request<'r>) -> Self
+            where
+                Self: Sized {
+        todo!()
+    }
+}
+
+// provide implementations for FromReq & FromSchema (basically how to hook into auth & get users)
+
+// policies & context can use this to have info about users
+// important for access control, DP and others
 
 #[derive(Clone, Serialize, Debug, PartialEq)]
 pub struct CandidateDataPolicy {
     // only set for data coming from client POST
-    session_id: Option<String>, 
+    session_id: Option<String>,
     
     // only set for data coming from DB
     candidate_id: Option<i32>,    // (candidate table)
@@ -259,12 +276,6 @@ impl FrontendPolicy for CandidateDataPolicy {
     fn from_request<'a, 'r>(request: &'a rocket::Request<'r>) -> Self
             where
                 Self: Sized {
-        // println!("in route {}", request.uri());
-        // if request.uri() == "/candidate/login" || request.route().unwrap().to_string() == "" {
-        //     // println!("special route");
-        // } else {
-        //     // println!("unspecial route");
-        // }
         match request.cookies().get("id") {
             // cookie id is a session id which maps in the sessions db table to candidate_id which is what we want
             Some(session_id) => {
