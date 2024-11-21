@@ -1,6 +1,6 @@
 use core::panic;
 
-use alohomora::{orm::ORMPolicy, policy::{AccessControlPolicy, AnyPolicy, FromFrontend, FrontendPolicy, NoPolicy, Policy, PolicyAnd}, testing::TestContextData, AlohomoraType};
+use alohomora::{orm::ORMPolicy, policy::{AnyPolicy, DefaultWithUser, FromFrontend, FrontendPolicy, NoPolicy, Policy, PolicyAnd, SchemaPolicy}, testing::TestContextData, AlohomoraType};
 use alohomora_policy::never_leaked;
 use sea_orm::{ConnectionTrait, DatabaseConnection, Statement};
 use serde::Serialize;
@@ -37,6 +37,7 @@ impl TestUser {
 }
 
 fn hey(a: TestAccessPolicy, request: rocket::Request) {
+    // <TestAccessPolicy as SchemaPolicy>::from_row(todo!(), todo!());
     <TestAccessPolicy as FrontendPolicy>::from_request(&request);
 }
 
