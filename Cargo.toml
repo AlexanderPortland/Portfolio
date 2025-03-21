@@ -1,13 +1,13 @@
 [package]
 name = "portfolio"
-version = "2.0.0"
+version = "2.0.1"
 authors = ["Vojtěch Jungmann", "Sebastian Pravda"]
 edition = "2021"
 publish = false
 
 [workspace]
 # members = [".", "api", "core", "entity", "migration", "cli", "policies"]
-members = [".", "api", "core", "entity", "migration", "policies", "harness"]
+members = [".", "api", "core", "entity", "migration", "policies"]
 
 [dependencies]
 portfolio-api = { path = "api" }

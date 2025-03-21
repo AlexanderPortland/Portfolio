@@ -2501,9 +2501,9 @@ dependencies = [
 
 [[package]]
 name = "jsonwebtoken"
-version = "9.3.0"
+version = "9.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b9ae10193d25051e74945f1ea2d0b42e03cc3b890f7e4cc5faa44997d808193f"
+checksum = "5c7ea04a7c5c055c175f189b6dc6ba036fd62306b58c66c9f6389036c503a3f4"
 dependencies = [
  "base64 0.21.7",
  "js-sys",
@@ -2575,7 +2575,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0c2a198fb6b0eada2a8df47933734e6d35d350665a33a3593d7164fa52c75c19"
 dependencies = [
  "cfg-if 1.0.0",
- "windows-targets 0.52.5",
+ "windows-targets 0.48.5",
 ]
 
 [[package]]
@@ -3645,7 +3645,7 @@ dependencies = [
 
 [[package]]
 name = "portfolio"
-version = "2.0.0"
+version = "2.0.1"
 dependencies = [
  "portfolio-api",
  "sea-orm-rocket",
@@ -3653,7 +3653,7 @@ dependencies = [
 
 [[package]]
 name = "portfolio-api"
-version = "2.0.0"
+version = "2.0.1"
 dependencies = [
  "alohomora",
  "alohomora_build",
@@ -3679,7 +3679,7 @@ dependencies = [
 
 [[package]]
 name = "portfolio-core"
-version = "2.0.0"
+version = "2.0.1"
 dependencies = [
  "aes-gcm-siv",
  "age",
@@ -3722,7 +3722,7 @@ dependencies = [
 
 [[package]]
 name = "portfolio-entity"
-version = "2.0.0"
+version = "2.0.1"
 dependencies = [
  "alohomora",
  "alohomora_derive",
@@ -3733,18 +3733,8 @@ dependencies = [
 ]
 
 [[package]]
-name = "portfolio-harness"
-version = "0.1.0"
-dependencies = [
- "alohomora",
- "portfolio-api",
- "portfolio-core",
- "rocket",
-]
-
-[[package]]
 name = "portfolio-migration"
-version = "2.0.0"
+version = "2.0.1"
 dependencies = [
  "alohomora",
  "alohomora_derive",
@@ -3758,7 +3748,7 @@ dependencies = [
 
 [[package]]
 name = "portfolio-policies"
-version = "2.0.0"
+version = "2.0.1"
 dependencies = [
  "alohomora",
  "alohomora_derive",
@@ -3775,7 +3765,7 @@ dependencies = [
 
 [[package]]
 name = "portfolio-types"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "serde",
 ]
