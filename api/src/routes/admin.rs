@@ -7,7 +7,7 @@ use requests::{AdminLoginRequest, RegisterRequest};
 use rocket::http::Status;
 
 
-use alohomora::{bbox::BBox, context::Context, orm::Connection, pcr::{execute_pcr, PrivacyCriticalRegion}, pure::{execute_pure, PrivacyPureRegion}, rocket::{get, post, route, BBoxCookie, BBoxCookieJar, BBoxJson, ContextResponse, JsonResponse}};
+use alohomora::{bbox::BBox, context::Context, orm::Connection, pure::{execute_pure, PrivacyPureRegion}, rocket::{get, post, route, BBoxCookie, BBoxCookieJar, BBoxJson, ContextResponse, JsonResponse}};
 use alohomora::policy::{AnyPolicy, NoPolicy};
 
 use portfolio_core::utils::csv::{ApplicationCsv, CandidateCsv, CsvExporter};

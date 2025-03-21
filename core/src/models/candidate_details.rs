@@ -525,10 +525,6 @@ pub mod tests {
         .await
         .unwrap();
 
-        // let dec_key_eq = PrivacyCriticalRegion::new(|enc_password: String, _, _|{
-        //     crypto::decrypt_password_with_private_key(&enc_password, PRIVATE_KEY)
-        // });
-
         let (name, email, sex) = execute_pcr((
                 encrypted_details.candidate.name.unwrap().0, 
                 encrypted_details.candidate.email.unwrap().0, 
@@ -536,8 +532,6 @@ pub mod tests {
             PrivacyCriticalRegion::new(|(name, email, sex), _, _|{
                 (name, email, sex)
             },
-            Signature{username: "AlexanderPortland", signature: ""}, 
-            Signature{username: "AlexanderPortland", signature: ""}, 
             Signature{username: "AlexanderPortland", signature: ""}), ()).unwrap();
 
         assert_eq!(crypto::decrypt_password_with_private_key(&name, PRIVATE_KEY).await.unwrap(), "name");
@@ -590,8 +584,6 @@ pub mod tests {
             PrivacyCriticalRegion::new(|enc_password: String, _, _|{
             enc_password
         },
-        Signature{username: "AlexanderPortland", signature: ""}, 
-        Signature{username: "AlexanderPortland", signature: ""}, 
         Signature{username: "AlexanderPortland", signature: ""}), ()).unwrap();
 
         assert_eq!(

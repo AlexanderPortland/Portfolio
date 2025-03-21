@@ -144,8 +144,6 @@ mod tests {
             PrivacyCriticalRegion::new(|private_key: String, _, _| {
                 crypto::decrypt_password(private_key, plain_text_password)
             },
-            Signature{username: "AlexanderPortland", signature: ""}, 
-            Signature{username: "AlexanderPortland", signature: ""}, 
             Signature{username: "AlexanderPortland", signature: ""}), ()).unwrap().await.unwrap();
         let priv_key = BBox::new(
             priv_key, KeyPolicy::new(None, portfolio_policies::key::KeySource::JustGenerated));

@@ -116,8 +116,6 @@ pub mod tests {
             PrivacyCriticalRegion::new(|private_key: String, _, _| {
                 crypto::decrypt_password(private_key, "admin".to_string())
             },
-            Signature{username: "AlexanderPortland", signature: ""}, 
-            Signature{username: "AlexanderPortland", signature: ""}, 
             Signature{username: "AlexanderPortland", signature: ""}), ()).unwrap().await.unwrap();
         //let private_key = crypto::decrypt_password(admin.private_key.discard_box(), "admin".to_string()).await.unwrap();
         let private_key = BBox::new(private_key, KeyPolicy::new(None, portfolio_policies::key::KeySource::JustGenerated));
@@ -179,8 +177,6 @@ pub mod tests {
             PrivacyCriticalRegion::new(|private_key: String, _, _| {
                 crypto::decrypt_password(private_key, password)
             },
-            Signature{username: "AlexanderPortland", signature: ""}, 
-            Signature{username: "AlexanderPortland", signature: ""}, 
             Signature{username: "AlexanderPortland", signature: ""}), ()).unwrap().await.unwrap();
         // let dec_priv_key = crypto::decrypt_password(application.private_key.clone().discard_box(), password)
         //     .await

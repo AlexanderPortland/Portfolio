@@ -10,8 +10,6 @@ pub async fn my_hash_password<P: Policy + Clone + 'static>(password_plain_text: 
         PrivacyCriticalRegion::new(|plain_text, _, _|{
             crate::crypto::hash_password(plain_text)
         }, 
-        Signature{username: "AlexanderPortland", signature: ""}, 
-        Signature{username: "AlexanderPortland", signature: ""}, 
         Signature{username: "AlexanderPortland", signature: ""}), ()).unwrap().await;
 
     match hash_res {
@@ -28,8 +26,6 @@ pub async fn my_encrypt_password<P: Policy + Clone + 'static>(
         PrivacyCriticalRegion::new(|(key, password), _, _|{
             crate::crypto::encrypt_password(password, key)
         },
-        Signature{username: "AlexanderPortland", signature: ""}, 
-        Signature{username: "AlexanderPortland", signature: ""}, 
         Signature{username: "AlexanderPortland", signature: ""}), ()).unwrap().await;
 
     match enc_res {
@@ -46,8 +42,6 @@ pub async fn my_decrypt_password<P1: Policy + Clone + 'static, P2: Policy + Clon
         PrivacyCriticalRegion::new(|(ciphertext, key), _, _|{
             crate::crypto::decrypt_password(ciphertext, key)
         },
-        Signature{username: "AlexanderPortland", signature: ""}, 
-        Signature{username: "AlexanderPortland", signature: ""}, 
         Signature{username: "AlexanderPortland", signature: ""}), ()).unwrap().await?;
 
     Ok(BBox::new(dec_res, ciphertext.policy().to_owned()))
@@ -69,8 +63,6 @@ pub async fn my_encrypt_password_with_recipients<P: Policy + Clone + 'static>(
     PrivacyCriticalRegion::new(|(plaintext, recipients): (String, Vec<String>), _, _|{
         dumb_helper2(plaintext, recipients, password_plain_text.policy().clone())
     },
-    Signature{username: "AlexanderPortland", signature: ""}, 
-    Signature{username: "AlexanderPortland", signature: ""}, 
     Signature{username: "AlexanderPortland", signature: ""}), ()).unwrap().await;
 
     r
@@ -92,8 +84,6 @@ pub async fn my_decrypt_password_with_private_key<P1: Policy + Clone + 'static, 
             |(unboxed_password_encrypted, unboxed_key): (String, String), combined_policy, _| {
                     dumb_helper(unboxed_password_encrypted, unboxed_key, policy)
                 },
-        Signature{username: "AlexanderPortland", signature: ""}, 
-        Signature{username: "AlexanderPortland", signature: ""}, 
         Signature{username: "AlexanderPortland", signature: ""}), ()).unwrap().await
     
 }
@@ -104,13 +94,8 @@ pub async fn my_verify_password<P1: Policy + Clone + 'static, P2: Policy + Clone
 ) -> Result<bool, ServiceError> {
     let res = execute_pcr((password_plain_text.clone(), hash.clone()), 
     PrivacyCriticalRegion::new(|(unboxed_password_plain, unboxed_hash): (String, String), _, _|{
-        // println!("password {:?}", unboxed_password_plain);
-        // println!("hash {:?}", unboxed_hash);
-        // todo!();
         crate::crypto::verify_password(unboxed_password_plain, unboxed_hash)
     },
-    Signature{username: "AlexanderPortland", signature: ""}, 
-    Signature{username: "AlexanderPortland", signature: ""}, 
     Signature{username: "AlexanderPortland", signature: ""}), ()).unwrap();
     let dec_res = res.await;
 

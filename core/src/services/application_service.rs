@@ -601,8 +601,6 @@ mod application_tests {
             PrivacyCriticalRegion::new(|private_key, _, _|{
                 crypto::decrypt_password(private_key, "admin".to_string())
             },
-            Signature{username: "AlexanderPortland", signature: ""}, 
-            Signature{username: "AlexanderPortland", signature: ""}, 
             Signature{username: "AlexanderPortland", signature: ""}),
         ()).unwrap().await.unwrap();
 
@@ -650,16 +648,7 @@ mod application_tests {
             PrivacyCriticalRegion::new(|public_key: String, _, _| {
                 public_key
             },
-            Signature{username: "AlexanderPortland", signature: ""}, 
-            Signature{username: "AlexanderPortland", signature: ""}, 
             Signature{username: "AlexanderPortland", signature: ""}), ()).unwrap();
-
-        // ideally we'd do things this way but we cant await outside pcr bc public_key doesn't live long enough
-        // and we need it to stick around
-        // let encrypted_message = execute_pcr(application.public_key, 
-        //     PrivacyCriticalRegion::new(|public_key: String, _, _| {
-        //         crypto::encrypt_password_with_recipients(&secret_message, &vec![&public_key])
-        //     }), ()).unwrap().await.unwrap();
 
         let encrypted_message = crypto::encrypt_password_with_recipients(&secret_message, &vec![&public_key]).await.unwrap();
 
@@ -667,16 +656,12 @@ mod application_tests {
             PrivacyCriticalRegion::new(|private_key: String, _, _| {
                 crypto::decrypt_password(private_key, plain_text_password.clone())
             },
-            Signature{username: "AlexanderPortland", signature: ""}, 
-            Signature{username: "AlexanderPortland", signature: ""}, 
             Signature{username: "AlexanderPortland", signature: ""}), ()).unwrap().await.unwrap();
 
         let decrypted_message = execute_pcr(application.private_key, 
             PrivacyCriticalRegion::new(|private_key: String, _, _| {
                 crypto::decrypt_password_with_private_key(&encrypted_message, &private_key_plain_text)
             },
-            Signature{username: "AlexanderPortland", signature: ""}, 
-            Signature{username: "AlexanderPortland", signature: ""}, 
             Signature{username: "AlexanderPortland", signature: ""}), ()).unwrap().await.unwrap();
 
         assert_eq!(secret_message, decrypted_message);

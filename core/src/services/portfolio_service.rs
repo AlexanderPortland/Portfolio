@@ -117,8 +117,6 @@ impl PortfolioService {
         candidate_id.into_unbox(context, PrivacyCriticalRegion::new(|candidate_id: i32, ()| {
             Self::get_submission_progress_raw(candidate_id)
         },
-        Signature{username: "AlexanderPortland", signature: ""}, 
-        Signature{username: "AlexanderPortland", signature: ""}, 
         Signature{username: "AlexanderPortland", signature: ""}), ()).unwrap_or(Err(ServiceError::PolicyCheckFailed))
     }
 
@@ -182,8 +180,6 @@ impl PortfolioService {
                     .join("cache")
             )
         },
-        Signature{username: "AlexanderPortland", signature: ""}, 
-        Signature{username: "AlexanderPortland", signature: ""}, 
         Signature{username: "AlexanderPortland", signature: ""}), ()).unwrap().await
     }
 
@@ -199,8 +195,6 @@ impl PortfolioService {
             PrivacyCriticalRegion::new(|(candidate_id, letter): (i32, Vec<u8>), ()| {
                 Self::write_portfolio_file(candidate_id, letter, FileType::CoverLetterPdf)
             },
-            Signature{username: "AlexanderPortland", signature: ""}, 
-            Signature{username: "AlexanderPortland", signature: ""}, 
             Signature{username: "AlexanderPortland", signature: ""}),
             ()
         ) {
@@ -222,8 +216,6 @@ impl PortfolioService {
             PrivacyCriticalRegion::new(|(candidate_id, letter): (i32, Vec<u8>), ()| {
                 Self::write_portfolio_file(candidate_id, letter, FileType::PortfolioLetterPdf)
             },
-            Signature{username: "AlexanderPortland", signature: ""}, 
-            Signature{username: "AlexanderPortland", signature: ""}, 
             Signature{username: "AlexanderPortland", signature: ""}),
             ()
         ) {
@@ -245,8 +237,6 @@ impl PortfolioService {
             PrivacyCriticalRegion::new(|(candidate_id, letter): (i32, Vec<u8>), ()| {
                 Self::write_portfolio_file(candidate_id, letter, FileType::PortfolioZip)
             },
-            Signature{username: "AlexanderPortland", signature: ""}, 
-            Signature{username: "AlexanderPortland", signature: ""}, 
             Signature{username: "AlexanderPortland", signature: ""}),
             ()
         ) {
@@ -314,8 +304,6 @@ impl PortfolioService {
             PrivacyCriticalRegion::new(|candidate_id: i32, ()| {
               Self::delete_cache_item(candidate_id,  FileType::CoverLetterPdf)
             },
-            Signature{username: "AlexanderPortland", signature: ""}, 
-            Signature{username: "AlexanderPortland", signature: ""}, 
             Signature{username: "AlexanderPortland", signature: ""}),
             (),
         ) {
@@ -333,8 +321,6 @@ impl PortfolioService {
             PrivacyCriticalRegion::new(|candidate_id: i32, ()| {
               Self::delete_cache_item(candidate_id,  FileType::PortfolioLetterPdf)
             },
-            Signature{username: "AlexanderPortland", signature: ""}, 
-            Signature{username: "AlexanderPortland", signature: ""}, 
             Signature{username: "AlexanderPortland", signature: ""}),
             (),
         ) {
@@ -352,8 +338,6 @@ impl PortfolioService {
             PrivacyCriticalRegion::new(|candidate_id: i32, ()| {
               Self::delete_cache_item(candidate_id,  FileType::PortfolioZip)
             },
-            Signature{username: "AlexanderPortland", signature: ""}, 
-            Signature{username: "AlexanderPortland", signature: ""}, 
             Signature{username: "AlexanderPortland", signature: ""}),
             (),
         ) {
@@ -441,8 +425,6 @@ impl PortfolioService {
             PrivacyCriticalRegion::new(move |candidate_id: i32, ()| {
                 Self::submit_pcr_1(candidate_id)
             },
-            Signature{username: "AlexanderPortland", signature: ""}, 
-            Signature{username: "AlexanderPortland", signature: ""}, 
             Signature{username: "AlexanderPortland", signature: ""}),
             ()
         ) {
@@ -467,8 +449,6 @@ impl PortfolioService {
             PrivacyCriticalRegion::new(|(candidate_id, recipients): (i32, Vec<String>), ()| {
                 Self::submit_pcr_2(candidate_id, recipients)
             },
-            Signature{username: "AlexanderPortland", signature: ""}, 
-            Signature{username: "AlexanderPortland", signature: ""}, 
             Signature{username: "AlexanderPortland", signature: ""}),
             ()
         ) {
@@ -502,8 +482,6 @@ impl PortfolioService {
             PrivacyCriticalRegion::new(|candidate_id: i32, ()| {
                 Self::delete_portfolio_pcr(candidate_id)
             },
-            Signature{username: "AlexanderPortland", signature: ""}, 
-            Signature{username: "AlexanderPortland", signature: ""}, 
             Signature{username: "AlexanderPortland", signature: ""}),
             (),
         ) {
@@ -526,8 +504,6 @@ impl PortfolioService {
                 let path = Self::get_file_store_path().join(&candidate_id.to_string()).to_path_buf();
                 tokio::fs::remove_dir_all(path)
             },
-            Signature{username: "AlexanderPortland", signature: ""}, 
-            Signature{username: "AlexanderPortland", signature: ""}, 
             Signature{username: "AlexanderPortland", signature: ""}),
             (),
         ) {
@@ -564,8 +540,6 @@ impl PortfolioService {
                     .to_path_buf();
                 crypto::decrypt_file_with_private_key_as_buffer(path, private_key)
             },
-            Signature{username: "AlexanderPortland", signature: ""}, 
-            Signature{username: "AlexanderPortland", signature: ""}, 
             Signature{username: "AlexanderPortland", signature: ""}),
             (),
         ) {
@@ -610,8 +584,6 @@ impl PortfolioService {
             PrivacyCriticalRegion::new(|(candidate_id, private_key, recipients): (i32, String, Vec<String>), ()| {
                 Self::reencrypt_portfolio_pcr(candidate_id, private_key, recipients)
             },
-            Signature{username: "AlexanderPortland", signature: ""}, 
-            Signature{username: "AlexanderPortland", signature: ""}, 
             Signature{username: "AlexanderPortland", signature: ""}),
             (),
         ) {
@@ -667,8 +639,6 @@ mod tests {
 
         // TODO: add fake context here bc PCR is just for unboxing
         bbox.into_unbox(crate::utils::db::get_test_context(&db).await, PrivacyCriticalRegion::new(|t: T, ()| t,
-        Signature{username: "AlexanderPortland", signature: ""}, 
-        Signature{username: "AlexanderPortland", signature: ""}, 
         Signature{username: "AlexanderPortland", signature: ""}), ()).unwrap()
     }
 
@@ -986,8 +956,6 @@ mod tests {
             PrivacyCriticalRegion::new(|id, _, _|{
                 PortfolioService::is_portfolio_submitted(id)
             },
-            Signature{username: "AlexanderPortland", signature: ""}, 
-            Signature{username: "AlexanderPortland", signature: ""}, 
             Signature{username: "AlexanderPortland", signature: ""}), ()).unwrap().await;
         assert!(!is_submitted);
 
@@ -1005,8 +973,6 @@ mod tests {
 
         let private_key = execute_pcr(application.private_key, 
             PrivacyCriticalRegion::new(|pk, _, _|{pk},
-                Signature{username: "AlexanderPortland", signature: ""}, 
-                Signature{username: "AlexanderPortland", signature: ""}, 
                 Signature{username: "AlexanderPortland", signature: ""}), ()).unwrap();
 
         let private_key = crypto::decrypt_password(private_key, "test".to_string())

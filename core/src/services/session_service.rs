@@ -94,8 +94,6 @@ mod tests {
         PrivacyCriticalRegion::new(|(id, password), _, _| {
             (id, password)
         },
-        Signature{username: "AlexanderPortland", signature: ""}, 
-        Signature{username: "AlexanderPortland", signature: ""}, 
         Signature{username: "AlexanderPortland", signature: ""}), ()).unwrap();
         assert_eq!(id, 103151);
         assert_ne!(password, SECRET.to_string());
@@ -128,8 +126,6 @@ mod tests {
         .unwrap();
         let session = execute_pcr(session, 
             PrivacyCriticalRegion::new(|s, _, _|{s},
-                Signature{username: "AlexanderPortland", signature: ""}, 
-                Signature{username: "AlexanderPortland", signature: ""}, 
                 Signature{username: "AlexanderPortland", signature: ""}), ()).unwrap();
         assert!(
             ApplicationService::auth(db, BBox::new(Uuid::parse_str(&session).unwrap(), FakePolicy::new()))
