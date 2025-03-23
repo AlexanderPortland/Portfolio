@@ -23,7 +23,7 @@ impl SessionService {
             }
         }));
 
-        Ok(result.transpose().is_ok())
+        Ok(result.fold_in().is_ok())
     }
 
     /// Delete list of sessions

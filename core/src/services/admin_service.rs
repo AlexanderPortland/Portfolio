@@ -188,7 +188,7 @@ pub mod admin_tests {
                     Err("waooo")
                 }
             })
-        ).unwrap().transpose();
+        ).unwrap().fold_in();
 
         assert!(check_vals.is_ok());
         

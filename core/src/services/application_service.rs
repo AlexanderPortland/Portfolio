@@ -47,7 +47,7 @@ impl ApplicationService {
                 return Err(ServiceError::InvalidApplicationId);
             }
             Ok(())
-        })).transpose()?;
+        })).fold_in()?;
 
         // Check if user with that application id already exists
         if Query::find_application_by_id(db, application_id.clone())
@@ -181,7 +181,7 @@ impl ApplicationService {
                 }
                 Ok(())
             })
-        ).unwrap().transpose()?;
+        ).unwrap().fold_in()?;
 
         let mut recipients = Query::get_all_admin_public_keys(db).await?;
         recipients.push(linked_application.public_key.clone());
@@ -351,7 +351,7 @@ impl ApplicationService {
             }
         }));
 
-        match result.transpose()?.transpose() {
+        match result.fold_in()?.fold_in() {
             Some(_) => {
                 let new_expires_at = now.checked_add_signed(Duration::days(14)).ok_or(ServiceError::Unauthorized)?;
                 let new_expires_at = BBox::new(new_expires_at, session.updated_at.policy().clone());

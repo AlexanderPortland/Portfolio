@@ -1,5 +1,6 @@
 use std::fmt::Debug;
 use alohomora::bbox::BBox;
+use alohomora::fold_in::FoldInAllowed;
 use alohomora::policy::{AnyPolicy, Policy, NoPolicy};
 use alohomora::pure::{execute_pure, PrivacyPureRegion};
 use chrono::NaiveDate;
@@ -63,7 +64,7 @@ impl EncryptedString {
         Ok(Self(encrypted_string.into_any_policy()))
     }
 
-    pub async fn new_option<P1: Policy + Clone + 'static>(
+    pub async fn new_option<P1: Policy + FoldInAllowed + Clone + 'static>(
         password_plain_text: &BBox<String, P1>,
         recipients: &Vec<BBox<String, NoPolicy>>,
     ) -> Result<Option<Self>, ServiceError> {
@@ -77,7 +78,7 @@ impl EncryptedString {
             )
         );
 
-        match password_plain_text.transpose() {
+        match password_plain_text.fold_in() {
             None => Ok(None),
             Some(password_plain_text) => {
                 let encrypted_string = my_encrypt_password_with_recipients(password_plain_text, recipients).await?;

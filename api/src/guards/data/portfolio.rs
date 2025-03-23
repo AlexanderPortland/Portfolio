@@ -1,4 +1,5 @@
 use alohomora::bbox::BBox;
+use alohomora::fold_in::FoldInAllowed;
 use alohomora::policy::FrontendPolicy;
 use alohomora::pure::PrivacyPureRegion;
 use alohomora::rocket::{BBoxData, BBoxDataOutcome, BBoxRequest, FromBBoxData};
@@ -7,16 +8,16 @@ use rocket::http::{ContentType, Status};
 use rocket::outcome::Outcome;
 
 
-pub struct Portfolio<P: FrontendPolicy>(BBox<Vec<u8>, P>);
+pub struct Portfolio<P: FrontendPolicy + FoldInAllowed>(BBox<Vec<u8>, P>);
 
-impl<P: FrontendPolicy> Into<BBox<Vec<u8>, P>> for Portfolio<P> {
+impl<P: FrontendPolicy + FoldInAllowed> Into<BBox<Vec<u8>, P>> for Portfolio<P> {
     fn into(self) -> BBox<Vec<u8>, P> {
         self.0
     }
 }
 
 #[rocket::async_trait]
-impl<'a, 'r, P: FrontendPolicy> FromBBoxData<'a, 'r> for Portfolio<P> {
+impl<'a, 'r, P: FrontendPolicy + FoldInAllowed> FromBBoxData<'a, 'r> for Portfolio<P> {
     type BBoxError = Option<String>;
 
     async fn from_data(req: BBoxRequest<'a, 'r>, data: BBoxData<'a>) -> BBoxDataOutcome<'a, 'r, Portfolio<P>> {
@@ -41,7 +42,7 @@ impl<'a, 'r, P: FrontendPolicy> FromBBoxData<'a, 'r> for Portfolio<P> {
             }
         ));
 
-        match result.transpose() {
+        match result.fold_in() {
             Err(_) => Outcome::Failure((Status::BadRequest, None)),
             Ok(data_bytes) => Outcome::Success(Portfolio(data_bytes)),
         }

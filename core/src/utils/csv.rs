@@ -24,7 +24,7 @@ impl TryFrom<(BBox<i32, CandidateDataPolicy>, ApplicationDetails)> for Applicati
         type Tup = (GradeList, GradeList, GradeList, GradeList);
         let diplomas = c.grades.clone().into_ppr(PrivacyPureRegion::new(|grades: GradeList| {
             grades.group_by_semester()
-        })).transpose()?;
+        })).fold_in()?;
 
         pub fn serde_from_tuple_caller(d: BBox<Tup, AnyPolicy>, i: u8) -> BBox<String, AnyPolicy> {
             let t = d.into_ppr(PrivacyPureRegion::new(|d: (GradeList, GradeList, GradeList, GradeList)|{
@@ -94,7 +94,7 @@ pub fn serialize_cand_row_caller(rows: Vec<CandidateRow>) -> Result<BBox<Vec<u8>
         })).unwrap()
     }).collect::<Vec<BBox<portfolio_types::CandidateRow, AnyPolicy>>>();
 
-    execute_sandbox::<portfolio_sandbox::serialize_cand_row, _, _>(sandbox_rows).transpose().map_err(error_map)
+    execute_sandbox::<portfolio_sandbox::serialize_cand_row, _, _>(sandbox_rows).fold_in().map_err(error_map)
 }
 
 pub fn serialize_app_row_caller(rows: Vec<ApplicationRow>) -> Result<BBox<Vec<u8>, AnyPolicy>, ServiceError> {
@@ -104,7 +104,7 @@ pub fn serialize_app_row_caller(rows: Vec<ApplicationRow>) -> Result<BBox<Vec<u8
         })).unwrap()
     }).collect::<Vec<BBox<portfolio_types::ApplicationRow, AnyPolicy>>>();
 
-    execute_sandbox::<portfolio_sandbox::serialize_app_row, _, _>(sandbox_rows).transpose().map_err(error_map)
+    execute_sandbox::<portfolio_sandbox::serialize_app_row, _, _>(sandbox_rows).fold_in().map_err(error_map)
 }
 
 #[async_trait]
@@ -179,13 +179,13 @@ impl CsvExporter for CandidateCsv {
                 PrivacyPureRegion::new(|f: School|
                     get_our_school_field(&f)
                 )
-            ).transpose().map_err(|_| ServiceError::InvalidFieldOfStudy)?;
+            ).fold_in().map_err(|_| ServiceError::InvalidFieldOfStudy)?;
 
             let second_field = c.secondSchool.clone().into_ppr(
                 PrivacyPureRegion::new(|f: School|
                     get_our_school_field(&f)
                 )
-            ).transpose().map_err(|_| ServiceError::InvalidFieldOfStudy)?;
+            ).fold_in().map_err(|_| ServiceError::InvalidFieldOfStudy)?;
 
             let applications_fields_comb = get_applications_fields_comb(&related_applications);
             let fields_combination = execute_pure(
@@ -217,8 +217,8 @@ impl CsvExporter for CandidateCsv {
                 second_school_field,
                 first_day_admissions: first_field.clone().into_ppr(PrivacyPureRegion::new(|f: Option<FieldOfStudy>| f.is_some())),
                 second_day_admissions: second_field.clone().into_ppr(PrivacyPureRegion::new(|f: Option<FieldOfStudy>| f.is_some())),
-                first_day_field: first_field.transpose(),
-                second_day_field: second_field.transpose(),
+                first_day_field: first_field.fold_in(),
+                second_day_field: second_field.fold_in(),
                 fields_combination: fields_combination.into_any_policy(),
                 personal_id_number: c.personalIdNumber,
                 fields_match: fields_match.into_any_policy(),
